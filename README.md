@@ -1,2 +1,2 @@
 # covid-19-forecast
-Public repository for CMU Delphi forecasting for SARS-Cov2
+Public repository for CMU Delphi forecasting efforts for SARS-Cov2
