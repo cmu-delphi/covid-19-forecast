@@ -1,0 +1,3 @@
+# template
+
+The template forecaster

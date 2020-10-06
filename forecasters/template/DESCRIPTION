@@ -1,0 +1,13 @@
+Package: template
+Title: The template forecaster
+Version: 20200618-114037
+Authors@R: 
+    person(given = "last_name",
+           family = "first_name",
+           role = c("aut", "cre"),
+           email = "email_address")
+Description: The template forecaster.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Suggests: testthat
+Roxygen: list(markdown = TRUE)

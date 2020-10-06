@@ -1,0 +1,3 @@
+# strawman
+
+The strawman forecaster
