@@ -1,6 +1,6 @@
 Package: strawman
 Title: The strawman forecaster
-Version: 20200714-093538
+Version: 0.0.1
 Authors@R: 
     c(person("Balasubramanian", "Narasimhan", role=c("aut", "cre"),
 	   	   email = "naras@stat.stanford.edu"),
@@ -17,5 +17,6 @@ Imports:
     stringr,
     zoo,
     MMWRweek,
-    evalforecast
-RoxygenNote: 7.1.0
+    evalforecast,
+    magrittr
+RoxygenNote: 7.1.1

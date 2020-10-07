@@ -99,7 +99,7 @@ strawman_quantiles_all_regions <- function(data,
 
       current_location_output <- output_prediction$output
     } else{
-      current_location_output <- cbind(probs = cdc_probs,
+      current_location_output <- cbind(probs = probs,
                                        quantiles = NA)
     }
 

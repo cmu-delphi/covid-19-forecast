@@ -66,7 +66,8 @@ strawman_forecaster_raw <- function(df,
     select(MMWRyear, MMWRweek) %>%
     distinct()
 
-  target_epiweek <- target_epiweeks %>% transmute(epiweek = 100 * MMWRyear + MMWRweek) %>% pull(epiweek)
+  target_epiweek <- target_epiweeks %>% 
+    transmute(epiweek = 100 * MMWRyear + MMWRweek) %>% pull(epiweek)
 
   ######################################################################
 
@@ -131,11 +132,10 @@ strawman_forecaster_raw <- function(df,
 
   df_epiweek <- df_epiweek %>%
     group_by(location) %>%
-    mutate(increase =
-             value - dplyr::lag(value,
-                                n = lag_length,
-                                default = 0,
-                                order_by = epiweek)) %>%
+    mutate(
+      increase = value - dplyr::lag(
+        value, n = lag_length, default = 0, order_by = epiweek)
+      ) %>%
     ungroup()
 
 
