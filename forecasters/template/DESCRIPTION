@@ -1,13 +1,12 @@
 Package: template
 Title: The template forecaster
-Version: 20200618-114037
+Version: 0.0.1
 Authors@R: 
-    person(given = "last_name",
-           family = "first_name",
-           role = c("aut", "cre"),
-           email = "email_address")
+  person(given="firstname", family="lastname", role=c("aut","cre"),
+    email="handle@webserver.com")
 Description: The template forecaster.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Suggests: testthat
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
