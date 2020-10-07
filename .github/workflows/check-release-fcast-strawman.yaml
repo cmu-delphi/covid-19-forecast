@@ -3,8 +3,10 @@
 on:
   push:
     branches:
-      - 'main/forecasters/strawman'
-      - 'develop/forecasters/strawman'
+      - 'main'
+      - 'develop'
+    paths:
+      - 'forecasters/strawman/**'
   pull_request:
     branches:
       - 'main/forecasters/strawman'
