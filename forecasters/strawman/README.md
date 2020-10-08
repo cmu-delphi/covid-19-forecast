@@ -2,5 +2,3 @@
 
 
 The strawman forecaster
-
-Blah blah
