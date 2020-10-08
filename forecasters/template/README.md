@@ -1,7 +1,5 @@
 # template
 
-<!-- badges: start -->
-  [![R build status](https://github.com/cmu-delphi/covid-19-forecast/workflows/R-CMD-check/badge.svg)](https://github.com/cmu-delphi/covid-19-forecast/actions)
-  <!-- badges: end -->
+![check-fcast-template](https://github.com/cmu-delphi/covid-19-forecast/workflows/check-fcast-template/badge.svg?branch=develop)
 
 The template forecaster
