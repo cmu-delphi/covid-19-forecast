@@ -13,7 +13,6 @@
 #' @param geo_type the `geo_type`, one of `"state"` or `"county"`
 #' @return a tibble of corrections data
 #' @importFrom dplyr tbl collect mutate
-#' @importFrom magrittr %>%
 #' @importFrom DBI dbConnect dbDisconnect
 #' @importFrom lubridate ymd
 #' @importFrom RSQLite SQLite
@@ -44,7 +43,7 @@ get_data_corrections  <- function(db_path, geo_type) {
 #' @param new_df the new data to replace the old
 #' @return `TRUE` invisibly
 #' @importFrom dplyr tbl collect mutate
-#' @importFrom DBI dbConnect dbDisconnect
+#' @importFrom DBI dbConnect dbDisconnect dbWriteTable
 #' @importFrom lubridate ymd
 #' @importFrom RSQLite SQLite
 #'
@@ -100,8 +99,7 @@ update_corrections  <- function(db_path, geo_type, new_df) {
 #'     `~/corrections.sqlite`
 #' @return a df with corrections applied if the corrections are
 #'     available, or same dataframe
-#' @importFrom fs file_exists
-#' @importFrom dplyr anti_join select rename mutate
+#' @importFrom dplyr anti_join bind_rows select rename mutate
 #' @importFrom DBI dbConnect dbDisconnect
 #' @importFrom lubridate ymd
 #' @importFrom RSQLite SQLite

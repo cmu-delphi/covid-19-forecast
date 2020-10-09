@@ -20,4 +20,6 @@ Imports:
     stats,
     RSQLite,
     lubridate,
-    DBI
+    DBI,
+    MMWRweek,
+    tibble

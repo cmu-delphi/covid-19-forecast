@@ -2,7 +2,27 @@
 ##
 ## This function IS in evalcast once available, to be removed from here
 
+## ---------------------------------
 
+
+#' Gets the forecast target period
+#'
+#' This function gives the start and end dates of the target period,
+#' based on the system described in the COVIDHub rules here:
+#' https://github.com/reichlab/covid19-forecast-hub/blob/master/data-processed/README.md
+#'
+#' For week-ahead forecasts with forecast_date of Sunday or Monday of EW12, a
+#' 1 week ahead forecast corresponds to EW12 and should have target_end_date of
+#' the Saturday of EW12. For week-ahead forecasts with forecast_date of Tuesday
+#' through Saturday of EW12, a 1 week ahead forecast corresponds to EW13 and
+#' should have target_end_date of the Saturday of EW13.
+#'
+#' @param forecast_date can be a vector of dates
+#' @param incidence_period one of "epiweek" or "day"
+#' @param ahead how many epiweeks/days ahead are you forecasting?
+#'
+#' @return a tibble with variables "start" and "end"
+#'
 #' @export
 #' @importFrom MMWRweek MMWRweek MMWRweek2Date
 #' @importFrom lubridate wday

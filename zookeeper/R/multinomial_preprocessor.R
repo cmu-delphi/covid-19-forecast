@@ -5,10 +5,22 @@
 
 
 ## NOTE THE SPELLING MISTAKE, should be multinomial_preprocessor!
-## SO make an alias below!
+
+
+#' Preprocesses the response values in a data frame.
+#'
+#' Replaces zeroes (which we suspect are due to lagged reporting) by samples from a multinomial.
+#'
+#' @param dat a data frame with columns reference_date, location, variable_name, and value
+#'       (and possibly some other columns we will ignore.)
+#' @param response the name of the response variable.
+#' @param max_lag maximum amount counts can be moved. Default to `Inf`
+#'
+#' @return a data frame of the same format as `dat`
+#'
 #' @importFrom dplyr arrange pull select
 #' @export
-multinomial_preprocesser <- function(dat, response, max_lag = Inf){
+multinomial_preprocessor <- function(dat, response, max_lag = Inf){
   # Preprocesses the response values in a data frame.
   # Replaces zeroes (which we suspect are due to lagged reporting) by samples from a multinomial.
   # Input:
@@ -36,9 +48,9 @@ multinomial_preprocesser <- function(dat, response, max_lag = Inf){
   return(dat)
 }
 
-## Alias
+#' @describeIn multinomial_preprocessor an alias for previously misspelled function
 #' @export
-multinomial_preprocessor  <- multinomial_preprocesser
+multinomial_preprocesser  <- multinomial_preprocessor
 
 
 #' @importFrom tidyr replace_na
