@@ -17,12 +17,9 @@
 #' @import lubridate
 #' @import tidyr
 #' @import dplyr
-#' @import splines
 #' @import glmnet
 #' @import zoo
-#' @import MMWRweek
-#' @import tigris
-#' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom quantile rmultinom rnorm rpois weighted.mean
+#' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom quantile rnorm weighted.mean
 #' @keywords package
 #' @seealso Relevant links:
 #' \itemize{

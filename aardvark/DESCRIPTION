@@ -1,6 +1,6 @@
 Package: aardvark
 Title: The aardvark forecaster
-Version: 20201005-165526
+Version: 20201016-125353
 Authors@R: 
     c(person(given = "Alden",
            family = "Green",
@@ -15,10 +15,10 @@ Description: Carnegie Mellon Delphi Lab COVID-19 state death forecaster
 License: MIT + file LICENSE
 Encoding: UTF-8
 Suggests: testthat
-Imports: evalforecast, lubridate, tidyr, dplyr, utils, 
-         purrr, stats, Matrix, glmnet, zoo
+Imports: evalforecast, lubridate, tidyr, dplyr, utils, purrr, stats,
+        Matrix, glmnet, zoo
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2020-09-08 13:58:39 UTC; collin
+Packaged: 2020-10-16 16:47:50 UTC; collin
 Author: Alden Green [aut, cre]
 Maintainer: Collin Politsch <capolitsch@cmu.edu>
