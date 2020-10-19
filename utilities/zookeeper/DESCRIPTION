@@ -23,3 +23,7 @@ Imports:
     DBI,
     MMWRweek,
     tibble
+Suggests: 
+    RcppRoll
+Depends: 
+    R (>= 2.10)
