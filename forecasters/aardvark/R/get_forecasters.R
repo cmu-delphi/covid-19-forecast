@@ -33,7 +33,6 @@
 #' ahead = 1
 #' my_forecaster <- get_forecasters(response = "jhu-csse_deaths_incidence_num",
 #'                                  ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
-# @importFrom evalcast multinomial_preprocesser
 
 get_forecasters <- function(response = "jhu-csse_deaths_incidence_num", 
                             incidence_period = c("epiweek"), 
