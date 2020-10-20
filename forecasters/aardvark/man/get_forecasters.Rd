@@ -40,7 +40,7 @@ A list with an element named \code{aardvark_state_death_forecaster},
     \code{list(forecaster = NA, type = "standalone")}.
 }
 \description{
-The \link[evalforecast]{evalforecast-package} production 
+The \link[evalcast]{evalcast-package} production 
     evaluator will first call this function to determine all the forecasters
     available for the given parameter specifications. It expects to get back 
     a named list of lists of forecasting functions and types. If a forecasting 

@@ -53,7 +53,7 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
     ##     This makes sure we satisfy the aligner guarantee.
     locations <- unique(df_use %>% pull(location))
     train_dates <- unique(df_use %>% pull(reference_date) )
-    target_dates <-  evalforecast::get_target_period(forecast_date, "epiweek", ahead) %$%
+    target_dates <-  evalcast::get_target_period(forecast_date, "epiweek", ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
     df_empty <- expand_grid(location = locations,
@@ -132,7 +132,7 @@ make_days_since_threshold_crossed_most_recent_time_aligner <- function(variables
     ##     This makes sure we satisfy the aligner guarantee.
     locations <- unique(df_use %>% pull(location))
     train_dates <- unique(df_use %>% pull(reference_date) )
-    target_dates <-  evalforecast::get_target_period(forecast_date,"epiweek",ahead) %$%
+    target_dates <-  evalcast::get_target_period(forecast_date,"epiweek",ahead) %$%
       seq(start,end,by = "days")
     dates <- unique(c(train_dates,target_dates))
     df_empty <- expand_grid(location = locations,

@@ -17,7 +17,7 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
     # Third, back out Monte Carlo samples for Y_{t,\ell}.
 
     # (1) Get conditional mean predictions, on weekly scale.
-    target_dates <- evalforecast::get_target_period(forecast_date, incidence_period, ahead) %$%
+    target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
       seq(start,end,by = "days")
     point_preds <- df_point_preds %>%
       filter(reference_date %in% target_dates) %>%

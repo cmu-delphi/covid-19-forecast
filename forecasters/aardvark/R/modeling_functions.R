@@ -286,7 +286,7 @@ local_lasso_daily_forecast <- function(df_use,
     
     ## (B) Only keep locations for which aligned time is never NA in the target period
     df_align <- aligner(df_train_use, forecast_date_ii)
-    target_dates <-  evalforecast::get_target_period(forecast_date_ii, incidence_period,ahead) %$%
+    target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period,ahead) %$%
       seq(start, end, by = "days")
     pretty_locs <- unique(df_align %>% 
                             filter(reference_date %in% target_dates) %>% # dates in the target period
@@ -432,7 +432,7 @@ local_lasso_daily_forecast <- function(df_use,
 
 #' @importFrom graphics plot
 #' @importFrom magrittr %$%
-#' @importFrom evalforecast get_target_period
+#' @importFrom evalcast get_target_period
 local_lasso_daily_forecast_by_stratum <- function(df_use, response,
                                                   degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
@@ -516,7 +516,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   # (4) Get predicted values.
   
   ## (A) Get all the dates we would like predicted values for.
-  target_dates <- evalforecast::get_target_period(forecast_date,incidence_period,ahead) %$%
+  target_dates <- evalcast::get_target_period(forecast_date,incidence_period,ahead) %$%
     seq(start,end,by = "days")
   dates <- unique(
     df_align %>% 
@@ -614,7 +614,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
 }
 
 
-#' @importFrom evalforecast get_target_period
+#' @importFrom evalcast get_target_period
 #' @import purrr
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
                                 response, features){
