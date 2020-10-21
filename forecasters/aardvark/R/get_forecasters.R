@@ -1,6 +1,6 @@
 #' Get the Aardvark state death production forecaster
 #'
-#' @description The \link[evalforecast]{evalforecast-package} production 
+#' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters
 #'     available for the given parameter specifications. It expects to get back 
 #'     a named list of lists of forecasting functions and types. If a forecasting 
@@ -33,7 +33,6 @@
 #' ahead = 1
 #' my_forecaster <- get_forecasters(response = "jhu-csse_deaths_incidence_num",
 #'                                  ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
-# @importFrom evalforecast multinomial_preprocesser
 
 get_forecasters <- function(response = "jhu-csse_deaths_incidence_num", 
                             incidence_period = c("epiweek"), 
@@ -116,7 +115,7 @@ get_forecasters <- function(response = "jhu-csse_deaths_incidence_num",
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
   bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
 
-  # The final state death forecaster function to pass to the evalforecast evaluator
+  # The final state death forecaster function to pass to the evalcast evaluator
   my_forecaster <- make_aardvark_forecaster(ahead = ahead,
                                             response = response,
                                             features = features,
@@ -129,6 +128,6 @@ get_forecasters <- function(response = "jhu-csse_deaths_incidence_num",
                                             modeler = modeler,
                                             bootstrapper = bootstrapper)
 
-  ## Return the forecaster in the format expected by evalforecast
+  ## Return the forecaster in the format expected by evalcast
   return(list(aardvark_state_death_forecaster = list(forecaster = my_forecaster, type = "standalone")))
 }

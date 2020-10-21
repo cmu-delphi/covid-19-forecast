@@ -19,7 +19,8 @@
 #' @import dplyr
 #' @import glmnet
 #' @import zoo
-#' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom quantile rnorm weighted.mean
+#' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom 
+#' @importFrom stats quantile rnorm weighted.mean end offset start weights
 #' @keywords package
 #' @seealso Relevant links:
 #' \itemize{
