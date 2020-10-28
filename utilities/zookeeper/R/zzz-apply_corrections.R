@@ -1,6 +1,7 @@
 ##-------------
 ## Originally in evalforecast, written by @bnaras
 
+## DEPRECATE
 
 
 #' Retrieve a tibble of data corrections from the corrections database
@@ -12,11 +13,11 @@
 #'     `~/data_corrections.sqlite`
 #' @param geo_type the `geo_type`, one of `"state"` or `"county"`
 #' @return a tibble of corrections data
-#' @importFrom dplyr tbl collect mutate
-#' @importFrom DBI dbConnect dbDisconnect
-#' @importFrom lubridate ymd
-#' @importFrom RSQLite SQLite
-#' @export get_data_corrections
+# @importFrom dplyr tbl collect mutate
+# @importFrom DBI dbConnect dbDisconnect
+# @importFrom lubridate ymd
+# @importFrom RSQLite SQLite
+# @export get_data_corrections
 get_data_corrections  <- function(db_path, geo_type) {
   ## The check below is preferable to match.arg because both state and county have same
   ## schema and we don't want people to clobber state with county data or vice-versa easily!
@@ -42,12 +43,12 @@ get_data_corrections  <- function(db_path, geo_type) {
 #' @param geo_type the `geo_type`, one of `"state"` or `"county"`
 #' @param new_df the new data to replace the old
 #' @return `TRUE` invisibly
-#' @importFrom dplyr tbl collect mutate
-#' @importFrom DBI dbConnect dbDisconnect dbWriteTable
-#' @importFrom lubridate ymd
-#' @importFrom RSQLite SQLite
+# @importFrom dplyr tbl collect mutate
+# @importFrom DBI dbConnect dbDisconnect dbWriteTable
+# @importFrom lubridate ymd
+# @importFrom RSQLite SQLite
 #'
-#' @export update_corrections
+# @export update_corrections
 update_corrections  <- function(db_path, geo_type, new_df) {
   ## The check below is preferable to match.arg because both state and county have same
   ## schema and we don't want people to clobber state with county data or vice-versa easily!
@@ -99,11 +100,11 @@ update_corrections  <- function(db_path, geo_type, new_df) {
 #'     `~/corrections.sqlite`
 #' @return a df with corrections applied if the corrections are
 #'     available, or same dataframe
-#' @importFrom dplyr anti_join bind_rows select rename mutate
-#' @importFrom DBI dbConnect dbDisconnect
-#' @importFrom lubridate ymd
-#' @importFrom RSQLite SQLite
-#' @export
+# @importFrom dplyr anti_join bind_rows select rename mutate
+# @importFrom DBI dbConnect dbDisconnect
+# @importFrom lubridate ymd
+# @importFrom RSQLite SQLite
+# @export
 apply_corrections  <- function(df, geo_type, corrections_db_path) {
   ## The check below is preferable to match.arg because both state and county have same
   ## schema and we don't want people to clobber state with county data or vice-versa easily!

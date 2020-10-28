@@ -1,15 +1,25 @@
+#' Creates additional columns and flags outliers for state-level data
+#'
+#' @param x a data frame as returned by `evalcast:::download_signal()`
+#' @param params a list of parameters, typically `correction_pars`
+#'
+#' @return
+#' @export
+#' @importFrom dplyr group_by mutate lead lag
+#' @importFrom RcppRoll roll_mean roll_meanr roll_median roll_medianr
+#' @importFrom RcppRoll roll_sd roll_sdr
 state_corrector <- function(x, params) {
   x = dplyr::group_by(x, location)
   with(params,
        dplyr::mutate(x,
-              fmean = roll_meanr(value, window_size),
-              smean = roll_mean(value, window_size, fill = NA),
-              fmedian = roll_medianr(value, window_size),
-              smedian = roll_median(value, window_size, fill = NA),
-              fsd = roll_sdr(value, window_size),
-              ssd = roll_sd(value, window_size,fill = NA),
-              fmad = roll_medianr(abs(value-fmedian), window_size),
-              smad = roll_median(abs(value-smedian), window_size, fill=NA),
+              fmean = RcppRoll::roll_meanr(value, window_size),
+              smean = RcppRoll::roll_mean(value, window_size, fill = NA),
+              fmedian = RcppRoll::roll_medianr(value, window_size),
+              smedian = RcppRoll::roll_median(value, window_size, fill = NA),
+              fsd = RcppRoll::roll_sdr(value, window_size),
+              ssd = RcppRoll::roll_sd(value, window_size,fill = NA),
+              fmad = RcppRoll::roll_medianr(abs(value-fmedian), window_size),
+              smad = RcppRoll::roll_median(abs(value-smedian), window_size, fill=NA),
               ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale,
               ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
               flag =
@@ -33,18 +43,29 @@ state_corrector <- function(x, params) {
 }
 
 
+#' Creates additional columns and flags outliers for county-level data
+#'
+#' @param x a data frame as returned by `evalcast:::download_signal()`
+#' @param params a list of parameters, typically `correction_pars`
+#'
+#' @return
+#' @export
+#'
+#' @importFrom dplyr group_by mutate lead lag
+#' @importFrom RcppRoll roll_mean roll_meanr roll_median roll_medianr
+#' @importFrom RcppRoll roll_sd roll_sdr
 county_corrector <- function(x, params){
   x = dplyr::group_by(x, location)
   with(params,
        dplyr::mutate(x,
-              fmean = roll_meanr(value, window_size),
+              fmean = RcppRoll::roll_meanr(value, window_size),
               # smean = roll_mean(value, window_size, fill = NA),
-              fmedian = roll_medianr(value, window_size),
-              smedian = roll_median(value, window_size, fill = NA),
-              fsd = roll_sdr(value, window_size),
-              ssd = roll_sd(value, window_size,fill = NA),
-              fmad = roll_medianr(abs(value-fmedian), window_size,na.rm=TRUE),
-              smad = roll_median(abs(value-smedian), na.rm=TRUE),
+              fmedian = RcppRoll::roll_medianr(value, window_size),
+              smedian = RcppRoll::roll_median(value, window_size, fill = NA),
+              fsd = RcppRoll::roll_sdr(value, window_size),
+              ssd = RcppRoll::roll_sd(value, window_size,fill = NA),
+              fmad = RcppRoll::roll_medianr(abs(value-fmedian), window_size,na.rm=TRUE),
+              smad = RcppRoll::roll_median(abs(value-smedian), na.rm=TRUE),
               ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale,
               ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
               flag =
