@@ -2,3 +2,5 @@
 *.Rproj.user
 *.Rproj
 *.Rhistory
+*.Rcheck/
+.Rproj.user
