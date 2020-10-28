@@ -6,20 +6,19 @@ on:
       - 'main'
       - 'develop'
     paths:
-      - 'forecasters/strawman/**'
+      - 'forecasters/aardvark/**'
   pull_request:
     branches:
       - 'main'
       - 'develop'
     paths:
-      - 'forecasters/strawman/**'
+      - 'forecasters/aardvark/**'
 
-
-name: check-fcast-strawman
+name: check-fcast-aardvark
 
 defaults:
   run:
-    working-directory: 'forecasters/strawman'
+    working-directory: 'forecasters/aardvark'
 
 jobs:
   R-CMD-check:
