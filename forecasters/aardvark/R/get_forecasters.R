@@ -34,7 +34,9 @@
 #' my_forecaster <- get_forecasters(response = "jhu-csse_deaths_incidence_num",
 #'                                  ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
 
-get_forecasters <- function(response = "jhu-csse_deaths_incidence_num", 
+get_forecasters <- function(response_signal = "deaths_incidence_num",
+                            response_source = "jhu-csse", 
+                            #response = "jhu-csse_deaths_incidence_num",
                             incidence_period = c("epiweek"), 
                             ahead, 
                             forecast_date,
@@ -44,12 +46,18 @@ get_forecasters <- function(response = "jhu-csse_deaths_incidence_num",
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
   
-  if ( geo_type == "county" ){
-    cases <- "usa-facts_confirmed_incidence_num"
-  }
-  else if ( geo_type == "state" ){
-    cases <- "jhu-csse_confirmed_incidence_num"
-  }
+  
+  response = paste(response_source, response_signal, sep="_")
+
+  
+  cases <- paste(response_source, "confirmed_incidence_num", sep="_")
+  # if ( geo_type == "county" ){
+  #   cases <- "usa-facts_confirmed_incidence_num"
+  # }
+  # else if ( geo_type == "state" ){
+  #   cases <- "jhu-csse_confirmed_incidence_num"
+  # }
+  
   
   ## Currently only allowing for state death predictions at the epiweek level
   if ( incidence_period != "epiweek" ){
@@ -68,14 +76,17 @@ get_forecasters <- function(response = "jhu-csse_deaths_incidence_num",
   preprocesser <- NULL
   imputer <- make_average_imputer(k = 7, align = "center")
   
-  if (geo_type == "county"){
-    alignment_variable <- "usa-facts_confirmed_cumulative_num"
-    threshold <- 500
-  }
-  else if (geo_type == "state"){
-    alignment_variable <- "jhu-csse_confirmed_cumulative_num"
-    threshold <- 500
-  }
+  
+  alignment_variable = cases
+  threshold = 500
+  # if (geo_type == "county"){
+  #   alignment_variable <- "usa-facts_confirmed_cumulative_num"
+  #   threshold <- 500
+  # }
+  # else if (geo_type == "state"){
+  #   alignment_variable <- "jhu-csse_confirmed_cumulative_num"
+  #   threshold <- 500
+  # }
   aligner <- make_days_since_threshold_attained_first_time_aligner(variables = alignment_variable,
                                                                    threshold = threshold, 
                                                                    ahead)
