@@ -93,13 +93,14 @@ make_aardvark_forecaster <- function(ahead = 1,
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, geo_type){
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, ahead,
+                                              geo_type){
     # Inputs:
-    #  df: data frame with columns "location", "location_name", "time_value", "issue",
-    #      "variable_name" and "value"
+    #  df: data frame with columns "data_source", "signal", "location", "time_value", 
+    #                              "issue", and "value"
     #
-    #  forecast_date: the Date on which forecasts will be made
-    #    about some period (e.g., epiweek).  Forecaster must only use data that
+    #  forecast_date: the date on which forecasts will be made
+    #    about some period ("epiweek" or "day").  Forecaster must only use data that
     #    would have been issued on or before forecast_date.
     
     # Preamble.
