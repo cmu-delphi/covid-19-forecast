@@ -45,7 +45,7 @@ get_forecasters <- function(response_source = "jhu-csse",
                             incidence_period = c("epiweek", "day"), 
                             ahead, 
                             forecast_date,
-                            geo_type = c("national","state", "county", "hrr", "msa"),
+                            geo_type = c("state", "county", "national", "hrr", "msa"),
                             n_locations = 52){
   
   incidence_period <- match.arg(incidence_period)
@@ -122,7 +122,8 @@ get_forecasters <- function(response_source = "jhu-csse",
                                             stratifier = stratifier,
                                             imputer = imputer,
                                             modeler = modeler,
-                                            bootstrapper = bootstrapper)
+                                            bootstrapper = bootstrapper,
+                                            geo_type = geo_type)
 
   ## Return the forecaster in the format expected by evalcast
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))

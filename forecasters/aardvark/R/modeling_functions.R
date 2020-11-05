@@ -33,6 +33,7 @@
 
 make_aardvark_forecaster <- function(ahead = 1, 
                                      incidence_period = c("epiweek", "day"),
+                                     geo_type = c("state", "county", "national", "hrr", "msa"),
                                      backfill_buffer = 5,
                                      response = "jhu-csse_deaths_incidence_num", 
                                      features = NULL, 
@@ -94,7 +95,7 @@ make_aardvark_forecaster <- function(ahead = 1,
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, geo_type){
     # Inputs:
-    #  df: data frame with columns "location", "location_name", "reference_date", "issue_date",
+    #  df: data frame with columns "location", "location_name", "time_value", "issue",
     #      "variable_name" and "value"
     #
     #  forecast_date: the Date on which forecasts will be made
