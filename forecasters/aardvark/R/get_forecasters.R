@@ -38,7 +38,7 @@
 #'                                  incidence_period = "epiweek",
 #'                                  geo_type = "state",
 #'                                  n_locations = 52,
-#'                                  ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
+#'                                  ahead = ahead)[["aardvark_forecaster"]][["forecaster"]]
 
 get_forecasters <- function(response_source = "jhu-csse", 
                             response_signal = "deaths_incidence_num",
@@ -56,7 +56,7 @@ get_forecasters <- function(response_source = "jhu-csse",
   ## Return NULL forecaster until these functionalities are added
   if ( incidence_period != "epiweek" | geo_type == "national"){
     return(list(
-      aardvark_state_death_forecaster = list(forecaster = NA, type = "standalone")
+      aardvark_forecaster = list(forecaster = NA, type = "standalone")
       ))
   }
   
@@ -125,5 +125,5 @@ get_forecasters <- function(response_source = "jhu-csse",
                                             bootstrapper = bootstrapper)
 
   ## Return the forecaster in the format expected by evalcast
-  return(list(aardvark_state_death_forecaster = list(forecaster = my_forecaster, type = "standalone")))
+  return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
 }
