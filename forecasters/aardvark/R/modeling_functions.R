@@ -31,14 +31,19 @@
 ## The aardvark forecaster fits models which are local in time and estimates
 ## location-specific effects using shrinkage
 
-make_aardvark_forecaster <- function(bandwidth = 40, degree = 0, 
-                                     ahead = 1, incidence_period = "epiweek",
-                                     data_start_date = ymd("2020-03-07"),
+make_aardvark_forecaster <- function(ahead = 1, 
+                                     incidence_period = c("epiweek", "day"),
                                      backfill_buffer = 5,
                                      response = "jhu-csse_deaths_incidence_num", 
-                                     stratifier, preprocesser = NULL, imputer = NULL, 
-                                     modeler = NULL, bootstrapper, B = 1000,
-                                     features = NULL, intercept = FALSE,
+                                     features = NULL, 
+                                     bandwidth = 7, 
+                                     degree = 0, 
+                                     intercept = FALSE,
+                                     stratifier, 
+                                     preprocesser = NULL, 
+                                     imputer = NULL, 
+                                     modeler = NULL, 
+                                     bootstrapper, B = 1000,
                                      aligner = NULL,
                                      verbose = 1){
   # Inputs:
@@ -85,9 +90,9 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
   # 
   #   verbose: integer, one of 0, 1, 2, or >2. Progressively more printing during forecasting.
 
-  cdc_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
+  covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date){
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, geo_type){
     # Inputs:
     #  df: data frame with columns "location", "location_name", "reference_date", "issue_date",
     #      "variable_name" and "value"
@@ -98,19 +103,30 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
     
     # Preamble.
     
+    incidence_period <- match.arg(incidence_period)
+    forecast_date <- lubridate::ymd(forecast_date)
+    target_period <- get_target_period(forecast_date, incidence_period, 
+                                       ahead)
+    
     # (0) Check some things.
-    stopifnot(c("location", "reference_date", "issue_date") %in% names(df))
-    stopifnot(names(features) == 
-                c("variable_name","type", "lag","offset","main_effect","impute", "interaction","build_functions"))
+    stopifnot(c("location", "time_value", "issue") %in% names(df))
+    stopifnot(names(features) == c("variable_name",
+                                   "type", 
+                                   "lag",
+                                   "offset",
+                                   "main_effect",
+                                   "impute", 
+                                   "interaction",
+                                   "build_functions")
+              )
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
     
-    # (1) Don't use any data past the last_train_date, or before the data_start_date.
+    # (1) Don't use any data past the last_train_date
     df_train <- df %>%
-      filter((is.na(issue_date) & 
-                (reference_date <= forecast_date)) | issue_date <= forecast_date | is.na(reference_date)) %>%
-      filter(reference_date >= data_start_date)
+      filter((is.na(issue) & 
+                (time_value <= forecast_date)) | issue <= forecast_date | is.na(time_value))
     
     
     # (2) Concentrate on the locations we need.
@@ -146,25 +162,25 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
     
     
     # (4) If we have a choice as to issue date...pick the latest one.
-    if ( length(unique(df_train$issue_date)) > 1 ){
-      min_issue_date <- min(df_train$issue_date, na.rm = TRUE) # NAs are always the earliest one.
+    if ( length(unique(df_train$issue)) > 1 ){
+      min_issue_date <- min(df_train$issue, na.rm = TRUE) # NAs are always the earliest one.
       df_train <- df_train %>% 
-        mutate(issue_date = replace_na(issue_date, min_issue_date - 1)) %>%
+        mutate(issue = replace_na(issue, min_issue_date - 1)) %>%
         group_by(location, reference_date, location_name, variable_name) %>%
-        top_n(1, wt = issue_date) %>% # NA only chosen if that's all there is
+        top_n(1, wt = issue) %>% # NA only chosen if that's all there is
         ungroup %>%
-        mutate(issue_date = na_if(issue_date, min_issue_date - 1)) # go back to NA
+        mutate(issue_date = na_if(issue, min_issue_date - 1)) # go back to NA
     }
     
     
     # (5) Don't use any response data that hasn't solidified
     warning("You may be using wobbly features; although your response has stabilized.")
     df_train <- filter(df_train, (variable_name != response) | 
-                                 (issue_date >= reference_date + backfill_buffer) |
-                                  is.na(issue_date)) # treat grandfathered data as solidified
+                                 (issue >= time_value + backfill_buffer) |
+                                  is.na(issue)) # treat grandfathered data as solidified
     
     # (6) We now never need to deal with issue date again; let's dispose of it.
-    df_train <- df_train %>% select(-issue_date)
+    df_train <- df_train %>% select(-issue)
     
     # Preprocess.
     
@@ -175,7 +191,7 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
     all_locs <- df_train %>% pull(location) %>% unique
     locs_ugly_criterion1 <- df_train %>% 
       filter(variable_name == response) %>% group_by(location) %>% 
-      summarize(n_response = sum(value,na.rm = T)) %>%
+      summarize(n_response = sum(value, na.rm = T)) %>%
       filter(n_response <= 5) %>% # Ugly because too few responses to model as a continuous variable.
       pull(location) %>% 
       unique()
@@ -199,7 +215,7 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
     
     ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location),
-                          probs = cdc_probs)
+                          probs = covidhub_probs)
     
     ## (2) Fit model and issue predictions for non-ugly locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, 
@@ -208,7 +224,7 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
                                                   forecast_date, incidence_period, ahead,
                                                   preprocesser, imputer, stratifier, aligner,
                                                   modeler,
-                                                  bootstrapper, B, cdc_probs,
+                                                  bootstrapper, B, covidhub_probs,
                                                   features, intercept, alignment_variable,
                                                   verbose = verbose)
     
@@ -219,7 +235,7 @@ make_aardvark_forecaster <- function(bandwidth = 40, degree = 0,
       group_by(location) %>%
       summarise(preds = pmax(mean(value, na.rm = T), 0)) %>%
       ungroup()
-    df_preds_ugly <- expand_grid(df_point_preds_ugly, probs = cdc_probs) %>%
+    df_preds_ugly <- expand_grid(df_point_preds_ugly, probs = covidhub_probs) %>%
       mutate(quantiles = qnbinom(p = probs,mu = preds, size = .25)) %>%
       select(-preds)
     non_zero_locs <- filter(df_point_preds_ugly, preds > 0) %>% pull(location) %>% unique()
@@ -250,7 +266,7 @@ local_lasso_daily_forecast <- function(df_use,
                                        response, degree, bandwidth,
                                        forecast_date, incidence_period, ahead,
                                        preprocesser, imputer, stratifier, aligner,
-                                       modeler, bootstrapper, B, cdc_probs,
+                                       modeler, bootstrapper, B, covidhub_probs,
                                        features, intercept, alignment_variable,
                                        verbose = 1){
   # Produces a distributional forecast (represented by quantiles) on daily time series data,
@@ -286,7 +302,7 @@ local_lasso_daily_forecast <- function(df_use,
     
     ## (B) Only keep locations for which aligned time is never NA in the target period
     df_align <- aligner(df_train_use, forecast_date_ii)
-    target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period,ahead) %$%
+    target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     pretty_locs <- unique(df_align %>% 
                             filter(reference_date %in% target_dates) %>% # dates in the target period
@@ -424,8 +440,8 @@ local_lasso_daily_forecast <- function(df_use,
   # Obtain quantiles.
   preds_df <- df_bootstrap_preds %>% 
     group_by(location) %>% 
-    group_modify(~ data.frame(probs = cdc_probs,
-                              quantiles = round(quantile(.x$value,cdc_probs))))
+    group_modify(~ data.frame(probs = covidhub_probs,
+                              quantiles = round(quantile(.x$value,covidhub_probs))))
   
   return(preds_df)
 }
@@ -832,7 +848,6 @@ make_predict_glmnet <- function(lambda_choice){
   # Inputs:
   #   lambda_choice: one of "lambda.1se" or "lambda.min", determining how
   #                  we will choose the value of lambda used for prediction.
-  #
   predict_glmnet <- function(fit, X, offset,...){
     stopifnot(is.character(lambda_choice))
     preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]

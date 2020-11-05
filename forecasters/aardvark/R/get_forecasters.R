@@ -1,4 +1,4 @@
-#' Get the Aardvark state death production forecaster
+#' Get the Aardvark forecaster
 #'
 #' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters
@@ -8,19 +8,21 @@
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
 #'     
-#' @param response The response variable (for this forecaster, should be 
+#' @param response The response variable (\code{geo_type = "state"}), should be 
 #' "jhu-csse_deaths_incidence_num" -- the incident deaths reported by Johns Hopkins 
-#' University).
-#' @param incidence_period The incidence period. This state death forecaster
+#' University) -- assuming no data issues.
+#' @param incidence_period The incidence period. This forecaster
 #' currently only supports forecasts at the "epiweek" level.
-#' @param ahead The number of incidence periods ahead to forecast state deaths.
-#' One of 1, 2, 3, 4.
+#' @param ahead The number of incidence periods ahead to forecast the respoonse.
+#' For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
 #' @param forecast_date The date of the forecast.
 #' @param geo_type the geographic type (e.g "state" or "county" or
 #'     "hrr" or "msa"... but for now only the first two),
 #' @param n_locations The number of geo locations. Up to 52 for \code{geo_type = "state"}
-#' (states + D.C. and Puerto Rico)
-#' @return A list with an element named \code{aardvark_state_death_forecaster}, 
+#' (states + D.C. and Puerto Rico). Usually let \code{n_locations = 200} for 
+#' \code{geo_type = "county"} (Top 200). For \code{geo_type = "national"}, 
+#' \code{n_locations = 1}
+#' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
 #'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
 #'     deprecated. Unavailable forecasters are marked as 
@@ -31,35 +33,35 @@
 #' library(aardvark)
 #' 
 #' ahead = 1
-#' my_forecaster <- get_forecasters(response = "jhu-csse_deaths_incidence_num",
+#' my_forecaster <- get_forecasters(response_source = "jhu-csse",
+#'                                  response_signal = "deaths_incidence_num",
+#'                                  incidence_period = "epiweek",
+#'                                  geo_type = "state",
+#'                                  n_locations = 52,
 #'                                  ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
 
-get_forecasters <- function(response = "jhu-csse_deaths_incidence_num", 
-                            incidence_period = c("epiweek"), 
+get_forecasters <- function(response_source = "jhu-csse", 
+                            response_signal = "deaths_incidence_num",
+                            incidence_period = c("epiweek", "day"), 
                             ahead, 
                             forecast_date,
-                            geo_type = c("state", "county", "hrr", "msa"),
+                            geo_type = c("national","state", "county", "hrr", "msa"),
                             n_locations = 52){
   
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
+  response <- paste(response_source, response_signal, sep="_")
+  cases <- paste(response_source, "confirmed_incidence_num", sep="_")
   
-  if ( geo_type == "county" ){
-    cases <- "usa-facts_confirmed_incidence_num"
-  }
-  else if ( geo_type == "state" ){
-    cases <- "jhu-csse_confirmed_incidence_num"
-  }
-  
-  ## Currently only allowing for state death predictions at the epiweek level
-  if ( incidence_period != "epiweek" ){
+  ## Return NULL forecaster until these functionalities are added
+  if ( incidence_period != "epiweek" | geo_type == "national"){
     return(list(
       aardvark_state_death_forecaster = list(forecaster = NA, type = "standalone")
       ))
   }
   
   # Hyperparameters
-  data_start_date <- ymd("2020-03-07")
+  data_start_date <- lubridate::ymd("2020-03-07")
   bandwidth <- 7
   degree <- 0
 
@@ -68,14 +70,8 @@ get_forecasters <- function(response = "jhu-csse_deaths_incidence_num",
   preprocesser <- NULL
   imputer <- make_average_imputer(k = 7, align = "center")
   
-  if (geo_type == "county"){
-    alignment_variable <- "usa-facts_confirmed_cumulative_num"
-    threshold <- 500
-  }
-  else if (geo_type == "state"){
-    alignment_variable <- "jhu-csse_confirmed_cumulative_num"
-    threshold <- 500
-  }
+  alignment_variable <- cases
+  threshold <- 500
   aligner <- make_days_since_threshold_attained_first_time_aligner(variables = alignment_variable,
                                                                    threshold = threshold, 
                                                                    ahead)

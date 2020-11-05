@@ -3,4 +3,6 @@
 *.Rproj
 *.Rhistory
 *.Rcheck/
+.Rhistory
+.Ruserdata
 .Rproj.user

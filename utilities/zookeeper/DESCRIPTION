@@ -1,0 +1,32 @@
+Package: zookeeper
+Type: Package
+Title: Utility functions for our forecast pipeline 
+Version: 0.0.1
+Authors@R: 
+  person("Daniel J. ", "McDonald", role=c("aut","cre"), 
+    email="daniel@stat.ubc.ca")
+Description: This packages contains various functions necessary to run our forecast
+  pipeline and produce forecasts to upload to the CDC. Much of this represents
+  a conscious uncoupling of functions previously located elsewhere.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Imports: 
+    magrittr,
+    dplyr,
+    tidyr,
+    purrr,
+    stats,
+    RSQLite,
+    lubridate,
+    DBI,
+    MMWRweek,
+    tibble
+Suggests: 
+    RcppRoll,
+    knitr,
+    rmarkdown
+Depends: 
+    R (>= 2.10)
+VignetteBuilder: knitr

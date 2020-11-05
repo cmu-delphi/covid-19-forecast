@@ -1,0 +1,344 @@
+---
+title: "making-corrections"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{making-corrections}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(zookeeper)
+```
+
+The zookeeper package provides some utilities for correcting the anomalous data points in the daily data-reporting records on both state and county levels, which could help forecaster generate more accurate predictions. Here we will perform corrections on both state-level data and county-level data.
+
+
+
+## Corrections on the state-level data
+
+### Package Setup
+```{r setup}
+library(zookeeper)
+library(covidcast)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(lubridate)
+library(RcppRoll)
+library(cowplot)
+library(ggplot2)
+library(DT)
+```
+
+### Data Retrieval  
+We fetch data from the [COVIDcast API](https://cmu-delphi.github.io/delphi-epidata/api/covidcast.html)  
+
+- **Source**: JHU Cases and Deaths
+- **Signal**: Number of new confirmed deaths due to COVID-19, daily.
+```{r grab-data, cache=TRUE}
+start_date <- NULL
+
+states <-  suppressMessages(
+  covidcast_signal(
+  "jhu-csse","deaths_incidence_num", 
+  geo_type = "state", 
+  start_day = start_date)
+)
+
+```
+
+### Calculate rolling statistics and flagged abnormal data points
+```{r calculate-roll-stats}
+#Parameters
+window_size <- 14
+sig_cut <- 3
+size_cut <-  20
+sig_consec <- 2.25
+
+#FIPS codes of states
+STATE_TO_FIPS = c( ## copied from somewhere in the bowels of the code
+  'WA'='53', 'DE'='10', 'DC'='11', 'WI'='55', 'WV'='54', 'HI'='15',
+  'FL'='12', 'WY'='56', 'PR'='72', 'NJ'='34', 'NM'='35', 'TX'='48',
+  'LA'='22', 'NC'='37', 'ND'='38', 'NE'='31', 'TN'='47', 'NY'='36',
+  'PA'='42', 'AK'='02', 'NV'='32', 'NH'='33', 'VA'='51', 'CO'='08',
+  'CA'='06', 'AL'='01', 'AR'='05', 'VT'='50', 'IL'='17', 'GA'='13',
+  'IN'='18', 'IA'='19', 'MA'='25', 'AZ'='04', 'ID'='16', 'CT'='09',
+  'ME'='23', 'MD'='24', 'OK'='40', 'OH'='39', 'UT'='49', 'MO'='29',
+  'MN'='27', 'MI'='26', 'RI'='44', 'KS'='20', 'MT'='30', 'MS'='28',
+  'SC'='45', 'KY'='21', 'OR'='41', 'SD'='46',
+  'AS'='60', 'GU'='66', 'MP'='69', 'VI'='78', 'UM'='74'
+)
+
+
+states <- states %>% group_by(geo_value) %>% mutate(
+  fmean = roll_meanr(value, window_size),
+  smean = roll_mean(value, window_size, fill = NA),
+  fmedian = roll_medianr(value, window_size),
+  smedian = roll_median(value, window_size, fill = NA),
+  fsd = roll_sdr(value, window_size),
+  ssd = roll_sd(value, window_size,fill = NA),
+  fmad = roll_medianr(abs(value-fmedian), window_size),
+  smad = roll_median(abs(value-smedian), window_size, fill=NA),
+  ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
+  ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
+  flag = 
+    (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut) | # best case
+    (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
+      # use filter if smoother is missing
+    (value < -size_cut & !is.na(ststat) & !is.na(ftstat)), # big negative
+  flag = flag | # these allow smaller values to also be outliers if they are consecutive
+    (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
+    (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
+    (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
+    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+  FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)])
+  )
+```
+
+
+### Make corrections
+Now we use the "multinomial" smoother to backfill the excess of any flagged outliers. Some notes:  
+
+* We use the function `corrections_multinom_roll()` in the `zookeeper` package to do the backfill.
+* It backfills randomly based on smoother as weights
+* Optionally allows for filling non-uniformly.
+* We treat the big New York outlier differently, it gets an infinite backfill (convolved with linear decay).
+* As of 10/4, we convolve with a linear decay over 30 days. 
+
+```{r}
+excess_cut <- 0
+backfill_lag <- 30
+
+corrected_states = states %>%
+  mutate(
+    # try using everything, not just the "excess"
+    excess = value,
+    corrected = corrections_multinom_roll(
+      value, excess, (flag), # & !flag_big_ny), 
+      time_value, backfill_lag, expectations = value,
+      reweight=function(x) exp_w(x, backfill_lag))
+  )
+```
+
+### Visualizations
+These are states in which corrections are made. Elements of plots include:
+- Yellow: original value
+- Purple: corrected value  
+- Red dot: flagged outlier  
+
+```{r show-state-corrections, fig.height = 30, fig.width = 10}
+corrected_states %>% group_by(geo_value) %>% 
+  filter(any(flag == 'TRUE')) %>% 
+  dplyr::select(geo_value, time_value, value, corrected, flag) %>%
+  pivot_longer(value:corrected) %>%
+  ggplot(aes(time_value)) + geom_line(aes(y=value,color=name)) +
+  geom_point(data = filter(corrected_states, flag), aes(y=value), color="red") +
+  facet_wrap(~geo_value, scales = "free_y", ncol = 2) +
+  theme_cowplot() + xlab("date") + 
+  ylab(attributes(states)$metadata$signal) +
+  scale_color_viridis_d()
+```
+
+
+### Show all corrected time points
+In the following datatable, you will see which datapoints were corrected:
+- **orig_value**: original value
+- **replacement**: corrected value
+```{r}
+#check if there's any change
+sum_check = corrected_states %>%
+  summarise(original = sum(value, na.rm=TRUE),
+            corrected = sum(corrected, na.rm = TRUE)) %>% ungroup() %>%
+  mutate(diffs = abs(original-corrected)) %>%
+  summarise(trouble = any(diffs != 0L))
+print(paste0("Any totals changed? ", sum_check))
+
+# output a data table
+corrected_states %>% 
+  mutate(output = abs(corrected - value) > 0) %>%
+  filter(output) %>%
+  dplyr::select(geo_value, time_value, value, corrected) %>%
+  transmute(time_value=time_value, 
+            geo_value=geo_value,
+            orig_value = value,
+            replacement = corrected
+            ) %>%
+  datatable(
+    options = list(
+      scrollX = TRUE, scrollY = "300px",paging = FALSE),
+    rownames = NULL) 
+```
+
+## Corrections on the county-level data
+
+### Data Retrieval
+- **Source**: USAFacts Cases and Deaths
+- **Signal**: Number of new confirmed COVID-19 cases, daily
+```{r, cache=params$cache_data}
+start_date: NULL
+
+counties <-  suppressMessages(
+  covidcast_signal(
+  "usa-facts","confirmed_incidence_num", 
+  geo_type = "county", 
+  start_day = "2020-03-01")
+)
+```
+
+### Data Wrangling
+- Only counties with > 30 days' available data will be selected  
+- Counties whose maximum daily_confirmed_case <10 are filter out  
+- Top 250 of counties sorted by total cases will be selected
+```{r}
+todump <- counties %>% group_by(geo_value) %>% 
+  summarise(
+    ava_value_count = sum(!is.na(value)),
+    case_sum = sum(value,na.rm = T),
+    max_case = max(value)
+    ) %>% 
+  filter(max_case>=10, 
+         ava_value_count>=30, 
+         as.numeric(geo_value) %% 1000 > 0) %>% 
+  arrange(desc(case_sum)) %>% top_n(300, wt=case_sum) 
+county_filtered <- subset(counties,counties$geo_value %in% todump$geo_value)
+```
+
+
+### Calculate rolling statistics and flagged abnormal data points
+```{r}
+outlier_start_date <-  "2020-03-01"
+sig_cut <- 3
+size_cut <- 20
+sig_consec <- 2.25
+
+county_filtered <- county_filtered %>% group_by(geo_value)  %>% mutate(
+  fmean = roll_meanr(value, window_size),
+  smean = roll_mean(value, window_size, fill = NA),
+  fmedian = roll_medianr(value, window_size),
+  smedian = roll_median(value, window_size, fill = NA),
+  fsd = roll_sdr(value, window_size),
+  ssd = roll_sd(value, window_size,fill = NA),
+  fmad = roll_medianr(abs(value-fmedian), window_size,na.rm=TRUE),
+  smad = roll_median(abs(value-smedian), na.rm=TRUE),
+  ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
+  ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
+  flag = 
+    (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut) | # best case
+    (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
+      # use filter if smoother is missing
+    (value < -size_cut & !is.na(ststat) & !is.na(ftstat)), # big negative
+  flag = flag | # these allow smaller values to also be outliers if they are consecutive
+    (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
+    (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
+    (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
+    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+  RI_daily_flag = (geo_value=="44007" & value!=0 & 
+                     lead(value,n=1L)!=0 & lead(value,n=2L)!=0 
+                   & lead(value,n=3L)!=0)
+  )
+
+county_filtered <-  county_filtered %>% 
+  mutate(FIP = substr(geo_value,1,2)) %>% 
+  mutate(state = names(STATE_TO_FIPS)[match(FIP,STATE_TO_FIPS)]) %>% 
+  select(-FIP) %>% relocate(state,.after=geo_value)
+```
+
+### Make County Corrections
+
+```{r}
+corrected_counties_old <- county_filtered %>% mutate(
+   # FIPS = as.numeric(geo_value),
+   # excess = value,
+   excess = value - na_replace(smedian, fmedian),
+   excess = floor(excess - excess_cut*sign(excess)*na_replace(smad,fmad)),
+   corrected = corrections_multinom_roll(
+     value, excess, flag, time_value, backfill_lag,
+     reweight=function(x) exp_w(x, backfill_lag)))
+```
+
+
+The Providence county in Rhode Island reports only weekly, so we correct the weekly spikes by multinomial samples.    
+```{r}
+# RI reports only weekly
+corrected_counties <- county_filtered %>% 
+  mutate(
+    # FIPS = as.numeric(geo_value),
+    excess = value - na_replace(smedian, fmedian),
+    excess = floor(excess - excess_cut*sign(excess)*na_replace(smad,fmad)),
+    flag_bad_RI = (state == "RI"  & value > 10 & lag(value) == 0),
+    corrected = corrections_multinom_roll(
+      value, value, flag_bad_RI, time_value, 7),
+    # flag_bad_VA =(geo_value == "51059"  && lag(value) > 0),
+    # corrected = corrections_multinom_roll(
+    #   value, value, flag_bad_VA, time_value, FIPS, 7),
+    corrected = corrections_multinom_roll(
+      corrected, excess, (flag & !flag_bad_RI), time_value, 
+      backfill_lag, 
+      reweight=function(x) exp_w(x, backfill_lag)),
+    corrected = corrected + # imputes forward due to weekly releases
+      missing_future(state=="RI", time_value, excess, fmean)
+    )
+```
+
+
+
+
+### Visualize corrected counties
+These are states in which corrections are made. Elements of plots include:
+- Yellow: original value
+- Purple: corrected value  
+- Red dot: flagged outliers  
+
+```{r show-county-corrections, fig.height = 80, fig.width = 20}
+simple_labs = covidcast::fips_to_name(unique(corrected_counties$geo_value))
+simple_labs = gsub(" County| city| Parish", "", simple_labs)
+sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
+nn = names(simple_labs)
+simple_labs = paste(simple_labs, sta)
+names(simple_labs) = nn
+
+
+corrected_counties %>% group_by(geo_value) %>% 
+  filter(any(flag == 'TRUE')) %>% 
+  dplyr::select(geo_value, time_value, value, corrected, flag) %>%
+  pivot_longer(value:corrected) %>%
+  ggplot(aes(time_value))+geom_line(aes(y=value, color=name))+
+  geom_point(
+    data = filter(corrected_counties, flag), 
+    aes(y=value), color="red")+ 
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5,
+             labeller = labeller(geo_value = simple_labs))+
+  theme_cowplot()+xlab("date")+
+  ylab(attributes(county_filtered)$metadata$signal)+
+  scale_color_viridis_d()
+```
+
+### Show all corrected time points
+In the following datatable, you will see which datapoints were corrected:
+- **orig_value**: original value
+- **replacement**: corrected value
+_ **geo_value**: FIPS codes of counties
+```{r}
+corrected_counties %>% 
+  mutate(output = abs(corrected - value) > 0) %>%
+  filter(output) %>%
+  dplyr::select(geo_value, time_value, value, corrected) %>%
+  transmute(time_value=time_value, 
+            geo_value=geo_value,
+            orig_value = value,
+            replacement = corrected
+            ) %>%
+  datatable(
+    options = list(scrollX = TRUE, scrollY = "300px",paging = FALSE),
+    rownames = NULL) 
+```
+
+
