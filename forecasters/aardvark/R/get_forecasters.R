@@ -49,7 +49,6 @@ get_forecasters <- function(response_source = "jhu-csse",
                             n_locations = 52){
   
   incidence_period <- match.arg(incidence_period)
-  geo_type <- match.arg(geo_type)
   response <- paste(response_source, response_signal, sep="_")
   cases <- paste(response_source, "confirmed_incidence_num", sep="_")
   
