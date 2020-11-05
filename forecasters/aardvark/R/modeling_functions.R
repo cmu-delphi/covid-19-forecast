@@ -103,9 +103,9 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     # Preamble.
     
-    stopifnot(geo_type != "national")
-    
     incidence_period <- match.arg(incidence_period)
+    geo_type <- match.arg(geo_type)
+    stopifnot(geo_type != "national")
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, 
                                        ahead)
