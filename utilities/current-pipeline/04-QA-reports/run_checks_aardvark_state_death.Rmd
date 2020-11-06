@@ -1,0 +1,110 @@
+---
+title: "Aardvark QA"
+author: "Delphi Group - Last run:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+params:
+  upstream_df_date: "2020-11-01"
+  forecast_date: "2020-11-02"
+  response: "jhu-csse_deaths_incidence_num"
+  geo: "state"
+  upstream_data_path: "~/Documents/COVID-Delphi"
+  forecast_dir_path: "."
+---
+  
+
+```{r, echo=FALSE, message=FALSE}
+# Global variables
+library(tidyverse)
+library(magrittr)
+library(ggforce)
+attach(params)
+
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+ggplot2::theme_set(theme_bw())
+
+forecast_dir <- file.path(forecast_dir_path,forecast_date)
+upstream_date = upstream_df_date
+
+init_date <- "2020-03-01"
+dvar_type <- "epiweek"
+dvar <- 200
+smooth_window_len <- 7
+prev_epiweek <- 3
+forecaster <- forecasters <- c('aardvark_cookies_and_cream')
+#c("aardvark_chocolate","poiszero","aardvark_cookies_and_cream","stackedLasso_customized","aardvark_vanilla","stackedLasso_cvquantile")
+
+upstream_filename <- sprintf("upstream_df_%s_%s_final_corrected.Rdata",geo,upstream_df_date)
+upstream_path <- file.path(upstream_data_path,upstream_filename)
+
+load(upstream_path)  
+df <- dplyr::filter(df,variable_name == response)
+
+
+
+ref_start <- evalforecast::get_target_period(forecast_date, "epiweek", -prev_epiweek)$start
+
+rec_data <- df %>% 
+  group_by(location) %>% 
+  arrange(reference_date) %>% 
+  mutate(value_roll = zoo::rollsum(value,
+                                   k = smooth_window_len,
+                                   fill = NA,
+                                   align = "right")) %>%
+  ungroup()
+
+fips_names <- df %>% select(location, location_name) %>% distinct
+
+loc_sum <- df %>%
+  group_by(location) %>% 
+  summarize(tot = sum(value))
+loc_sum <- loc_sum %>% left_join(fips_names,by=c("location"))
+loc_ord = order(-loc_sum$tot)
+loc_levels = loc_sum[loc_ord,]
+loc_levels$location_name = factor(loc_levels$location_name,levels=loc_levels$location_name)
+loc_names <- loc_levels %>% select(-tot)
+#loc_names = loc_levels %>% mutate(location_name = factor(location_name, levels=loc_levels$location_name))
+n_locs <- length(loc_ord)
+
+rec_data <- rec_data %>% 
+  filter(ref_start < reference_date) %>% 
+  filter(reference_date <= forecast_date) %>% 
+  select(-variable_name, -issue_date)
+```
+
+```{r trajectories, cache=FALSE, echo=FALSE, fig.width=8, fig.height=11}
+source("trajectories.R")
+```
+
+```{r dists, cache=FALSE, echo=FALSE, fig.width=8, fig.height=10}
+source("dists.R")
+all_tb_fac %>% ggplot(aes(x=ahead,y=1+quantiles)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  facet_wrap(~probs) + 
+  ggtitle(sprintf("Quantile distribution by ahead, prob\nForecaster: %s",forecaster))
+
+all_tb_fac %>% ggplot(aes(x=ahead,y=1+quantiles)) +
+  geom_violin() +
+  scale_y_log10() +
+  facet_wrap(~probs) + 
+  ggtitle(sprintf("Quantile distribution by ahead, prob\nForecaster: %s",forecaster))
+
+stat_df %>% ggplot(aes(x=factor(ahead),y=value)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  facet_wrap(~stat_name) + 
+  ylab("width") +
+  ggtitle(sprintf("IQR width dist by quantile diff\nForecaster: %s",forecaster))
+
+stat_df %>% ggplot(aes(x=factor(ahead),y=value)) +
+  geom_violin() +
+  scale_y_log10() +
+  facet_wrap(~stat_name) + 
+  ggtitle(sprintf("IQR width dist by quantile diff\nForecaster: %s",forecaster))
+```
+
+```{r anomalise, echo=FALSE, fig.width=8, fig.height=10}
+source("anomalies.R")
+```
+
