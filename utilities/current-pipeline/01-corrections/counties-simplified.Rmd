@@ -96,7 +96,7 @@ county_filtered <- county_filtered %>% group_by(geo_value)  %>% mutate(
   # RI_daily_flag = (geo_value=="44007" & value!=0 & 
   #                    lead(value,n=1L)!=0 & lead(value,n=2L)!=0 
   #                  & lead(value,n=3L)!=0)
-  flag = flag & (time_value < ymd("2020-10-20") | value < -size_cut)
+  #flag = flag & (time_value < ymd("2020-10-20") | value < -size_cut)
   )
 
 county_filtered <-  county_filtered %>% 
@@ -187,12 +187,14 @@ corrected_counties %>% group_by(geo_value) %>%
 ## Show all corrected time points
 
 ```{r}
-sum_check = corrected_counties %>% filter(state != "RI") %>%
+sum_check = corrected_counties %>% 
   summarise(original = sum(value, na.rm=TRUE),
             corrected = sum(corrected, na.rm = TRUE)) %>% ungroup() %>%
   mutate(diffs = abs(original-corrected)) %>%
-  summarise(trouble = any(diffs != 0L))
-print(paste0("Any totals changed? ", sum_check))
+  filter(diffs > 1e-8) %>%
+  select(geo_value, diffs)
+
+sum_check
 
 tosave <- corrected_counties %>% 
   mutate(output = abs(corrected - value) > 0) %>%
