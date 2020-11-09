@@ -112,7 +112,15 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
-    print(names(features))
+    stopifnot(names(features) == c("variable_name",
+                                   "type", 
+                                   "lag",
+                                   "offset",
+                                   "main_effect",
+                                   "impute", 
+                                   "interaction",
+                                   "build_functions")
+    )
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
@@ -317,9 +325,6 @@ local_lasso_daily_forecast <- function(df_use,
     
     ## (C) Run the preprocesser
     df_original_response <- df_train_use %>% filter(variable_name == response)
-    if ( !is.null(preprocesser) ){
-      df_train_use <- preprocesser(df_train_use, response)
-    }
     
     ## (D) Impute.
     if ( !is.null(imputer) ){
@@ -372,21 +377,20 @@ local_lasso_daily_forecast <- function(df_use,
     df_strata <- stratifier(df_train_use, response)
     
     ## (C) Augment df_with_lags
-    df_with_lags <- left_join(df_with_lags, df_align, by = c("location","reference_date")) %>%
+    df_with_lags <- left_join(df_with_lags, df_align, by = c("location", "reference_date")) %>%
       left_join(df_strata, by = "location")
     
     # (4) Separate predictions for each strata.
-    dat_bad <- filter(df_with_lags,!strata)
+    dat_bad <- filter(df_with_lags, !strata)
     if ( nrow(dat_bad) == 0 ){
       warning("No data in bad strata.")
       df_point_preds_bad <- NULL
     } else{
       df_point_preds_bad <- dat_bad %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
-                                                      forecast_date_ii, incidence_period, ahead,
-                                                      features, intercept,
-                                                      df_align, modeler,
-                                                      verbose)
+                                              forecast_date_ii, incidence_period, ahead,
+                                              features, intercept, df_align, modeler,
+                                              verbose)
     }
     
     dat_good <- filter(df_with_lags, strata)
@@ -396,10 +400,9 @@ local_lasso_daily_forecast <- function(df_use,
     } else{
       df_point_preds_good <- dat_good %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
-                                                      forecast_date_ii, incidence_period, ahead,
-                                                      features, intercept,
-                                                      df_align, modeler,
-                                                      verbose)
+                                              forecast_date_ii, incidence_period, ahead,
+                                              features, intercept, df_align, modeler,
+                                              verbose)
     }
     
     # (6) Prepare output, by joining strata and adding original value of the response
@@ -427,8 +430,8 @@ local_lasso_daily_forecast <- function(df_use,
   
   # If we need to sum over multiple dates...
   df_bootstrap_preds <- df_bootstrap_preds %>%
-    group_by(location,location_name,replicate) %>%
-    summarise(value = sum(pmax(value,0))) %>%
+    group_by(location, location_name, replicate) %>%
+    summarise(value = sum(pmax(value, 0))) %>%
     ungroup()
   
   # Obtain quantiles.
@@ -463,7 +466,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   
   # (2) Pivot wider, for model matrix form.
   YX <- df_use %>%
-    select(location, align_date, reference_date, variable_name,value) %>% 
+    select(location, align_date, reference_date, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
     pivot_wider(names_from = "variable_name", values_from = "value") %>%
     rename(response = response_name,
