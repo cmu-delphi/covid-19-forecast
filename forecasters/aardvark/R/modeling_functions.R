@@ -112,15 +112,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
-    stopifnot(names(features) == c("variable_name",
-                                   "type", 
-                                   "lag",
-                                   "offset",
-                                   "main_effect",
-                                   "impute", 
-                                   "interaction",
-                                   "build_functions")
-              )
+    print(names(features))
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
