@@ -184,6 +184,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     # (6) We now never need to deal with issue date again; let's dispose of it.
     df_train <- df_train %>% select(-issue)
     
+    print(head(df_train))
+    
     # Preprocess.
     
     ## (0) Divide into "ugly" and "pretty" data locations.
