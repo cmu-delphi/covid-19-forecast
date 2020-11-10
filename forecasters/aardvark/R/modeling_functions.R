@@ -124,6 +124,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
+    print(head(df_train))
+    
     
     # (1) Don't use any data past the last_train_date
     df_train <- df %>%
@@ -184,7 +186,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     # (6) We now never need to deal with issue date again; let's dispose of it.
     df_train <- df_train %>% select(-issue)
     
-    print(head(df_train))
+    ## Bug above here
     
     # Preprocess.
     
