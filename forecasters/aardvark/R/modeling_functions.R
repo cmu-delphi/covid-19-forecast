@@ -132,7 +132,6 @@ make_aardvark_forecaster <- function(ahead = 1,
 
     
     # (2) Concentrate on the locations we need.
-    print(unique(df_train$signal))
     stopifnot("location_to_be_forecast" %in% unique(df_train %>% pull(variable_name)))
     forecast_locations <- df_train %>% 
       filter(variable_name == "location_to_be_forecast" & value == 1) %>%
