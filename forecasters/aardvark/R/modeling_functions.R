@@ -124,13 +124,13 @@ make_aardvark_forecaster <- function(ahead = 1,
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
-    print(head(df_train))
-    
     
     # (1) Don't use any data past the last_train_date
     df_train <- df %>%
       filter((is.na(issue) & 
                 (time_value <= forecast_date)) | issue <= forecast_date | is.na(time_value))
+    
+    print(head(df_train))
     
     
     # (2) Concentrate on the locations we need.
