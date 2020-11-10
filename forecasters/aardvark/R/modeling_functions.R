@@ -322,11 +322,9 @@ local_lasso_daily_forecast <- function(df_use,
     }
     
     df_train_use <- filter(df_train_use,location %in% response_locs & location %in% pretty_locs)
-    
-    ## (C) Run the preprocesser
     df_original_response <- df_train_use %>% filter(variable_name == response)
     
-    ## (D) Impute.
+    ## (C) Impute.
     if ( !is.null(imputer) ){
       
       # (I) Variables to impute.

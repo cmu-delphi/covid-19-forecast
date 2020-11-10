@@ -43,9 +43,9 @@
 get_forecasters <- function(response_source = "jhu-csse", 
                             response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
+                            geo_type = c("state", "county", "national", "hrr", "msa"),
                             ahead, 
                             forecast_date,
-                            geo_type = c("state", "county", "national", "hrr", "msa"),
                             n_locations = 52){
   
   incidence_period <- match.arg(incidence_period)
