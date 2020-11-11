@@ -146,19 +146,6 @@ make_aardvark_forecaster <- function(ahead = 1,
                                   alignment_variables)) %>%
       distinct()
     
-    
-    # (4) If we have a choice as to issue date...pick the latest one.
-    if ( length(unique(df_train$issue)) > 1 ){
-      min_issue_date <- min(df_train$issue, na.rm = TRUE) # NAs are always the earliest one.
-      df_train <- df_train %>% 
-        mutate(issue = replace_na(issue, min_issue_date - 1)) %>%
-        group_by(location, reference_date, location_name, variable_name) %>%
-        top_n(1, wt = issue) %>% # NA only chosen if that's all there is
-        ungroup %>%
-        mutate(issue_date = na_if(issue, min_issue_date - 1)) # go back to NA
-    }
-    
-    
     # (5) Don't use any response data that hasn't solidified
     warning("You may be using wobbly features; although your response has stabilized.")
     df_train <- filter(df_train, (variable_name != response) | 
