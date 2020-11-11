@@ -83,9 +83,7 @@ get_forecasters <- function(response_source = "jhu-csse",
                      type = rep("n", 6),
                      offset = rep(F, 6), 
                      main_effect = rep(T, 6), 
-                     impute = rep(T, 6), 
-                     interaction = rep(NA, 6))
-  features[["build_functions"]] <- rep(NA, 6)
+                     impute = rep(T, 6))
   if ( ahead == 1 ){
     features[["lag"]] <- rep(c(1, 7, 14), times = 2)
   }else{
@@ -96,9 +94,7 @@ get_forecasters <- function(response_source = "jhu-csse",
                                   lag, 
                                   offset, 
                                   main_effect,
-                                  impute, 
-                                  interaction, 
-                                  build_functions)
+                                  impute)
 
   # Modeler
   build_penalty_factor <- function(variable_names){

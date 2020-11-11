@@ -79,10 +79,6 @@ make_aardvark_forecaster <- function(ahead = 1,
   #     offset: logical, whether or not to treat this feature as an offset.
   #     main_effect: logical, whether or not to include a main (global) effect for this feature.
   #     interaction: character, indicating which variable this should be interacted with. NA implies no interactions.
-  #     build_functions: list column, with each entry being either NA or a function. 
-  #                      If NA, this feature must already belong to the upstream_df.
-  #                      If a function, it must take exactly the form of those functions as given in
-  #                      build_feature_functions.R.
   # 
   #   intercept: logical, indicating whether or not we want to add a (location-specific) intercept
   # 
@@ -124,9 +120,7 @@ make_aardvark_forecaster <- function(ahead = 1,
                                    "lag",
                                    "offset",
                                    "main_effect",
-                                   "impute", 
-                                   "interaction",
-                                   "build_functions")
+                                   "impute")
     )
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
@@ -146,19 +140,6 @@ make_aardvark_forecaster <- function(ahead = 1,
     
 
     # (3) Concentrate on the variables we need.
-    
-    ## (A) Build any additional features
-    features_df_list <- list()
-    build_feature_functions <- features %>% pull(build_functions)
-    for ( ii in 1:nrow(features) ){
-      if ( is.function(build_feature_functions[[ii]]) ){
-        features_df_list[[ii]] <- build_feature_functions[[ii]](features[["variable_name"]][ii], df_train)
-      } else{
-        features_df_list[[ii]] <- NULL
-      }
-    }
-    df_train <- bind_rows(df_train, features_df_list)
-    
     
     ## (C) Filter down to just the variables we need
     alignment_variables <- environment(aligner)$variables
