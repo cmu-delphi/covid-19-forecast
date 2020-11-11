@@ -127,17 +127,13 @@ make_aardvark_forecaster <- function(ahead = 1,
     stopifnot(is.function(aligner))
     
     
-    # (1) Don't use any data past the last_train_date
-    df_train <- df %>%
-      filter((is.na(issue) & 
-                (time_value <= forecast_date)) | issue <= forecast_date | is.na(time_value))
-    
+    # Forecast all locations for now
     # (2) Concentrate on the locations we need.
-    stopifnot("location_to_be_forecast" %in% unique(df_train %>% pull(variable_name)))
-    forecast_locations <- df_train %>% 
-      filter(variable_name == "location_to_be_forecast" & value == 1) %>%
-      pull(location)
-    df_train <- filter(df_train, location %in% forecast_locations)
+    #stopifnot("location_to_be_forecast" %in% unique(df_train %>% pull(variable_name)))
+    #forecast_locations <- df_train %>% 
+    #  filter(variable_name == "location_to_be_forecast" & value == 1) %>%
+    #  pull(location)
+    #df_train <- filter(df_train, location %in% forecast_locations)
     
 
     # (3) Concentrate on the variables we need.
