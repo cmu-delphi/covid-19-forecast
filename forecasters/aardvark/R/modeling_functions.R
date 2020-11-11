@@ -103,6 +103,13 @@ make_aardvark_forecaster <- function(ahead = 1,
     #    about some period ("epiweek" or "day").  Forecaster must only use data that
     #    would have been issued on or before forecast_date.
     
+    # Manipulate evalcast df to the format previously used during evalforecast era
+    df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
+    df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) %>%
+      covidcast::aggregate_signals(format = "wide")
+      
+    names(df)[which(substr(names(df),1,5) == "value")] <- "value"
+    
     # Preamble.
 
     stopifnot(geo_type != "national")
@@ -129,16 +136,15 @@ make_aardvark_forecaster <- function(ahead = 1,
     df_train <- df %>%
       filter((is.na(issue) & 
                 (time_value <= forecast_date)) | issue <= forecast_date | is.na(time_value))
-
     
     # (2) Concentrate on the locations we need.
     stopifnot("location_to_be_forecast" %in% unique(df_train %>% pull(variable_name)))
     forecast_locations <- df_train %>% 
       filter(variable_name == "location_to_be_forecast" & value == 1) %>%
       pull(location)
-    df_train <- filter(df_train,location %in% forecast_locations)
+    df_train <- filter(df_train, location %in% forecast_locations)
     
-    
+
     # (3) Concentrate on the variables we need.
     
     ## (A) Build any additional features
@@ -151,7 +157,7 @@ make_aardvark_forecaster <- function(ahead = 1,
         features_df_list[[ii]] <- NULL
       }
     }
-    df_train <- bind_rows(df_train,features_df_list)
+    df_train <- bind_rows(df_train, features_df_list)
     
     
     ## (C) Filter down to just the variables we need
@@ -188,7 +194,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     # Preprocess.
     
-    ## (0) Divide into "ugly" and "pretty" data locations.
+    ## (0) Stratification
     ##     "Pretty" locations are locations where we believe our model will be useful.
     ##     "Ugly" locations are locations where we believe a different model will be useful,
     ##     and currently we just use a placeholder.
