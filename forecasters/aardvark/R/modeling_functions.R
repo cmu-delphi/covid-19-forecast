@@ -100,12 +100,27 @@ make_aardvark_forecaster <- function(ahead = 1,
     #    would have been issued on or before forecast_date.
     
     # Manipulate evalcast df to the format previously used during evalforecast era
+    # This is a really hacky way to navigate the issue while GitHub issues are pending
+    
+    if ( nrow(unique(df %>% select(data_source,signal,location,time_value))) < nrow(df) ){
+      min_issue <- min(df$issue, na.rm = TRUE) # NAs are always the earliest one.
+      df.tmp <- df %>% 
+        mutate(issue = replace_na(issue, min_issue - 1)) %>%
+        group_by(data_source, signal, location, time_value) %>%
+        top_n(1, wt = issue) %>% # NA only chosen if that's all there is
+        ungroup %>%
+        mutate(issue = na_if(issue, min_issue - 1)) # go back to NA
+    }else{
+      df.tmp <- df
+    }
+    match.string.1 <- with(df.tmp, paste0(data_source,"-",signal,location,time_value))
     df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), 
                                                        covidcast::state_census$STATE)]
     df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) %>%
       covidcast::aggregate_signals(format = "wide")
-      
+    match.string.2 <- with(df, paste0(variable_name,location,time_value))
     names(df)[which(substr(names(df),1,5) == "value")] <- "value"
+    df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     
     # Preamble.
 
@@ -145,17 +160,14 @@ make_aardvark_forecaster <- function(ahead = 1,
                                   features$variable_name,
                                   alignment_variables)) %>%
       distinct()
-    
+
     # (5) Don't use any response data that hasn't solidified
-    warning("You may be using wobbly features; although your response has stabilized.")
     df_train <- filter(df_train, (variable_name != response) | 
                                  (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
-    
-    # (6) We now never need to deal with issue date again; let's dispose of it.
+
     df_train <- df_train %>% select(-issue)
-    
-    ## Bug above here
+
     
     # Preprocess.
     
@@ -194,12 +206,10 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     ## (2) Fit model and issue predictions for non-ugly locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, 
-                                                  response,
-                                                  degree, bandwidth,
+                                                  response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
                                                   preprocesser, imputer, stratifier, aligner,
-                                                  modeler,
-                                                  bootstrapper, B, covidhub_probs,
+                                                  modeler, bootstrapper, B, covidhub_probs,
                                                   features, intercept, alignment_variable,
                                                   verbose = verbose)
     
