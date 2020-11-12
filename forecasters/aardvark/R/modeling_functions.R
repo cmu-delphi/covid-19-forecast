@@ -100,7 +100,11 @@ make_aardvark_forecaster <- function(ahead = 1,
     #    would have been issued on or before forecast_date.
     
     
-    # Manipulate evalcast df to the format previously used during evalforecast era
+    # Preamble.
+    forecast_date <- lubridate::ymd(forecast_date)
+    target_period <- get_target_period(forecast_date, incidence_period, ahead)
+    
+    # Manipulate evalcast df to the wide format previously used during evalforecast era
     # This is a really hacky way to navigate the issue while GitHub issue #269 is pending
     if ( nrow(unique(df %>% select(data_source,signal,location,time_value))) < nrow(df) ){
       min_issue <- min(df$issue, na.rm = TRUE)
@@ -123,9 +127,6 @@ make_aardvark_forecaster <- function(ahead = 1,
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     rm(df.tmp); gc()
     
-    # Preamble.
-    forecast_date <- lubridate::ymd(forecast_date)
-    target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
     # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
@@ -141,14 +142,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     df_train <- df
     
-    
-    # Forecast all locations for now
-    # (2) Concentrate on the locations we need.
-    #stopifnot("location_to_be_forecast" %in% unique(df_train %>% pull(variable_name)))
-    #forecast_locations <- df_train %>% 
-    #  filter(variable_name == "location_to_be_forecast" & value == 1) %>%
-    #  pull(location)
-    #df_train <- filter(df_train, location %in% forecast_locations)
+    print(head(df_train))
     
 
     # (3) Concentrate on the variables we need.

@@ -37,7 +37,7 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
       filter(variable_name == variables)
     stopifnot(all(!is.na(df_alignment_variable %>% pull(reference_date)))) # alignment variable better be a temporal variable...
     
-    # (2) Compute day0---the first date the threshold was attained--- for each location
+    # (2) Compute day0 --- the first date the threshold was attained --- for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
