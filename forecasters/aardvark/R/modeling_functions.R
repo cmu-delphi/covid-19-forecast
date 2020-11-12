@@ -99,11 +99,11 @@ make_aardvark_forecaster <- function(ahead = 1,
     #    about some period ("epiweek" or "day").  Forecaster must only use data that
     #    would have been issued on or before forecast_date.
     
-    # Manipulate evalcast df to the format previously used during evalforecast era
-    # This is a really hacky way to navigate the issue while GitHub issues are pending
     
+    # Manipulate evalcast df to the format previously used during evalforecast era
+    # This is a really hacky way to navigate the issue while GitHub issue #269 is pending
     if ( nrow(unique(df %>% select(data_source,signal,location,time_value))) < nrow(df) ){
-      min_issue <- min(df$issue, na.rm = TRUE) # NAs are always the earliest one.
+      min_issue <- min(df$issue, na.rm = TRUE)
       df.tmp <- df %>% 
         mutate(issue = replace_na(issue, min_issue - 1)) %>%
         group_by(data_source, signal, location, time_value) %>%
@@ -121,13 +121,11 @@ make_aardvark_forecaster <- function(ahead = 1,
     match.string.2 <- with(df, paste0(variable_name,location,time_value))
     names(df)[which(substr(names(df),1,5) == "value")] <- "value"
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
+    rm(df.tmp); gc()
     
     # Preamble.
-
-    stopifnot(geo_type != "national")
     forecast_date <- lubridate::ymd(forecast_date)
-    target_period <- get_target_period(forecast_date, incidence_period, 
-                                       ahead)
+    target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
     # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
