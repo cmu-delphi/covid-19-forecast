@@ -139,6 +139,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
     
+    df_train <- df
+    
     
     # Forecast all locations for now
     # (2) Concentrate on the locations we need.
