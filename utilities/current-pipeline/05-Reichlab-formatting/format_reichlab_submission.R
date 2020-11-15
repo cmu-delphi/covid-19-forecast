@@ -1,10 +1,10 @@
 #-----------------------------------------------------#
-# 
+#
 #-----------------------------------------------------#
-path_to_production_run_output <- "/Users/dajmcdon/Documents/COVID-Delphi/covidcast-forecast/forecaster_predictions"
-data_date <- lubridate::ymd("2020-11-02")
+path_to_production_run_output <- "~/upstream_df_creation/forecaster_predictions"
+data_date <- lubridate::ymd("2020-11-16")
 aheads <- 4:1
-response_state <- "usa-facts_deaths_incidence_num"
+response_state <- "jhu-csse_deaths_incidence_num"
 response_cty <- "usa-facts_confirmed_incidence_num"
 incidence_period <- "epiweek"
 n_locations <- 200
@@ -64,5 +64,5 @@ log_info(sprintf("Writing to file %s",out_file_name))
 
 all_preds = bind_rows(state_preds, county_preds)
 
-write_csv(all_preds, file=out_file_name)
+write_csv(all_preds, path=out_file_name)
 

@@ -15,8 +15,11 @@ params:
   cache_data: TRUE
   backfill_lag: 30
   excess_cut: 0
-  write_RDS: FALSE
-editor_options: 
+  write_RDS: TRUE
+  covidcast_data_source: "usa-facts"
+  covidcast_signal: "confirmed_incidence_num"
+  corrections_db_path: "~/upstream_df_creation/corrections_db/data_corrections.sqlite"
+  editor_options: 
   chunk_output_type: inline
 ---
 
@@ -30,7 +33,7 @@ library(cowplot)
 library(ggplot2)
 library(DT)
 library(ggforce)
-knitr::opts_chunk$set(warning = FALSE, message=FALSE, dev="svg")
+knitr::opts_chunk$set(warning = FALSE, message=FALSE, dev="CairoSVG")
 source("process-funs.R")
 source("corrections.R")
 attach(params)
@@ -40,7 +43,8 @@ Data retrieval
 ```{r, cache=params$cache_data}
 counties <-  suppressMessages(
   covidcast_signal(
-  "usa-facts","confirmed_incidence_num", 
+      covidcast_data_source, covidcast_signal,
+
   geo_type = "county", 
   start_day = "2020-03-01")
 )
@@ -159,7 +163,7 @@ corrected_counties <- county_filtered %>%
 
 ## Visualize corrected counties
 
-```{r show-corrections, fig.height = 80, fig.width = 20, dev="svg"}
+```{r show-corrections, fig.height = 80, fig.width = 20, dev="CairoSVG"}
 simple_labs = covidcast::fips_to_name(unique(corrected_counties$geo_value))
 simple_labs = gsub(" County| city| Parish", "", simple_labs)
 sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
@@ -205,7 +209,7 @@ tosave <- corrected_counties %>%
     location_name=as.character(NA),
     reference_date=as.Date(time_value), 
     issue_date=as.Date(NA),
-    variable_name = "usa-facts_confirmed_incidence_num",
+    variable_name = paste(covidcast_data_source, covidcast_signal, sep = "_"),
     value = as.double(value),
     new_value = as.double(corrected),
     correction_date = Sys.Date(),
@@ -231,5 +235,5 @@ corrected_counties %>%
 
 
 ```{r eval=params$write_RDS}
-update_corrections("data_corrections.sqlite", "county", tosave)
+update_corrections(corrections_db_path, "county", tosave)
 ```

@@ -4,12 +4,12 @@ author: "Delphi Group - Last run:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: pdf_document
 params:
-  upstream_df_date: "2020-11-01"
-  forecast_date: "2020-11-02"
+  upstream_df_date: "2020-11-14"
+  forecast_date: "2020-11-16"
   response: "usa-facts_confirmed_incidence_num"
-  geo: "state"
-  upstream_data_path: "~/Documents/COVID-Delphi"
-  forecast_dir_path: "."
+  geo: "county"
+  upstream_data_path: "~/upstream_df_creation/upstream_df_outputs"
+  forecast_dir_path: "~/upstream_df_creation/forecaster_predictions"
 ---
 
 ```{r, echo=FALSE, message=FALSE}
@@ -33,7 +33,7 @@ prev_epiweek <- 3
 forecaster <- forecasters <- c('zyzzyva_covidcast')
 #c("aardvark_chocolate","poiszero","aardvark_cookies_and_cream","stackedLasso_customized","aardvark_vanilla","stackedLasso_cvquantile")
 
-upstream_filename <- sprintf("upstream_df_%s_%s_final_corrected.Rdata",geo,upstream_df_date)
+upstream_filename <- sprintf("upstream_df_%s_%s_corrected.Rdata",geo,upstream_df_date)
 upstream_path <- file.path(upstream_data_path,upstream_filename)
 
 load(upstream_path)  
