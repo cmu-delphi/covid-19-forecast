@@ -141,13 +141,17 @@ make_aardvark_forecaster <- function(ahead = 1,
     stopifnot(is.function(aligner))
     
     df_train <- df
-    
-    print(head(df_train))
-    
 
-    # (3) Concentrate on the variables we need.
+    cat("df variables: ")
+    print(unique(df$variable_name))
+    cat("Response: ", response,"\n")
+    cat("Features: ")
+    print(features$variable_name)
+    cat("Alignment variable: ")
+    print(alignment_variables)
     
-    ## (C) Filter down to just the variables we need
+    # (1) Concentrate on the variables we need.
+
     alignment_variables <- environment(aligner)$variables
     df_train <- df_train %>% 
       filter(variable_name %in% c(response, 
@@ -155,7 +159,7 @@ make_aardvark_forecaster <- function(ahead = 1,
                                   alignment_variables)) %>%
       distinct()
 
-    # (5) Don't use any response data that hasn't solidified
+    # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | 
                                  (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
@@ -208,14 +212,13 @@ make_aardvark_forecaster <- function(ahead = 1,
                                                   verbose = verbose)
     
     ## (3) Fit model and issue predictions for ugly locations.
-    warning("Placeholder for a time-to-event model.")
     df_point_preds_ugly <- df_train_ugly %>% 
       filter(variable_name == response) %>%
       group_by(location) %>%
       summarise(preds = pmax(mean(value, na.rm = T), 0)) %>%
       ungroup()
     df_preds_ugly <- expand_grid(df_point_preds_ugly, probs = covidhub_probs) %>%
-      mutate(quantiles = qnbinom(p = probs,mu = preds, size = .25)) %>%
+      mutate(quantiles = qnbinom(p = probs, mu = preds, size = .25)) %>%
       select(-preds)
     non_zero_locs <- filter(df_point_preds_ugly, preds > 0) %>% pull(location) %>% unique()
     df_preds_ugly <- df_preds_ugly %>%
@@ -231,7 +234,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     ## (5) Replace NA and negative predictions by 0.
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
-      mutate(quantiles = pmax(replace_na(quantiles,0), 0))
+      mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     
     if ( verbose > 0 ){
       print(forecast_date) 
