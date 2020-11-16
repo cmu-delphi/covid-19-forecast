@@ -50,8 +50,14 @@ get_forecasters <- function(response_source = "jhu-csse",
   
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
-  response <- paste(response_source, response_signal, sep="_")
-  cases <- paste(response_source, "confirmed_incidence_num", sep="_")
+  if ( response_source == "use-facts" ){
+    response <- paste(response_source, response_signal, sep="-")
+    cases <- paste(response_source, "confirmed_incidence_num", sep="-")
+  }else{
+    response <- paste(response_source, response_signal, sep="_")
+    cases <- paste(response_source, "confirmed_incidence_num", sep="_")
+  }
+  
   stopifnot("geo_type must be in c('state','county','national')"= geo_type %in% 
               c("state", "county", "national"))
   
