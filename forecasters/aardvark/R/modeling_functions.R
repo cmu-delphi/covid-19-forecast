@@ -734,38 +734,7 @@ model_formula <- function(features, intercept){
   }
   
   # (1) Create the interaction part of the formula
-  if ( nrow(features %>% filter(!is.na(interaction))) > 0 ){
-    interaction_specs <- features %>%
-      filter(!is.na(interaction)) %>%
-      select(variable_name, interaction,lag) %>%
-      left_join(features %>% 
-                  select(variable_name,lag) %>%
-                  rename(interaction_lag = lag), by = c("interaction" = "variable_name")) %>%
-      filter(  lag == interaction_lag | # Include interactions only between same lagged variables
-                 is.na(interaction_lag) | is.na(lag))            # or with non-temporal variables.
-    interaction_features <- interaction_specs %>%
-      filter(!is.na(interaction)) %>%
-      mutate(feature_name = case_when(
-        is.na(lag) ~ variable_name,
-        TRUE       ~ paste0(variable_name,"_lag_",lag)
-      )) %>%
-      mutate(interaction_feature_name = case_when(
-        interaction == "location" ~ "location",
-        is.na(interaction_lag) ~ interaction,
-        TRUE                   ~ paste0(interaction, "_lag_", interaction_lag)
-      ))  %>%
-      mutate(feature_name = if_else(grepl("-", feature_name), 
-                                    paste0("`", feature_name, "`"),
-                                    feature_name),
-             interaction_feature_name = if_else(grepl("-", interaction_feature_name), 
-                                                paste0("`", interaction_feature_name, "`"),
-                                                interaction_feature_name)) %>%
-      mutate(feature_and_interaction_name = paste0(interaction_feature_name,":", feature_name)) %>%
-      pull(feature_and_interaction_name)
-    interaction_chr <- paste0(interaction_features, collapse = " + ")
-  } else{
-    interaction_chr <- NULL
-  }
+  interaction_chr <- NULL
   
   # (3) Combine main effects and interactions
   formula_chr <- paste0( c("~ ", main_effect_chr, interaction_chr), collapse = " + ")
