@@ -144,20 +144,24 @@ make_aardvark_forecaster <- function(ahead = 1,
 
     cat("df variables: ")
     print(unique(df$variable_name))
-    cat("Response: ", response,"\n")
+    cat("Response: ", response, "\n")
     cat("Features: ")
-    print(features$variable_name)
-    cat("Alignment variable: ")
-    print(alignment_variables)
-    
+    print(unique(features$variable_name))
+
     # (1) Concentrate on the variables we need.
 
     alignment_variables <- environment(aligner)$variables
+    cat("Alignment variable: ")
+    print(alignment_variables)
+    
     df_train <- df_train %>% 
       filter(variable_name %in% c(response, 
                                   features$variable_name,
                                   alignment_variables)) %>%
       distinct()
+    
+    cat("df_train variables: ")
+    print(unique(df_train$variable_name))
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | 
