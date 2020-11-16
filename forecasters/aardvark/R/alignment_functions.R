@@ -4,7 +4,7 @@
 #   df_use: a data frame, of the same form as the upstream_df
 #   forecast_date: a canonical parameter used by the evaluator.
 # and output a data frame
-#   df_align: a data frame with columns location, reference_date, and align_date.
+#   df_align: a data frame with columns location, time_value, and align_date.
 # 
 # Each aligner should satisfy the "aligner guarantee". 
 # This guarantees that an aligned date is computed for
@@ -35,33 +35,33 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
     # (1) Restrict ourselves to the data we need
     df_alignment_variable <- df_use %>%
       filter(variable_name == variables)
-    stopifnot(all(!is.na(df_alignment_variable %>% pull(reference_date)))) # alignment variable better be a temporal variable...
+    stopifnot(all(!is.na(df_alignment_variable %>% pull(time_value)))) # alignment variable better be a temporal variable...
     
     # (2) Compute day0 --- the first date the threshold was attained --- for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
       group_by(location) %>%
-      summarise(value = min(reference_date)) %>%
+      summarise(value = min(time_value)) %>%
       ungroup()
     
     # (3) Compute days since variable 
-    #     If the threshold has not yet been reached for a given (location,reference_date), 
+    #     If the threshold has not yet been reached for a given (location,time_value), 
     #     we assign a value of NA.
     
     ## (A) Create an empty data frame we wish to populate.
     ##     This makes sure we satisfy the aligner guarantee.
     locations <- unique(df_use %>% pull(location))
-    train_dates <- unique(df_use %>% pull(reference_date) )
+    train_dates <- unique(df_use %>% pull(time_value) )
     target_dates <-  evalcast::get_target_period(forecast_date, "epiweek", ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
     df_empty <- expand_grid(location = locations,
-                            reference_date = dates)
+                            time_value = dates)
     
     ## (B) Populate the empty data frame.
     df_align <- left_join(df_empty, day0, by = "location") %>%
-      mutate(align_date = ifelse(reference_date - value >= 0, reference_date - value, NA)) %>%
+      mutate(align_date = ifelse(time_value - value >= 0, time_value - value, NA)) %>%
       select(-value)
     
     return(df_align)
@@ -92,56 +92,56 @@ make_days_since_threshold_crossed_most_recent_time_aligner <- function(variables
     # (1) Restrict ourselves to the data we need
     df_alignment_variable <- df_use %>%
       filter(variable_name == variables)
-    stopifnot(all(!is.na(df_alignment_variable %>% pull(reference_date)))) # alignment variable better be a temporal variable...
+    stopifnot(all(!is.na(df_alignment_variable %>% pull(time_value)))) # alignment variable better be a temporal variable...
     
     # (2) Smooth data.
-    first_date <- min(df_alignment_variable %>% pull(reference_date))
-    last_date <- max(df_alignment_variable %>% pull(reference_date))
-    date_df <- data.frame(reference_date = seq(first_date, last_date, by = "days"))
-    full_df <- left_join(date_df, df_alignment_variable, by = c("reference_date"))
+    first_date <- min(df_alignment_variable %>% pull(time_value))
+    last_date <- max(df_alignment_variable %>% pull(time_value))
+    date_df <- data.frame(time_value = seq(first_date, last_date, by = "days"))
+    full_df <- left_join(date_df, df_alignment_variable, by = c("time_value"))
     
     df_alignment_variable_smooth <- full_df %>% 
       group_by(location) %>%
-      arrange(reference_date) %>% 
+      arrange(time_value) %>% 
       mutate(value = ave(value, k, align = "center", fill = "extend")) %>%
       ungroup
     
     # (3) Find all the dates on which the threshold was crossed for a given location.
     df_dates_above_threshold <- df_alignment_variable_smooth %>%
-      select(location,reference_date,value) %>%
+      select(location,time_value,value) %>%
       filter(value >= threshold) %>%
       select(-value)
     df_first_date <- expand_grid(location = unique(df_dates_above_threshold %>% pull(location)),
-                                 reference_date = first_date)
+                                 time_value = first_date)
     df_dates_below_threshold <- df_alignment_variable_smooth %>%
-      select(location,reference_date,value) %>%
+      select(location,time_value,value) %>%
       filter(value < threshold) %>%
-      mutate(reference_date = reference_date + 1) %>%
+      mutate(time_value = time_value + 1) %>%
       select(-value) %>%
       bind_rows(df_first_date)
     day0 <- inner_join(df_dates_above_threshold,
                        df_dates_below_threshold, 
-                       by = c('location','reference_date')) %>%
-      rename(value = reference_date)
+                       by = c('location','time_value')) %>%
+      rename(value = time_value)
     
     # (3) Compute days since variable 
-    #     If the threshold has never been reached for a given (location,reference_date), 
+    #     If the threshold has never been reached for a given (location,time_value), 
     #     we assign a value of NA.
     
     ## (A) Create an empty data frame we wish to populate.
     ##     This makes sure we satisfy the aligner guarantee.
     locations <- unique(df_use %>% pull(location))
-    train_dates <- unique(df_use %>% pull(reference_date) )
+    train_dates <- unique(df_use %>% pull(time_value) )
     target_dates <-  evalcast::get_target_period(forecast_date,"epiweek",ahead) %$%
       seq(start,end,by = "days")
     dates <- unique(c(train_dates,target_dates))
     df_empty <- expand_grid(location = locations,
-                            reference_date = dates)
+                            time_value = dates)
     
     ## (B) Populate the empty data frame.
     df_align <- left_join(df_empty, day0, by = "location") %>%
-      mutate(align_date = ifelse(reference_date - value >= 0, reference_date - value, NA)) %>%
-      group_by(location,reference_date) %>%
+      mutate(align_date = ifelse(time_value - value >= 0, time_value - value, NA)) %>%
+      group_by(location,time_value) %>%
       summarise(align_date = ifelse(all(is.na(align_date)), 
                                      NA,
                                      min(align_date,na.rm = T)))

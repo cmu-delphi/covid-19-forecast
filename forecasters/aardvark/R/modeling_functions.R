@@ -55,7 +55,7 @@ make_aardvark_forecaster <- function(ahead = 1,
   # 
   #   incidence_period: string, one of "epiweek" or "day"
   # 
-  #   backfill_buffer: numeric, never use training responses for which issue_date - reference_date < backfill_buffer
+  #   backfill_buffer: numeric, never use training responses for which issue_date - time_value < backfill_buffer
   # 
   #   response: string, the name of the variable you would like to treat as response.
   # 
@@ -142,26 +142,17 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     df_train <- df
 
-    cat("df variables: ")
-    print(unique(df$variable_name))
-    cat("Response: ", response, "\n")
-    cat("Features: ")
-    print(unique(features$variable_name))
 
     # (1) Concentrate on the variables we need.
 
     alignment_variables <- environment(aligner)$variables
-    cat("Alignment variable: ")
-    print(alignment_variables)
-    
+
     df_train <- df_train %>% 
       filter(variable_name %in% c(response, 
                                   features$variable_name,
                                   alignment_variables)) %>%
       distinct()
-    
-    cat("df_train variables: ")
-    print(unique(df_train$variable_name))
+
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | 
@@ -279,7 +270,7 @@ local_lasso_daily_forecast <- function(df_use,
   for ( ii in 1:length(forecast_dates) ){
     # (0) Treat train forecast date as forecast date.
     forecast_date_ii <- forecast_dates[ii]
-    df_train_use <- filter(df_use, reference_date <= forecast_date_ii | is.na(reference_date))
+    df_train_use <- filter(df_use, time_value <= forecast_date_ii | is.na(time_value))
     
     # (1) Preprocess
     
@@ -291,7 +282,7 @@ local_lasso_daily_forecast <- function(df_use,
     target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     pretty_locs <- unique(df_align %>% 
-                            filter(reference_date %in% target_dates) %>% # dates in the target period
+                            filter(time_value %in% target_dates) %>% # dates in the target period
                             group_by(location) %>%
                             summarise(n_na_align_dates = sum(is.na(align_date))) %>% # number of NA align_dates
                             ungroup %>%
@@ -320,10 +311,10 @@ local_lasso_daily_forecast <- function(df_use,
       # (II) Make sure all variables are present in the data frame.
       location_df <- distinct(select(df_impute, c(location,location_name)))
       df_empty <- expand_grid(location_df,
-                              reference_date = unique(df_impute$reference_date),
+                              time_value = unique(df_impute$time_value),
                               variable_name = unique(df_impute$variable_name))
       df_impute_all <- left_join(df_empty, df_impute, 
-                                 by = c("location","location_name","reference_date","variable_name"))
+                                 by = c("location","location_name","time_value","variable_name"))
       
       # (III) Impute NA by 0.
       warning("You are treating NA as 0 in the smoothing step.")
@@ -335,9 +326,9 @@ local_lasso_daily_forecast <- function(df_use,
       # (IV) Smooth out our data.
       df_imputed <- df_impute_all_no_na %>%
         group_by(variable_name) %>%
-        rename(date = reference_date) %>% # adopt our old convention
+        rename(date = time_value) %>% # adopt our old convention
         group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% # impute
-        rename(original_value = value,value = imputed_value, reference_date = date) %>%
+        rename(original_value = value,value = imputed_value, time_value = date) %>%
         ungroup()# go back to the new convention
       
       # (V) Add back in variables which were not supposed to be imputed
@@ -359,7 +350,7 @@ local_lasso_daily_forecast <- function(df_use,
     df_strata <- stratifier(df_train_use, response)
     
     ## (C) Augment df_with_lags
-    df_with_lags <- left_join(df_with_lags, df_align, by = c("location", "reference_date")) %>%
+    df_with_lags <- left_join(df_with_lags, df_align, by = c("location", "time_value")) %>%
       left_join(df_strata, by = "location")
     
     # (4) Separate predictions for each strata.
@@ -391,8 +382,8 @@ local_lasso_daily_forecast <- function(df_use,
     df_point_preds_ii <- bind_rows(df_point_preds_bad, df_point_preds_good) %>%
       left_join(df_use %>% 
                   filter(variable_name == response) %>%
-                  select(location, reference_date, value),
-                by = c("location","reference_date")
+                  select(location, time_value, value),
+                by = c("location","time_value")
       ) %>%
       rename(original_value = value)
     
@@ -406,7 +397,7 @@ local_lasso_daily_forecast <- function(df_use,
   
   # Put response back on original scale.
   df_bootstrap_preds <- df_bootstrap_preds %>%
-    pivot_longer(-c(location, location_name, reference_date), 
+    pivot_longer(-c(location, location_name, time_value), 
                  names_to = "replicate", values_to = "value")
   
   
@@ -434,12 +425,12 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
                                                   features, intercept,
                                                   df_align, modeler,
                                                   verbose = 1){
-  # Returns a data frame with point predictions for each (location,reference_date)
+  # Returns a data frame with point predictions for each (location,time_value)
   # pair satisfying location in "good" strata, and 
-  #                 reference_date in target_period.
+  #                 time_value in target_period.
   # Inputs:
   #   df_use: data used to make forecasts. At minimum, should have the columns
-  #           location, location_name, reference_date, variable_name, original_value, value,
+  #           location, location_name, time_value, variable_name, original_value, value,
   #           and align_date.
   
   # (1) Preamble
@@ -448,15 +439,15 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   
   # (2) Pivot wider, for model matrix form.
   YX <- df_use %>%
-    select(location, align_date, reference_date, variable_name, value) %>% 
+    select(location, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
     pivot_wider(names_from = "variable_name", values_from = "value") %>%
     rename(response = response_name,
            date = align_date)
   
   ## Save reference date information, so we know which are target rows.
-  YX_reference_dates <- YX %>% pull(reference_date)
-  YX <- YX %>% select(-reference_date)
+  YX_time_values <- YX %>% pull(time_value)
+  YX <- YX %>% select(-time_value)
   
   # (3) Assign feature the right type.
   for ( ii in 1:nrow(features) ){
@@ -516,7 +507,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   dates <- unique(
     df_align %>% 
       filter(location %in% locations$location,      
-             reference_date %in% target_dates) %>% 
+             time_value %in% target_dates) %>% 
       pull(align_date)
   )
   
@@ -529,10 +520,10 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
     
     # (II) Remember which rows we should predict
     forecast_rows <- which(YX_use$date == dates[ii] & # right align date
-                             YX_reference_dates %in% target_dates # right reference date
+                             YX_time_values %in% target_dates # right reference date
     )
     forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
-    forecast_reference_dates <- YX_reference_dates[forecast_rows]
+    forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
     
     # (III) We don't need date any more.
@@ -577,7 +568,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
     
     # (IX) Predict using our model.
     preds_ii <- data.frame(location = forecast_locs,
-                           reference_date = forecast_reference_dates,
+                           time_value = forecast_time_values,
                            preds = 
                              modeler$predicter(fit  = fit,
                                                X = X_test,
@@ -597,8 +588,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   df_preds <- bind_rows(preds)
   
   # (5) Prepare output
-  df_empty <- expand_grid(locations,reference_date = target_dates, strata = df_use$strata[1])
-  df_final <- left_join(df_empty,df_preds, by = c("location","reference_date"))
+  df_empty <- expand_grid(locations,time_value = target_dates, strata = df_use$strata[1])
+  df_final <- left_join(df_empty,df_preds, by = c("location","time_value"))
   
   # Some prints to let Alden know how far along the forecaster is.
   if (verbose > 0){
@@ -623,22 +614,22 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
   ## one value.
   
   # (1) Separate temporal and non-temporal variables
-  df_temporal <- filter(df_use, !is.na(reference_date))
-  df_non_temporal <- filter(df_use,is.na(reference_date))
+  df_temporal <- filter(df_use, !is.na(time_value))
+  df_non_temporal <- filter(df_use,is.na(time_value))
   
   # (2) Get all the locations and dates we need.
   locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location,location_name))
   target_period <- get_target_period(forecast_date,incidence_period,ahead)
   target_dates <- seq(target_period$start,target_period$end,by = "days")
-  reference_dates <- unique(c(df_temporal %>% pull(reference_date),target_dates))
+  time_values <- unique(c(df_temporal %>% pull(time_value),target_dates))
   
   # (3) Build df for non-temporal variables.
   non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), c(response,features$variable_name))
   if (length(non_temporal_vars) > 0){
     df_non_temporal_all <- expand_grid(locations,
-                                       reference_date = reference_dates,
+                                       time_value = time_values,
                                        variable_name = non_temporal_vars) %>%
-      left_join(df_non_temporal %>% select(-reference_date), 
+      left_join(df_non_temporal %>% select(-time_value), 
                 by = c("location","location_name","variable_name"))
   } else{
     df_non_temporal_all <- NULL
@@ -647,14 +638,14 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
   # (4) Build df for temporal variables.
   
   ## (A) All possible location, date, variable_name triples.
-  all_dates <- seq(min(reference_dates),max(reference_dates),by = 1)
+  all_dates <- seq(min(time_values),max(time_values),by = 1)
   temporal_vars <- intersect(unique(df_temporal$variable_name), c(response,features$variable_name))
   stopifnot(length(temporal_vars) > 0)
   df_temporal_all <- expand_grid(locations,
-                                 reference_date = all_dates,
+                                 time_value = all_dates,
                                  variable_name = temporal_vars) %>%
     left_join(df_temporal,
-              by = c("location", "location_name","reference_date","variable_name"))
+              by = c("location", "location_name","time_value","variable_name"))
   
   ## (c) Add lags.
   lags <- setdiff( unique(features$lag), NA)
@@ -669,7 +660,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
     
     df_temporal_all_with_lags <- df_temporal_all %>%
       group_by(location, variable_name) %>%
-      arrange(reference_date) %>%
+      arrange(time_value) %>%
       mutate_at(vars(value),.funs = lag_functions) %>%
       ungroup() %>%
       rename(lag_0 = value) %>%
@@ -678,7 +669,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
     
     # Tidy up rows, by just selecting the dates we want.
     df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
-      filter(reference_date %in% reference_dates)
+      filter(time_value %in% time_values)
     
     # Tidy up columns
     df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
