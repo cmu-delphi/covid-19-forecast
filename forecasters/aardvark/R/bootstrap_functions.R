@@ -21,22 +21,22 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
       seq(start,end,by = "days")
     point_preds <- df_point_preds %>%
       filter(time_value %in% target_dates) %>%
-      select(location, location_name, time_value, preds)
+      select(location, time_value, preds)
     stopifnot(nrow(point_preds) == length(unique(point_preds$location)) * length(target_dates))
     point_preds <- point_preds %>%
-      group_by(location,location_name) %>%
+      group_by(location) %>%
       summarize(preds = sum(preds)) %>%
       mutate(time_value = NA) %>%
       ungroup()
 
     # (2) Get conditional standard deviation estimates, on weekly scale
     df_resids <-  df_point_preds %>%
-      select(location,location_name,time_value, original_value, preds) %>% # we don't use strata for a by location bootstrap.
+      select(location, time_value, original_value, preds) %>% # we don't use strata for a by location bootstrap.
       filter(!is.na(original_value)) %>%
       mutate(resids = original_value - preds,
              weights = tricube( as.numeric(forecast_date - time_value) / bandwidth)) %>%
       select(-c(original_value,preds)) %>% # don't need these to compute variance
-      group_by(location,location_name) %>%
+      group_by(location) %>%
       arrange(time_value) %>%
       mutate(resids = rollsum(resids, 7,
                               fill = NA,
@@ -70,7 +70,7 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
 
     # (5) Prepare output
     bootstrap_preds <- bind_cols(df_distribution,replicates) %>%
-      select(location,location_name,time_value,starts_with("replicate_"))
+      select(location,time_value,starts_with("replicate_"))
 
     return(bootstrap_preds)
   }

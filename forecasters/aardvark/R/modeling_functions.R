@@ -309,12 +309,12 @@ local_lasso_daily_forecast <- function(df_use,
       df_no_impute <- filter(df_train_use,!(variable_name %in% impute_variables))
       
       # (II) Make sure all variables are present in the data frame.
-      location_df <- distinct(select(df_impute, c(location,location_name)))
+      location_df <- distinct(select(df_impute, c(location)))
       df_empty <- expand_grid(location_df,
                               time_value = unique(df_impute$time_value),
                               variable_name = unique(df_impute$variable_name))
       df_impute_all <- left_join(df_empty, df_impute, 
-                                 by = c("location","location_name","time_value","variable_name"))
+                                 by = c("location","time_value","variable_name"))
       
       # (III) Impute NA by 0.
       warning("You are treating NA as 0 in the smoothing step.")
@@ -397,13 +397,13 @@ local_lasso_daily_forecast <- function(df_use,
   
   # Put response back on original scale.
   df_bootstrap_preds <- df_bootstrap_preds %>%
-    pivot_longer(-c(location, location_name, time_value), 
+    pivot_longer(-c(location, time_value), 
                  names_to = "replicate", values_to = "value")
   
   
   # If we need to sum over multiple dates...
   df_bootstrap_preds <- df_bootstrap_preds %>%
-    group_by(location, location_name, replicate) %>%
+    group_by(location, replicate) %>%
     summarise(value = sum(pmax(value, 0))) %>%
     ungroup()
   
@@ -430,12 +430,12 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   #                 time_value in target_period.
   # Inputs:
   #   df_use: data used to make forecasts. At minimum, should have the columns
-  #           location, location_name, time_value, variable_name, original_value, value,
+  #           location, time_value, variable_name, original_value, value,
   #           and align_date.
   
   # (1) Preamble
   response_name <- paste0(response,"_lag_0")
-  locations <- distinct(df_use %>% filter(variable_name == response_name) %>% select(location,location_name))
+  locations <- distinct(df_use %>% filter(variable_name == response_name) %>% select(location))
   
   # (2) Pivot wider, for model matrix form.
   YX <- df_use %>%
@@ -618,7 +618,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
   df_non_temporal <- filter(df_use,is.na(time_value))
   
   # (2) Get all the locations and dates we need.
-  locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location,location_name))
+  locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location))
   target_period <- get_target_period(forecast_date,incidence_period,ahead)
   target_dates <- seq(target_period$start,target_period$end,by = "days")
   time_values <- unique(c(df_temporal %>% pull(time_value),target_dates))
@@ -630,7 +630,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
                                        time_value = time_values,
                                        variable_name = non_temporal_vars) %>%
       left_join(df_non_temporal %>% select(-time_value), 
-                by = c("location","location_name","variable_name"))
+                by = c("location","variable_name"))
   } else{
     df_non_temporal_all <- NULL
   }
@@ -645,7 +645,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
                                  time_value = all_dates,
                                  variable_name = temporal_vars) %>%
     left_join(df_temporal,
-              by = c("location", "location_name","time_value","variable_name"))
+              by = c("location","time_value","variable_name"))
   
   ## (c) Add lags.
   lags <- setdiff( unique(features$lag), NA)
