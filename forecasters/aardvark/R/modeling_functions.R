@@ -45,7 +45,6 @@ make_aardvark_forecaster <- function(ahead = 1,
                                      modeler = NULL, 
                                      bootstrapper, B = 1000,
                                      aligner = NULL,
-                                     return_df = FALSE,
                                      verbose = 1){
   # Inputs:
   # 
@@ -88,8 +87,7 @@ make_aardvark_forecaster <- function(ahead = 1,
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
-                                              incidence_period, ahead, geo_type,
-                                              return_df = return_df){
+                                              incidence_period, ahead, geo_type){
     # Inputs:
     #  df: data frame with columns "data_source", "signal", "location", "time_value", 
     #                              "issue", "lag", "value", "stderr", and "sample_size"
@@ -97,11 +95,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     #  forecast_date: the date on which forecasts will be made
     #    about some period ("epiweek" or "day").  Forecaster must only use data that
     #    would have been issued on or before forecast_date.
-    
-    if ( return_df ){
-      return(df)
-    }
-    
+
     # Preamble.
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)

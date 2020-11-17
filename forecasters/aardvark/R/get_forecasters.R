@@ -11,13 +11,13 @@
 #' @param response The response variable (\code{geo_type = "state"}), should be 
 #' "jhu-csse_deaths_incidence_num" -- the incident deaths reported by Johns Hopkins 
 #' University) -- assuming no data issues.
-#' @param incidence_period The incidence period. This forecaster
+#' @param incidence_period The incidence period ("epiweek" or "day"). This forecaster
 #' currently only supports forecasts at the "epiweek" level.
-#' @param ahead The number of incidence periods ahead to forecast the respoonse.
+#' @param ahead The number of incidence periods ahead to forecast the response.
 #' For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
 #' @param forecast_date The date of the forecast.
 #' @param geo_type the geographic type (e.g "state" or "county" or
-#'     "hrr" or "msa"... but for now only the first two),
+#'     "national", hrr", or "msa"... but for now only the first two),
 #' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
 #'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
@@ -29,19 +29,22 @@
 #' library(aardvark)
 #' 
 #' ahead = 1
-#' my_forecaster <- get_forecasters(response_source = "jhu-csse",
-#'                                  response_signal = "deaths_incidence_num",
-#'                                  incidence_period = "epiweek",
-#'                                  geo_type = "state"
-#'                                  ahead = ahead)[["aardvark_forecaster"]][["forecaster"]]
+#' signals <- tibble::tibble(data_source = "usa-facts",
+#' signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+#' start_day = "2020-03-07"
+#' )
+#' my_forecaster <- aardvark::get_forecasters(response_signal = signals$signal[1],
+#'   response_source = signals$data_source[1], 
+#'   ahead = ahead,
+#'   geo_type = "state",
+#'   forecast_date = forecast_date)[[1]]$forecaster
 
 get_forecasters <- function(response_source = "jhu-csse", 
                             response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
                             geo_type = c("state", "county", "national", "hrr", "msa"),
                             ahead, 
-                            forecast_date,
-                            return_df = FALSE){
+                            forecast_date){
   
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
@@ -115,8 +118,7 @@ get_forecasters <- function(response_source = "jhu-csse",
                                             imputer = imputer,
                                             modeler = modeler,
                                             bootstrapper = bootstrapper,
-                                            geo_type = geo_type,
-                                            return_df = return_df)
+                                            geo_type = geo_type)
 
   ## Return the forecaster in the format expected by evalcast
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
