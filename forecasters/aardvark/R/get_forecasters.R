@@ -18,10 +18,6 @@
 #' @param forecast_date The date of the forecast.
 #' @param geo_type the geographic type (e.g "state" or "county" or
 #'     "hrr" or "msa"... but for now only the first two),
-#' @param n_locations The number of geo locations. Up to 52 for \code{geo_type = "state"}
-#' (states + D.C. and Puerto Rico). Usually let \code{n_locations = 200} for 
-#' \code{geo_type = "county"} (Top 200). For \code{geo_type = "national"}, 
-#' \code{n_locations = 1}
 #' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
 #'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
@@ -36,8 +32,7 @@
 #' my_forecaster <- get_forecasters(response_source = "jhu-csse",
 #'                                  response_signal = "deaths_incidence_num",
 #'                                  incidence_period = "epiweek",
-#'                                  geo_type = "state",
-#'                                  n_locations = 52,
+#'                                  geo_type = "state"
 #'                                  ahead = ahead)[["aardvark_forecaster"]][["forecaster"]]
 
 get_forecasters <- function(response_source = "jhu-csse", 
@@ -45,8 +40,7 @@ get_forecasters <- function(response_source = "jhu-csse",
                             incidence_period = c("epiweek", "day"), 
                             geo_type = c("state", "county", "national", "hrr", "msa"),
                             ahead, 
-                            forecast_date,
-                            n_locations = 52){
+                            forecast_date){
   
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
