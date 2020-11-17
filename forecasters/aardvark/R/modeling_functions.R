@@ -231,6 +231,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     
+    predictions$ahead <- ahead
+    
     if ( verbose > 0 ){
       print(forecast_date) 
     }
