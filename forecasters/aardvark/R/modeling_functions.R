@@ -41,7 +41,6 @@ make_aardvark_forecaster <- function(ahead = 1,
                                      degree = 0, 
                                      intercept = FALSE,
                                      stratifier, 
-                                     preprocesser = NULL, 
                                      imputer = NULL, 
                                      modeler = NULL, 
                                      bootstrapper, B = 1000,
@@ -58,8 +57,6 @@ make_aardvark_forecaster <- function(ahead = 1,
   #   backfill_buffer: numeric, never use training responses for which issue_date - time_value < backfill_buffer
   # 
   #   response: string, the name of the variable you would like to treat as response.
-  # 
-  #   preprocesser: a function to perform preprocessing of our training data, for instance by doing backfill
   # 
   #   imputer: a function to perform smoothing/imputation of our response, to improve training.
   #            the default NULL means we train on the raw response.

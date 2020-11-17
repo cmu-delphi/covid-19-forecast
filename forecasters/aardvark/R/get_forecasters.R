@@ -64,7 +64,6 @@ get_forecasters <- function(response_source = "jhu-csse",
 
   # Modeling pipeline functions to provide forecaster
   stratifier <- make_stratifier_by_n_responses(alpha = 0.5)
-  preprocesser <- NULL
   imputer <- make_average_imputer(k = 7, align = "center")
   
   alignment_variable <- cases
@@ -111,7 +110,6 @@ get_forecasters <- function(response_source = "jhu-csse",
                                             aligner = aligner,
                                             bandwidth = bandwidth,
                                             degree =  degree,
-                                            preprocesser = preprocesser,
                                             stratifier = stratifier,
                                             imputer = imputer,
                                             modeler = modeler,
