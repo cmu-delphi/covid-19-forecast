@@ -123,6 +123,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     rm(df.tmp); gc()
     
+    saveRDS(df, file = "~/Desktop/df.rds")
+    
     
     # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
