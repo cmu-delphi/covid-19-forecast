@@ -1,7 +1,5 @@
 #-----------------------------------------------------------------------------#
-# This script contains the functions needed to build modelers.
-# Each modeler is a list comprised of exactly two elements: a fitter and a predictor.
-# Hence, this script contains two types of functions: model fitting functions, and model predicting functions.
+# This script contains two types of functions: model fitting functions, and model predicting functions.
 # Model fitting functions take in data and produce a fitted model.
 # A fitted model is a function which can take in data, and produce a (point) prediction.
 # All model fitting functions should take the following arguments as inputs:
@@ -11,7 +9,6 @@
 #   offset: numeric vector, with default offset = NULL
 #   intercept: logical, with default intercept = TRUE
 #   locs: character vector, identifying each observation with a location.
-#
 # and possibly
 #   t: numeric vector, identifying each observation with a point in "aligned time".
 #                      To be used in forward-validation.
@@ -21,13 +18,7 @@
 #   fit: the fitted model used for prediction
 #   X: numeric matrix
 #   offset: numeric vector
-#
-#  and possibly
-#
-#   locs: character vector, identifying each observation with a location.
-# These arguments should not have defaults.
 #-----------------------------------------------------------------------------#
-
 ## The aardvark forecaster fits models which are local in time and estimates
 ## location-specific effects using shrinkage
 
@@ -49,39 +40,27 @@ make_aardvark_forecaster <- function(ahead = 1,
   # Inputs:
   # 
   #   bandwidth, degree: numeric, the parameters for a local polynomial fit.
-  # 
   #   ahead: numeric, how many periods ahead to predict.
-  # 
   #   incidence_period: string, one of "epiweek" or "day"
-  # 
   #   backfill_buffer: numeric, never use training responses for which issue_date - time_value < backfill_buffer
-  # 
   #   response: string, the name of the variable you would like to treat as response.
-  # 
   #   imputer: a function to perform smoothing/imputation of our response, to improve training.
   #            the default NULL means we train on the raw response.
-  # 
   #   modeler: a named list of length two, with elements fitter and predictor.
-  #     modeler$fitter: a function to perform model fitting. 
-  #     modeler$predicter: a function to perform prediction.
-  #     
+  #            modeler$fitter: a function to perform model fitting. 
+  #            modeler$predicter: a function to perform prediction.
   #   bootstrapper: a function used to resample our residuals, to form a distributional estimate.
-  # 
   #   B: number of resamples to take when doing Monte Carlo to form distributional estimate.
-  # 
   #   features: a data frame, with columns
-  #     variable_name: character, the names of the variables to use as features
-  #     type: character, the type of the variable. "n" for numeric, "f" for factor.
-  #     lag: numeric, how many periods in the past to use for the feature.
-  #     offset: logical, whether or not to treat this feature as an offset.
-  #     main_effect: logical, whether or not to include a main (global) effect for this feature.
-  #     interaction: character, indicating which variable this should be interacted with. NA implies no interactions.
-  # 
+  #       variable_name: character, the names of the variables to use as features
+  #       type: character, the type of the variable. "n" for numeric, "f" for factor.
+  #       lag: numeric, how many periods in the past to use for the feature.
+  #       offset: logical, whether or not to treat this feature as an offset.
+  #       main_effect: logical, whether or not to include a main (global) effect for this feature.
+  #       interaction: character, indicating which variable this should be interacted with. NA implies no interactions.
   #   intercept: logical, indicating whether or not we want to add a (location-specific) intercept
-  # 
   #   aligner: a function, used to compute aligned time.
   #            It must take exactly the form of those functions given in alignment_functions.R.
-  # 
   #   verbose: integer, one of 0, 1, 2, or >2. Progressively more printing during forecasting.
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
@@ -96,7 +75,6 @@ make_aardvark_forecaster <- function(ahead = 1,
     #    about some period ("epiweek" or "day").  Forecaster must only use data that
     #    would have been issued on or before forecast_date.
 
-    # Preamble.
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
@@ -122,11 +100,10 @@ make_aardvark_forecaster <- function(ahead = 1,
     names(df)[which(substr(names(df),1,5) == "value")] <- "value"
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     rm(df.tmp); gc()
+    df <- df %>% select(location,geo_value,variable_name,value,time_value,issue)
     
     saveRDS(df, file = "~/Desktop/df.rds")
     
-    
-    # (0) Check some things.
     stopifnot(c("location", "time_value", "issue") %in% names(df))
     stopifnot(names(features) == c("variable_name",
                                    "type", 
@@ -137,29 +114,21 @@ make_aardvark_forecaster <- function(ahead = 1,
     )
     stopifnot(names(modeler) == c("fitter","predicter"))
     stopifnot(is.function(aligner))
-    
-    df_train <- df
-
 
     # (1) Concentrate on the variables we need.
 
+    df_train <- df
     alignment_variables <- environment(aligner)$variables
-
-    df_train <- df_train %>% 
-      filter(variable_name %in% c(response, 
-                                  features$variable_name,
-                                  alignment_variables)) %>%
-      distinct()
-
+    df_train <- df_train %>% filter(variable_name %in% c(response, 
+                                                         features$variable_name,
+                                                         alignment_variables)) %>% distinct()
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | 
                                  (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
-
     df_train <- df_train %>% select(-issue)
 
-    
     # Preprocess.
     
     ## (0) Stratification
@@ -188,9 +157,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     df_train_pretty <- df_train %>% filter(!(location %in% locs_ugly))
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
     
-    
     # Predict.
-    
     ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location),
                           probs = covidhub_probs)
@@ -234,7 +201,6 @@ make_aardvark_forecaster <- function(ahead = 1,
     if ( verbose > 0 ){
       print(forecast_date) 
     }
-    
     return(predictions)
   }
 }
@@ -452,7 +418,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   # (3) Assign feature the right type.
   for ( ii in 1:nrow(features) ){
     # (A) Get the right name for the feature (i.e. the name it will have in YX)
-    if(is.na(features$lag[ii])){
+    if (is.na(features$lag[ii])){
       feature_name <- features$variable_name[ii]
     } else{
       feature_name <- paste0(features$variable_name[ii],"_lag_",features$lag[ii])
@@ -502,7 +468,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   # (4) Get predicted values.
   
   ## (A) Get all the dates we would like predicted values for.
-  target_dates <- evalcast::get_target_period(forecast_date,incidence_period,ahead) %$%
+  target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start,end,by = "days")
   dates <- unique(
     df_align %>% 
@@ -606,7 +572,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
                                 response, features){
   ## This function assembles all the data we will need for training and predicting.
   ## This means **I guarantee** the output of this function should have 
-  ## an entry for each (variable_name, location,date) triple
+  ## an entry for each (variable_name, location, date) triple
   ## in either my training or test period. 
   ##
   ## This guarantee should hold for both temporal and non-temporal variables,
@@ -615,16 +581,17 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
   
   # (1) Separate temporal and non-temporal variables
   df_temporal <- filter(df_use, !is.na(time_value))
-  df_non_temporal <- filter(df_use,is.na(time_value))
+  df_non_temporal <- filter(df_use, is.na(time_value))
   
   # (2) Get all the locations and dates we need.
   locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location))
-  target_period <- get_target_period(forecast_date,incidence_period,ahead)
-  target_dates <- seq(target_period$start,target_period$end,by = "days")
-  time_values <- unique(c(df_temporal %>% pull(time_value),target_dates))
+  target_period <- get_target_period(forecast_date, incidence_period, ahead)
+  target_dates <- seq(target_period$start, target_period$end, by = "days")
+  time_values <- unique(c(df_temporal %>% pull(time_value), target_dates))
   
   # (3) Build df for non-temporal variables.
-  non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), c(response,features$variable_name))
+  non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), 
+                                 c(response, features$variable_name))
   if (length(non_temporal_vars) > 0){
     df_non_temporal_all <- expand_grid(locations,
                                        time_value = time_values,
@@ -638,7 +605,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead,
   # (4) Build df for temporal variables.
   
   ## (A) All possible location, date, variable_name triples.
-  all_dates <- seq(min(time_values),max(time_values),by = 1)
+  all_dates <- seq(min(time_values), max(time_values), by = 1)
   temporal_vars <- intersect(unique(df_temporal$variable_name), c(response,features$variable_name))
   stopifnot(length(temporal_vars) > 0)
   df_temporal_all <- expand_grid(locations,
