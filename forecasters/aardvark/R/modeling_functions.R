@@ -212,8 +212,7 @@ local_lasso_daily_forecast <- function(df_use,
                                        modeler, bootstrapper, B, covidhub_probs,
                                        features, intercept, alignment_variable,
                                        verbose = 1){
-  # Produces a distributional forecast (represented by quantiles) on daily time series data,
-  # using 
+  # Produces a distributional forecast (represented by quantiles) on daily time series data, using 
   # -- local regression (glmnet with weights given by Gaussian kernel) with ridge? penalty on interactions
   #     to obtain the fitted/predicted conditional mean for each location. 
   # -- Monte Carlo to obtain a distribution of residuals for each location.
@@ -269,10 +268,9 @@ local_lasso_daily_forecast <- function(df_use,
     if ( !is.null(imputer) ){
       
       # (I) Variables to impute.
-      impute_variables <- unique(c(response,
-                                   features %>% filter(impute) %>% pull(variable_name)))
+      impute_variables <- unique(c(response, features %>% filter(impute) %>% pull(variable_name)))
       df_impute <- filter(df_train_use, variable_name %in% impute_variables)
-      df_no_impute <- filter(df_train_use,!(variable_name %in% impute_variables))
+      df_no_impute <- filter(df_train_use, !(variable_name %in% impute_variables))
       
       # (II) Make sure all variables are present in the data frame.
       location_df <- distinct(select(df_impute, c(location)))
@@ -295,7 +293,7 @@ local_lasso_daily_forecast <- function(df_use,
         rename(date = time_value) %>% # adopt our old convention
         group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% # impute
         rename(original_value = value,value = imputed_value, time_value = date) %>%
-        ungroup()# go back to the new convention
+        ungroup() # go back to the new convention
       
       # (V) Add back in variables which were not supposed to be imputed
       df_train_use <- bind_rows(df_imputed,df_no_impute)
