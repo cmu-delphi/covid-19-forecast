@@ -101,6 +101,7 @@ make_aardvark_forecaster <- function(ahead = 1,
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     rm(df.tmp); gc()
     df <- df %>% select(location,geo_value,variable_name,value,time_value,issue)
+    df$value <- as.double(df$value)
     
     saveRDS(df, file = "~/Desktop/df.rds")
     
