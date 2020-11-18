@@ -104,6 +104,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     df$value <- as.double(df$value)
     
     saveRDS(df, file = "~/Desktop/df.rds")
+    print(head(df))
+    print(unique(df$variable_name))
     
     stopifnot(c("location", "time_value", "issue") %in% names(df))
     stopifnot(names(features) == c("variable_name",
