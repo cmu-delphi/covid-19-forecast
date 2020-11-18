@@ -293,7 +293,7 @@ local_lasso_daily_forecast <- function(df_use,
         group_by(variable_name) %>%
         rename(date = time_value) %>% # adopt our old convention
         group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% # impute
-        rename(original_value = value,value = imputed_value, time_value = date) %>%
+        rename(original_value = value, value = imputed_value, time_value = date) %>%
         ungroup() # go back to the new convention
       
       # (V) Add back in variables which were not supposed to be imputed

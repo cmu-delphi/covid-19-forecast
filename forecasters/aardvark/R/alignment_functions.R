@@ -30,6 +30,10 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
     # for the first time.
     # Inputs:
     #   df_use, forecast_date: see top of this script.
+    cat("alignment variable: \n")
+    print(variables)
+    cat("variables\n")
+    print(unique(df_use %>% pull(variable_name)))
     stopifnot(variables %in% unique(df_use %>% pull(variable_name))) # the variable we plan to align on better be in the data...
     
     # (1) Restrict ourselves to the data we need
