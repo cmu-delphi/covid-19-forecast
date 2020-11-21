@@ -4,12 +4,12 @@ author: "Delphi Group - Last run:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: pdf_document
 params:
-  upstream_df_date: "2020-11-14"
-  forecast_date: "2020-11-16"
+  upstream_df_date: !r Sys.getenv("TODAY")
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
   response: "jhu-csse_deaths_incidence_num"
   geo: "state"
-  upstream_data_path: "~/upstream_df_creation/upstream_df_outputs"
-  forecast_dir_path: "~/upstream_df_creation/forecaster_predictions"
+  upstream_data_path: !r file.path(Sys.getenv("PROD_DIR"), "upstream_df_outputs")
+  forecast_dir_path: !r file.path(Sys.getenv("PROD_DIR"), "forecaster_predictions")
 ---
   
 
