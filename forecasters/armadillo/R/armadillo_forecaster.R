@@ -1,5 +1,7 @@
 #' Aramdillo forecaster
 #'
+#' Armadillo forecaster only gives point forecaster, not quantile forecaster.
+#'
 #' @param before_pan if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.
 #' @param mob_shift the number of epiweek that mobility variable is shifted backwards.
 #' @param mob_fun the function applied to mobility variables, min, mean, or max.
@@ -12,14 +14,11 @@
 #'
 #' @return a forecaster that works with evalcast.
 #'
-#' @importFrom lubridate ymd
-#' @importFrom magrittr %>%
-#' @import dplyr
-#' @importFrom stats dgamma
-#' @importFrom stats setNames
-#' @importFrom tibble tibble
-#'
 #' @examples
+#' signals <- tibble::tibble(data_source = c("jhu-csse","safegraph"),
+#' signal = c("deaths_incidence_num","completely_home_prop"),
+#' start_day = c("2020-03-08", "2020-03-01"))
+#'
 #' arma_forecaster <- Armadillo_forecaster(
 #'   before_pan = T,
 #'   mob_shift = 1,
@@ -85,6 +84,36 @@ Armadillo_forecaster <- function(before_pan = TRUE,
   }
 }
 
+#' Raw forecaster
+#'
+#' @param df dataframe returned by covidcast.
+#' @param forecast_date
+#' @param signals signal specifying response variable and safegraph mobility variables.
+#' @param incidence_period this forecaster only works with epiweek now.
+#' @param ahead
+#' @param geo_type this forecaster only works with state geo level.
+#' @param before_pan
+#' @param mob_shift
+#' @param mob_fun
+#' @param DC
+#' @param initial_fun
+#' @param initial_val
+#' @param lower
+#' @param upper
+#' @param ...
+#'
+#' @return
+#'
+#' @importFrom lubridate ymd
+#' @importFrom magrittr %>%
+#' @import dplyr
+#' @importFrom stats dgamma
+#' @importFrom stats setNames
+#' @importFrom tibble tibble
+#' @importFrom rlang .data
+#' @export
+#'
+#' @examples
 Armadillo_forecaster_raw <- function(df,
                                      forecast_date,
                                      signals,
