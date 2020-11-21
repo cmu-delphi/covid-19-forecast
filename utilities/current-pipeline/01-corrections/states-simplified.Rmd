@@ -12,11 +12,12 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-15"
-  cache_data: TRUE
+  time_value_flag_date: "2020-10-24"
+  cache_data: FALSE
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
   covidcast_signal: "deaths_incidence_num"
-  corrections_db_path: "~/upstream_df_creation/corrections_db/data_corrections.sqlite"
+  corrections_db_path: "./data_corrections.sqlite"
   excess_cut: 0
   write_RDS: TRUE
 ---
@@ -73,7 +74,8 @@ states <- states %>% group_by(geo_value) %>% mutate(
     (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
     (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
   FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
-  flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)
+  #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
+  flag = flag & (time_value < ymd(time_value_flag_date) | value < -size_cut)
   #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
 )
 ```
