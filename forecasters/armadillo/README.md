@@ -1,33 +1,22 @@
----
-output: github_document
----
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
-)
-```
 
 # armadillo
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
-The goal of armadillo is to implement Larry and Valerie's mobility model as a forecaster working with evalcast package.
+The goal of armadillo is to implement Larry and Valerie’s mobility model
+as a forecaster working with evalcast package.
 
 ## Installation
-
 
 ## Example
 
 This is a basic example:
 
-```{r example, eval = FALSE}
+``` r
 library(armadillo)
 
 signals <- tibble::tibble(data_source = c("jhu-csse","safegraph"),
@@ -57,4 +46,3 @@ res_armadillo <- evalcast::get_predictions(arma_forecaster,
 )
 eva <- evalcast::evaluate_predictions(res_armadillo)
 ```
-
