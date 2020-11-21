@@ -36,7 +36,7 @@ mob_trans <- function(x, incidence_length = 7, mob_fun) {
 mob_trans_shift <- function(x, incidence_length = 7, mob_fun) {
   n <- length(x)
   m <- floor(n / incidence_length)
-  x <- x[1 : (m * incidence_length)]
+  x <- x[1:(m * incidence_length)]
   x <- matrix(x, nrow = m, ncol = incidence_length, byrow = TRUE)
   mob_fun <- match.fun(mob_fun)
   x <- apply(x, 1, mob_fun)

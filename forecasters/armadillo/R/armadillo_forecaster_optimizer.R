@@ -7,15 +7,16 @@
 #' @param mu mobility function parameter.
 #' @param sigma mobility function parameter.
 #' @param M mobility series.
-#' @param DC death curve.
+#' @param DC death delay curve.
 #' @param before_pan if TRUE, the first estimated response must be 0.
 #'
 #' @return estmiated response series.
-#'
+#' @importFrom stats pnorm
+#' @importFrom optimization optim_sa
 #'
 #' @examples
 Mean.fun <- function(L, At, beta, alpha, mu, sigma, M, DC, before_pan) {
-  Beta <- beta + alpha * pnorm(M[1:L], mu, sigma)
+  Beta <- beta + alpha * stats::pnorm(M[1:L], mu, sigma)
   BetaSum <- cumsum(c(0, Beta))
   BetaSum <- BetaSum[-(L + 1)]
   if (before_pan) {
@@ -49,14 +50,14 @@ Loss <- function(y, yhat) {
 #' Optimizer using simulated annealing
 #'
 #' @param param initial value of arguments in Mean.fun (At, beta, alpha, mu, sigma).
-#' @param DC death curve.
+#' @param DC death delay curve.
 #' @param y observed response series.
 #' @param M mobility series.
 #' @param L length of observed response series.
 #' @param before_pan same as argument before_pan in Mean.fun.
 #' @param lower a vector of lower bounds (At, beta, alpha, mu, sigma).
 #' @param upper a vector of upper bounds (At, beta, alpha, mu, sigma).
-#' @param ... control arguments in optim_sa, such as initial temperature, ...
+#' @param ... control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...
 #'
 #' @return best parameters found by simulated annealing.
 #'
@@ -68,5 +69,5 @@ fit_optim <- function(param, DC, y, M, L, before_pan, lower, upper, ...) {
     loss <- Loss(y[1:L], yhat[1:L])
     return(loss)
   }
-  optim_sa(fun = Loss.wrap, start = param, lower = lower, upper = upper, control = list(...))$par
+  optimization::optim_sa(fun = Loss.wrap, start = param, lower = lower, upper = upper, control = list(...))$par
 }
