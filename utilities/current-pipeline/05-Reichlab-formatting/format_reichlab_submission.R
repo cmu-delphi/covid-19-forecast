@@ -1,8 +1,12 @@
 #-----------------------------------------------------#
 #
 #-----------------------------------------------------#
+## NOTE ON CHANGES made for keeping things consistent.
+## The variable that is now forecast_date used to be data_date
+## and forecasted_date used to be forecast_date.
+##
 path_to_production_run_output <- "~/upstream_df_creation/forecaster_predictions"
-data_date <- lubridate::ymd("2020-11-16")
+forecast_date  <- lubridate::ymd("2020-11-16")
 aheads <- 4:1
 response_state <- "jhu-csse_deaths_incidence_num"
 response_cty <- "usa-facts_confirmed_incidence_num"
@@ -24,7 +28,7 @@ forecaster <- "aardvark_cookies_and_cream"
 predictions_cards <- list()
 for(ahead in aheads){
   path_to_prediction_card <- file.path(path_to_production_run_output,
-                                       data_date,ahead,response_state,geo_type,
+                                       forecast_date,ahead,response_state,geo_type,
                                        incidence_period,n_locations,forecaster,
                                        "out.RDS")
   prediction_card <- readRDS(path_to_prediction_card)
@@ -35,7 +39,7 @@ for(ahead in aheads){
 state_preds <- format_predictions_cards_for_reichlab_submission(predictions_cards)
 
 # (3) Write to csv
-forecast_date <- state_preds[["forecast_date"]][1] # Output of format_predictions_cards_for_reichlab_submission guarantees they will all be the same.
+forecasted_date <- state_preds[["forecast_date"]][1] # Output of format_predictions_cards_for_reichlab_submission guarantees they will all be the same.
 
 
 
@@ -48,7 +52,7 @@ forecaster <- "zyzzyva_covidcast"
 predictions_cards <- list()
 for(ahead in aheads){
   path_to_prediction_card <- file.path(path_to_production_run_output,
-                                       data_date,ahead,response_cty,geo_type,
+                                       forecast_date,ahead,response_cty,geo_type,
                                        incidence_period,n_locations,forecaster,
                                        "out.RDS")
   prediction_card <- readRDS(path_to_prediction_card)
@@ -58,7 +62,7 @@ for(ahead in aheads){
 # (2) Reformat data
 county_preds <- format_predictions_cards_for_reichlab_submission(predictions_cards, is_case=TRUE)
 
-out_file_name <- paste0(forecast_date, "-CMU-TimeSeries",".csv")
+out_file_name <- paste0(forecasted_date, "-CMU-TimeSeries",".csv")
 
 log_info(sprintf("Writing to file %s",out_file_name))
 
