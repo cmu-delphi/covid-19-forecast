@@ -14,7 +14,6 @@
 #' @importFrom stats pnorm
 #' @importFrom optimization optim_sa
 #'
-#' @examples
 Mean.fun <- function(L, At, beta, alpha, mu, sigma, M, DC, before_pan) {
   Beta <- beta + alpha * stats::pnorm(M[1:L], mu, sigma)
   BetaSum <- cumsum(c(0, Beta))
@@ -35,13 +34,12 @@ Mean.fun <- function(L, At, beta, alpha, mu, sigma, M, DC, before_pan) {
 
 #' Hellinger loss function
 #'
-#' @param y
-#' @param yhat
+#' @param y observed response
+#' @param yhat fitted response
 #'
-#' @return
+#' @return Hellinger loss
 #'
 #'
-#' @examples
 Loss <- function(y, yhat) {
   return(mean((sqrt(y) - sqrt(yhat))^2))
 }
@@ -62,7 +60,6 @@ Loss <- function(y, yhat) {
 #' @return best parameters found by simulated annealing.
 #'
 #'
-#' @examples
 fit_optim <- function(param, DC, y, M, L, before_pan, lower, upper, ...) {
   Loss.wrap <- function(x) {
     yhat <- Mean.fun(L, x[1], x[2], x[3], x[4], x[5], M, DC, before_pan)

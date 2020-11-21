@@ -15,12 +15,14 @@
 #' @return a forecaster that works with evalcast.
 #'
 #' @examples
-#' signals <- tibble::tibble(data_source = c("jhu-csse","safegraph"),
-#' signal = c("deaths_incidence_num","completely_home_prop"),
-#' start_day = c("2020-03-08", "2020-03-01"))
+#' signals <- tibble::tibble(
+#'   data_source = c("jhu-csse", "safegraph"),
+#'   signal = c("deaths_incidence_num", "completely_home_prop"),
+#'   start_day = c("2020-03-08", "2020-03-01")
+#' )
 #'
-#' arma_forecaster <- Armadillo_forecaster(
-#'   before_pan = T,
+#' arma_forecaster <- armadillo_forecaster(
+#'   before_pan = TRUE,
 #'   mob_shift = 1,
 #'   mob_fun = "min",
 #'   DC = NULL,
@@ -33,7 +35,7 @@
 #'   t0 = 30000, r = 0.95, nlimit = 2000
 #' )
 #'
-#' res_armadillo <- get_predictions(arma_forecaster,
+#' res_armadillo <- evalcast::get_predictions(arma_forecaster,
 #'   name_of_forecaster = "armadillo",
 #'   signals,
 #'   forecast_dates = "2020-07-20",
@@ -43,12 +45,10 @@
 #'   geo_values = "*"
 #' )
 #'
-#' eva <- evaluate_predictions(res_armadillo)
-#'
-#'
-#'
+#' eva <- evalcast::evaluate_predictions(res_armadillo)
+#' @import evalcast
 #' @export
-Armadillo_forecaster <- function(before_pan = TRUE,
+armadillo_forecaster <- function(before_pan = TRUE,
                                  mob_shift = 0,
                                  mob_fun = "min",
                                  DC = NULL,
@@ -66,7 +66,7 @@ Armadillo_forecaster <- function(before_pan = TRUE,
            ahead,
            geo_type,
            ...) {
-    Armadillo_forecaster_raw(df,
+    armadillo_forecaster_raw(df,
       forecast_date,
       signals,
       incidence_period,
@@ -87,22 +87,22 @@ Armadillo_forecaster <- function(before_pan = TRUE,
 #' Raw forecaster
 #'
 #' @param df dataframe returned by covidcast.
-#' @param forecast_date
+#' @param forecast_date forecast date, could be a string like "2020-07-01" or parsed date-times in lubridate.
 #' @param signals signal specifying response variable and safegraph mobility variables.
 #' @param incidence_period this forecaster only works with epiweek now.
-#' @param ahead
+#' @param ahead how many epiweeks ahead to predict.
 #' @param geo_type this forecaster only works with state geo level.
-#' @param before_pan
-#' @param mob_shift
-#' @param mob_fun
-#' @param DC
-#' @param initial_fun
-#' @param initial_val
-#' @param lower
-#' @param upper
-#' @param ...
+#' @param before_pan before_pan if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.
+#' @param mob_shift mob_shift the number of epiweek that mobility variable is shifted backwards.
+#' @param mob_fun mob_fun the function applied to mobility variables, min, mean, or max.
+#' @param DC DC death delay curve, numerical vector. If NULL, a gamma distribution with scale 3.64, shape 6.28 is used.
+#' @param initial_fun initial_fun function to initialize the normalized parameter At. It is a function of the sum of death incid
+#' @param initial_val initial_val initialized values for other model parameters, beta, alpha, mu, sigma.
+#' @param lower lower lower bound for parameters (At, beta, alpha, mu, sigma).
+#' @param upper upper upper bound for parameters (At, beta, alpha, mu, sigma).
+#' @param ... ... control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...
 #'
-#' @return
+#' @return point forecasts
 #'
 #' @importFrom lubridate ymd
 #' @importFrom magrittr %>%
@@ -111,10 +111,10 @@ Armadillo_forecaster <- function(before_pan = TRUE,
 #' @importFrom stats setNames
 #' @importFrom tibble tibble
 #' @importFrom rlang .data
+#' @importFrom utils tail
 #' @export
 #'
-#' @examples
-Armadillo_forecaster_raw <- function(df,
+armadillo_forecaster_raw <- function(df,
                                      forecast_date,
                                      signals,
                                      incidence_period = c("epiweek"),
@@ -272,7 +272,7 @@ Armadillo_forecaster_raw <- function(df,
       if (length(M_ahead) > L + max(ahead)) {
         M_ahead <- M_ahead[1:(L + max(ahead))]
       } else if (length(M_ahead) < L + max(ahead)) {
-        M_ahead <- c(M_ahead, rep(tail(AA[i, ], 1), L + max(ahead) - length(M_ahead)))
+        M_ahead <- c(M_ahead, rep(utils::tail(AA[i, ], 1), L + max(ahead) - length(M_ahead)))
       }
     }
 

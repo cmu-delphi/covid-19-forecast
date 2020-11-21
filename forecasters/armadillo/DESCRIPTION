@@ -1,5 +1,5 @@
 Package: armadillo
-Title: What the Package Does (One Line, Title Case)
+Title: Armadillo forecaster (Larry and Valerie's mobility model)
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "First",
@@ -7,8 +7,20 @@ Authors@R:
            role = c("aut", "cre"),
            email = "first.last@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Armadillo forecaster implements Larry and Valerie's mobility model. It works with the package evalcast. Now this forecaster only returns point forecasts, no quantile forecasts. 
 License: What license it uses
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
+Imports: 
+  lubridate,
+  magrittr,
+  dplyr,
+  stats,
+  tibble,
+  rlang,
+  optimization,
+  evalcast,
+  utils
+Suggests: 
+    testthat (>= 2.1.0)
