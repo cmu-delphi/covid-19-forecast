@@ -15,8 +15,7 @@ mob_trans <- function(x, incidence_length = 7, mob_fun) {
   x <- x[(n %% incidence_length + 1):n]
   x <- matrix(x, nrow = m, ncol = incidence_length, byrow = TRUE)
   mob_fun <- match.fun(mob_fun)
-  x <- apply(x, 1, mob_fun)
-  return(x)
+  apply(x, 1, mob_fun)
 }
 
 
@@ -38,8 +37,7 @@ mob_trans_shift <- function(x, incidence_length = 7, mob_fun) {
   x <- x[1:(m * incidence_length)]
   x <- matrix(x, nrow = m, ncol = incidence_length, byrow = TRUE)
   mob_fun <- match.fun(mob_fun)
-  x <- apply(x, 1, mob_fun)
-  return(x)
+  apply(x, 1, mob_fun)
 }
 
 #' Transform death incidence numbers from day to sum over a week
@@ -59,6 +57,5 @@ resp_trans <- function(x, incidence_length = 7) {
   m <- floor(n / incidence_length)
   x <- x[(n %% incidence_length + 1):n]
   x <- matrix(x, nrow = m, ncol = incidence_length, byrow = TRUE)
-  x <- apply(x, 1, sum)
-  return(x)
+  apply(x, 1, sum)
 }
