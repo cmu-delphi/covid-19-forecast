@@ -12,7 +12,7 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
-  time_value_flag_date: "2020-11-01"
+  time_value_flag_date: "2020-11-22"
   cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
@@ -44,16 +44,15 @@ Data retrieval
 ```{r, cache=params$cache_data}
 counties <-  suppressMessages(
   covidcast_signal(
-      covidcast_data_source, covidcast_signal,
-
-  geo_type = "county", 
-  ## start_day = "2020-03-01")
-  start_day = outlier_start_date)
+    covidcast_data_source, covidcast_signal,
+    geo_type = "county", 
+    start_day = outlier_start_date)
 )
 ```
 
 
 Data Wrangling notes:
+
 * Only counties with > 30 days' available data will be selected
 * Counties whose maximum daily_confirmed_case <10 are filtered out
 * Top 300 of counties sorted by total cases will be corrected
@@ -103,7 +102,11 @@ county_filtered <- county_filtered %>% group_by(geo_value)  %>% mutate(
   #                    lead(value,n=1L)!=0 & lead(value,n=2L)!=0 
   #                  & lead(value,n=3L)!=0)
   ##flag = flag & (time_value < ymd("2020-11-01") | value < -size_cut)
-  flag = flag & (time_value < ymd(time_value_flag_date) | value < -size_cut)
+  flag = flag & 
+    (time_value < ymd(time_value_flag_date) | value < -size_cut),
+  flag = flag | 
+    (time_value == "2020-11-20" & as.numeric(geo_value) %/% 1000 == 22)
+  #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
   )
 
 county_filtered <-  county_filtered %>% 

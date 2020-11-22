@@ -12,14 +12,14 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-15"
-  time_value_flag_date: "2020-10-24"
-  cache_data: FALSE
+  time_value_flag_date: "2020-11-10"
+  cache_data: TRUE
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
   covidcast_signal: "deaths_incidence_num"
   corrections_db_path: "./data_corrections.sqlite"
   excess_cut: 0
-  write_RDS: TRUE
+  write_RDS: FALSE
 ---
   
 ```{r setup, warning=FALSE, message=FALSE}
