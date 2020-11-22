@@ -12,7 +12,7 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-15"
-  time_value_flag_date: "2020-10-24"
+  time_value_flag_date: "2020-11-09"
   cache_data: FALSE
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
