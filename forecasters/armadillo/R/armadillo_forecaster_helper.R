@@ -6,7 +6,7 @@
 #' @param incidence_length by default, 7. Data in day is transformed to week.
 #' @param mob_fun function applied to mobility variables. Now this package only supports "min", "max" and "mean".
 #'
-#' @return vector of a function of mobility variables in incidence_length.
+#' @return Vector of a function of mobility variables in incidence_length.
 #'
 #'
 mob_trans <- function(x, incidence_length = 7, mob_fun) {
@@ -27,7 +27,7 @@ mob_trans <- function(x, incidence_length = 7, mob_fun) {
 #' @param incidence_length by default, 7. Data in day is transformed to week.
 #' @param mob_fun function applied to mobility variables. Now this package only supports "min", "max" and "mean".
 #'
-#' @return vector of a function of mobility variables in incidence_length.
+#' @return Vector of a function of mobility variables in incidence_length.
 #'
 #'
 #'
@@ -48,7 +48,7 @@ mob_trans_shift <- function(x, incidence_length = 7, mob_fun) {
 #' @param x vector of death incidence numbers in day.
 #' @param incidence_length by default, 7.
 #'
-#' @return vector of sum of death incidence numbers over the incidence length.
+#' @return Vector of sum of death incidence numbers over the incidence length.
 #'
 #'
 #'

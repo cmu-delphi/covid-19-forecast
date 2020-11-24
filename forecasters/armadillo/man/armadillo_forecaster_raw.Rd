@@ -35,7 +35,7 @@ armadillo_forecaster_raw(
 
 \item{geo_type}{this forecaster only works with state geo level.}
 
-\item{before_pan}{before_pan if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.}
+\item{before_pan}{before_pan if TRUE, the parameter out in mobility_model is 0, and the first estimated response must be 0.}
 
 \item{mob_shift}{mob_shift the number of epiweek that mobility variable is shifted backwards.}
 
@@ -54,7 +54,7 @@ armadillo_forecaster_raw(
 \item{...}{... control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...}
 }
 \value{
-point forecasts
+Point forecasts.
 }
 \description{
 Raw forecaster

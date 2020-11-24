@@ -2,7 +2,7 @@
 #'
 #' Armadillo forecaster only gives point forecaster, not quantile forecaster.
 #'
-#' @param before_pan if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.
+#' @param before_pan if TRUE, the parameter out in mobility_model is 0, and the first estimated response must be 0. See details in mobility_model.
 #' @param mob_shift the number of epiweek that mobility variable is shifted backwards.
 #' @param mob_fun the function applied to mobility variables, min, mean, or max.
 #' @param DC death delay curve, numerical vector. If NULL, a gamma distribution with scale 3.64, shape 6.28 is used.
@@ -12,7 +12,7 @@
 #' @param upper upper bound for parameters (At, beta, alpha, mu, sigma).
 #' @param ... control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...
 #'
-#' @return a forecaster that works with evalcast.
+#' @return A forecaster that works with evalcast.
 #'
 #' @examples
 #' signals <- tibble::tibble(
@@ -92,7 +92,7 @@ armadillo_forecaster <- function(before_pan = TRUE,
 #' @param incidence_period this forecaster only works with epiweek now.
 #' @param ahead how many epiweeks ahead to predict.
 #' @param geo_type this forecaster only works with state geo level.
-#' @param before_pan before_pan if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.
+#' @param before_pan before_pan if TRUE, the parameter out in mobility_model is 0, and the first estimated response must be 0.
 #' @param mob_shift mob_shift the number of epiweek that mobility variable is shifted backwards.
 #' @param mob_fun mob_fun the function applied to mobility variables, min, mean, or max.
 #' @param DC DC death delay curve, numerical vector. If NULL, a gamma distribution with scale 3.64, shape 6.28 is used.
@@ -102,7 +102,7 @@ armadillo_forecaster <- function(before_pan = TRUE,
 #' @param upper upper upper bound for parameters (At, beta, alpha, mu, sigma).
 #' @param ... ... control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...
 #'
-#' @return point forecasts
+#' @return Point forecasts.
 #'
 #' @importFrom lubridate ymd
 #' @importFrom magrittr %>%
@@ -277,7 +277,7 @@ armadillo_forecaster_raw <- function(df,
     }
 
     PAR[i, ] <- fit_optim(c(initial_fun(y), initial_val), DC = DC, y = y, M = M, L = L, before_pan = before_pan, lower = lower, upper = upper, ...)
-    PRED[i, ] <- Mean.fun(L + max(ahead), PAR[i, 1], PAR[i, 2], PAR[i, 3], PAR[i, 4], PAR[i, 5], M_ahead, DC_ahead, before_pan)
+    PRED[i, ] <- mobility_model(L + max(ahead), PAR[i, 1], PAR[i, 2], PAR[i, 3], PAR[i, 4], PAR[i, 5], M_ahead, DC_ahead, before_pan)
 
     for (a in ahead) {
       output_df[[a]] <- dplyr::bind_rows(

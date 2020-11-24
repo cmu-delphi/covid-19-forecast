@@ -17,7 +17,7 @@ armadillo_forecaster(
 )
 }
 \arguments{
-\item{before_pan}{if TRUE, the parameter out in Mean.fun is 0, and the first estimated response must be 0.}
+\item{before_pan}{if TRUE, the parameter out in mobility_model is 0, and the first estimated response must be 0. See details in mobility_model.}
 
 \item{mob_shift}{the number of epiweek that mobility variable is shifted backwards.}
 
@@ -36,7 +36,7 @@ armadillo_forecaster(
 \item{...}{control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...}
 }
 \value{
-a forecaster that works with evalcast.
+A forecaster that works with evalcast.
 }
 \description{
 Armadillo forecaster only gives point forecaster, not quantile forecaster.

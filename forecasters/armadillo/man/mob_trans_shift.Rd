@@ -14,7 +14,7 @@ mob_trans_shift(x, incidence_length = 7, mob_fun)
 \item{mob_fun}{function applied to mobility variables. Now this package only supports "min", "max" and "mean".}
 }
 \value{
-vector of a function of mobility variables in incidence_length.
+Vector of a function of mobility variables in incidence_length.
 }
 \description{
 Unlike mob_trans, if the length of the vector is not a multiple of incidence_length, the last a few data points are excluded.

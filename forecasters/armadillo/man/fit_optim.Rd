@@ -7,7 +7,7 @@
 fit_optim(param, DC, y, M, L, before_pan, lower, upper, ...)
 }
 \arguments{
-\item{param}{initial value of arguments in Mean.fun (At, beta, alpha, mu, sigma).}
+\item{param}{initial value of arguments in mobility_model (A, beta, alpha, mu, sigma).}
 
 \item{DC}{death delay curve.}
 
@@ -17,16 +17,16 @@ fit_optim(param, DC, y, M, L, before_pan, lower, upper, ...)
 
 \item{L}{length of observed response series.}
 
-\item{before_pan}{same as argument before_pan in Mean.fun.}
+\item{before_pan}{same as argument before_pan in mobility_model.}
 
-\item{lower}{a vector of lower bounds (At, beta, alpha, mu, sigma).}
+\item{lower}{a vector of lower bounds (A, beta, alpha, mu, sigma).}
 
-\item{upper}{a vector of upper bounds (At, beta, alpha, mu, sigma).}
+\item{upper}{a vector of upper bounds (A, beta, alpha, mu, sigma).}
 
 \item{...}{control arguments in optim_sa, such as initial temperature, temperature reduction in outer loop, ...}
 }
 \value{
-best parameters found by simulated annealing.
+Best parameters found by simulated annealing.
 }
 \description{
 Optimizer using simulated annealing

@@ -12,7 +12,7 @@ resp_trans(x, incidence_length = 7)
 \item{incidence_length}{by default, 7.}
 }
 \value{
-vector of sum of death incidence numbers over the incidence length.
+Vector of sum of death incidence numbers over the incidence length.
 }
 \description{
 A vector of death incidence numbers in day is transformed to sum over the incidence length. By default, sum over a week.
