@@ -32,7 +32,7 @@ Estimated response series.
 This function fits Larry and Valerie's mobility model. Given a mobility variable series, the estimated death incidence series is returned.
 }
 \details{
-Let \eqn{Y_t} be the number of deaths at time \eqn{t}. The model can be described as
+For a single state, let \eqn{Y_t} be the number of deaths at time \eqn{t}. The model can be described as
 \deqn{E[Y_t|M = m] = A\sum_{s=1}^{t}exp{s\beta + \alpha G_s}f(t-s)}
 for \eqn{t > 1}, where \eqn{M} denotes mobility, \eqn{m = m_1,...,m_t} is the mobility in the past. \eqn{f(t-s)} is the death delay curve, i.e. the probability of someone dying at time \eqn{t} if infected at time \eqn{s}. The probit function is used for \eqn{G_s}.
 \deqn{G_s = \sum_{u=1}^{s-1}\Phi((m_u - \mu)/\sigma)}

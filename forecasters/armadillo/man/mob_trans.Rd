@@ -17,5 +17,5 @@ mob_trans(x, incidence_length = 7, mob_fun)
 Vector of a function of mobility variables in incidence_length.
 }
 \description{
-If the length of the vector is not a multiple of incidence_length, the first a few data points are excluded to make the length of the left a multiple.
+This function transforms mobility variables in day to (mean, minimum or maximum over) week If the length of the vector is not a multiple of incidence_length, the first a few data points are excluded to make the length of the left a multiple.
 }
