@@ -1,6 +1,6 @@
 #' Transform mobility variables from day to week
 #'
-#' If the length of the vector is not a multiple of incidence_length, the first a few data points are excluded to make the length of the left a multiple.
+#' This function transforms mobility variables in day to (mean, minimum or maximum over) week If the length of the vector is not a multiple of incidence_length, the first a few data points are excluded to make the length of the left a multiple.
 #'
 #' @param x vector of mobility variables in day.
 #' @param incidence_length by default, 7. Data in day is transformed to week.
