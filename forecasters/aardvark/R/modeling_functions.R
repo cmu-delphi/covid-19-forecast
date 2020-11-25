@@ -89,7 +89,7 @@ make_aardvark_forecaster <- function(ahead = 1,
       pull(location) %>% 
       unique()
     df_align <- aligner(df_train, forecast_date)
-    saveRDS(df_align, file = "~/Desktop/df_align_0.rds")
+    
     locs_ugly_criterion2 <- setdiff(all_locs,
                                     df_align %>% 
                                       filter(!is.na(align_date)) %>% # Ugly because pandemic time hasn't yet begun for this location.
@@ -101,8 +101,11 @@ make_aardvark_forecaster <- function(ahead = 1,
                 filter(!is.na(value)) %>% pull(location) %>% unique()) # Ugly because we don't have the response variable for this location.
     locs_ugly <- unique(c(locs_ugly_criterion1, locs_ugly_criterion2, locs_ugly_criterion3))
     
-    df_train_pretty <- df_train %>% filter(!(location %in% locs_ugly))
+    df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
+    
+    saveRDS(df_train_pretty, file = "~/Desktop/df_train_pretty.rds")
+    saveRDS(df_train_ugly, file = "~/Desktop/df_train_ugly.rds")
     
     # Predict.
     ## (1) Prepare data frame to hold predictions.
