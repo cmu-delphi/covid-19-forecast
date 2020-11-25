@@ -56,10 +56,8 @@ make_aardvark_forecaster <- function(ahead = 1,
     rm(df.tmp); gc()
     df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
     df$value <- as.double(df$value)
-    saveRDS(df, file = "~/Desktop/df_train_0.rds")
-    print(head(df))
-    print(unique(df$variable_name))
     
+    saveRDS(df, file = "~/Desktop/df_train_0.rds")
     stopifnot(c("location", "time_value", "issue") %in% names(df))
 
     # (1) Concentrate on the variables we need.
@@ -505,7 +503,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
   df_final <- left_join(df_empty,df_preds, by = c("location","time_value"))
   
   # Some prints to let Alden know how far along the forecaster is.
-  if (verbose > 0){
+  if ( FALSE ){
     print(paste0("Forecast date: ", forecast_date))
     print(paste0("Strata: ", df_use$strata[1]))
   }
