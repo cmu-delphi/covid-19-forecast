@@ -1,27 +1,3 @@
-#-----------------------------------------------------------------------------#
-# This script contains two types of functions: model fitting functions, and model predicting functions.
-# Model fitting functions take in data and produce a fitted model.
-# A fitted model is a function which can take in data, and produce a (point) prediction.
-# All model fitting functions should take the following arguments as inputs:
-#   Y: numeric vector
-#   X: numeric matrix, with default X = NULL
-#   wts: numeric vector, with default wts = rep(1, length(Y))
-#   offset: numeric vector, with default offset = NULL
-#   intercept: logical, with default intercept = TRUE
-#   locs: character vector, identifying each observation with a location.
-# and possibly
-#   t: numeric vector, identifying each observation with a point in "aligned time".
-#                      To be used in forward-validation.
-#
-# Model predicting functions take in a fitted model, and produce predictions.
-# All model predicting functions should take the following arguments as inputs:
-#   fit: the fitted model used for prediction
-#   X: numeric matrix
-#   offset: numeric vector
-#-----------------------------------------------------------------------------#
-## The aardvark forecaster fits models which are local in time and estimates
-## location-specific effects using shrinkage
-
 make_aardvark_forecaster <- function(ahead = 1, 
                                      incidence_period = c("epiweek", "day"),
                                      geo_type = c("state", "county", "national", "hrr", "msa"),
@@ -37,50 +13,28 @@ make_aardvark_forecaster <- function(ahead = 1,
                                      bootstrapper, B = 1000,
                                      aligner = NULL,
                                      verbose = 1){
-  # Inputs:
-  # 
-  #   bandwidth, degree: numeric, the parameters for a local polynomial fit.
-  #   ahead: numeric, how many periods ahead to predict.
-  #   incidence_period: string, one of "epiweek" or "day"
-  #   backfill_buffer: numeric, never use training responses for which issue_date - time_value < backfill_buffer
-  #   response: string, the name of the variable you would like to treat as response.
-  #   imputer: a function to perform smoothing/imputation of our response, to improve training.
-  #            the default NULL means we train on the raw response.
-  #   modeler: a named list of length two, with elements fitter and predictor.
-  #            modeler$fitter: a function to perform model fitting. 
-  #            modeler$predicter: a function to perform prediction.
-  #   bootstrapper: a function used to resample our residuals, to form a distributional estimate.
-  #   B: number of resamples to take when doing Monte Carlo to form distributional estimate.
-  #   features: a data frame, with columns
-  #       variable_name: character, the names of the variables to use as features
-  #       type: character, the type of the variable. "n" for numeric, "f" for factor.
-  #       lag: numeric, how many periods in the past to use for the feature.
-  #       offset: logical, whether or not to treat this feature as an offset.
-  #       main_effect: logical, whether or not to include a main (global) effect for this feature.
-  #       interaction: character, indicating which variable this should be interacted with. NA implies no interactions.
-  #   intercept: logical, indicating whether or not we want to add a (location-specific) intercept
-  #   aligner: a function, used to compute aligned time.
-  #            It must take exactly the form of those functions given in alignment_functions.R.
-  #   verbose: integer, one of 0, 1, 2, or >2. Progressively more printing during forecasting.
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
                                               incidence_period, ahead, geo_type){
-    # Inputs:
-    #  df: data frame with columns "data_source", "signal", "location", "time_value", 
-    #                              "issue", "lag", "value", "stderr", and "sample_size"
-    #
-    #  forecast_date: the date on which forecasts will be made
-    #    about some period ("epiweek" or "day").  Forecaster must only use data that
-    #    would have been issued on or before forecast_date.
+    
+    stopifnot(names(features) == c("variable_name",
+                                   "type", 
+                                   "lag",
+                                   "offset",
+                                   "main_effect",
+                                   "impute")
+    )
+    stopifnot(names(modeler) == c("fitter", "predicter"))
+    stopifnot(is.function(aligner))
 
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
     # Manipulate evalcast df to the wide format previously used during evalforecast era
     # This is a really hacky way to navigate the issue while GitHub issue #269 is pending
-    if ( nrow(unique(df %>% select(data_source,signal,location,time_value))) < nrow(df) ){
+    if ( nrow(unique(df %>% select(data_source, signal, location, time_value))) < nrow(df) ){
       min_issue <- min(df$issue, na.rm = TRUE)
       df.tmp <- df %>% 
         mutate(issue = replace_na(issue, min_issue - 1)) %>%
@@ -91,32 +45,22 @@ make_aardvark_forecaster <- function(ahead = 1,
     }else{
       df.tmp <- df
     }
-    match.string.1 <- with(df.tmp, paste0(data_source,"-",signal,location,time_value))
+    match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
     df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), 
                                                        covidcast::state_census$STATE)]
     df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) %>%
       covidcast::aggregate_signals(format = "wide")
-    match.string.2 <- with(df, paste0(variable_name,location,time_value))
+    match.string.2 <- with(df, paste0(variable_name, location, time_value))
     names(df)[which(substr(names(df),1,5) == "value")] <- "value"
     df$issue <- df.tmp$issue[match(match.string.2,match.string.1)]
     rm(df.tmp); gc()
-    df <- df %>% select(location,geo_value,variable_name,value,time_value,issue)
+    df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
     df$value <- as.double(df$value)
-    
-    saveRDS(df, file = "~/Desktop/df.rds")
+    saveRDS(df, file = "~/Desktop/df_train_0.rds")
     print(head(df))
     print(unique(df$variable_name))
     
     stopifnot(c("location", "time_value", "issue") %in% names(df))
-    stopifnot(names(features) == c("variable_name",
-                                   "type", 
-                                   "lag",
-                                   "offset",
-                                   "main_effect",
-                                   "impute")
-    )
-    stopifnot(names(modeler) == c("fitter","predicter"))
-    stopifnot(is.function(aligner))
 
     # (1) Concentrate on the variables we need.
 
@@ -131,13 +75,12 @@ make_aardvark_forecaster <- function(ahead = 1,
                                  (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
     df_train <- df_train %>% select(-issue)
+    
+    saveRDS(df_train, file = "~/Desktop/df_train_1.rds")
 
     # Preprocess.
     
     ## (0) Stratification
-    ##     "Pretty" locations are locations where we believe our model will be useful.
-    ##     "Ugly" locations are locations where we believe a different model will be useful,
-    ##     and currently we just use a placeholder.
     all_locs <- df_train %>% pull(location) %>% unique
     locs_ugly_criterion1 <- df_train %>% 
       filter(variable_name == response) %>% group_by(location) %>% 
@@ -146,6 +89,7 @@ make_aardvark_forecaster <- function(ahead = 1,
       pull(location) %>% 
       unique()
     df_align <- aligner(df_train, forecast_date)
+    saveRDS(df_align, file = "~/Desktop/df_align_0.rds")
     locs_ugly_criterion2 <- setdiff(all_locs,
                                     df_align %>% 
                                       filter(!is.na(align_date)) %>% # Ugly because pandemic time hasn't yet begun for this location.
@@ -181,12 +125,12 @@ make_aardvark_forecaster <- function(ahead = 1,
       summarise(preds = pmax(mean(value, na.rm = T), 0)) %>%
       ungroup()
     df_preds_ugly <- expand_grid(df_point_preds_ugly, probs = covidhub_probs) %>%
-      mutate(quantiles = qnbinom(p = probs, mu = preds, size = .25)) %>%
+      mutate(quantiles = qnbinom(p = probs, mu = preds, size = 0.25)) %>%
       select(-preds)
     non_zero_locs <- filter(df_point_preds_ugly, preds > 0) %>% pull(location) %>% unique()
     df_preds_ugly <- df_preds_ugly %>%
       mutate(quantiles = if_else(
-        probs >= .95 & location %in% non_zero_locs,
+        probs >= 0.95 & location %in% non_zero_locs,
         pmax(quantiles, 2),
         quantiles
       ))
@@ -316,7 +260,7 @@ local_lasso_daily_forecast <- function(df_use,
     ## (A) Compute strata
     df_strata <- stratifier(df_train_use, response)
     
-    ## (C) Augment df_with_lags
+    ## (B) Augment df_with_lags
     df_with_lags <- left_join(df_with_lags, df_align, by = c("location", "time_value")) %>%
       left_join(df_strata, by = "location")
     
@@ -345,7 +289,7 @@ local_lasso_daily_forecast <- function(df_use,
                                               verbose)
     }
     
-    # (6) Prepare output, by joining strata and adding original value of the response
+    # (5) Prepare output, by joining strata and adding original value of the response
     df_point_preds_ii <- bind_rows(df_point_preds_bad, df_point_preds_good) %>%
       left_join(df_use %>% 
                   filter(variable_name == response) %>%
@@ -392,7 +336,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
                                                   features, intercept,
                                                   df_align, modeler,
                                                   verbose = 1){
-  # Returns a data frame with point predictions for each (location,time_value)
+  # Returns a data frame with point predictions for each (location, time_value)
   # pair satisfying location in "good" strata, and 
   #                 time_value in target_period.
   # Inputs:
@@ -520,7 +464,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
     offset_train <- offset[train_indices]
     X_test <- X_train_test[forecast_rows,,drop = F] # Keep a one row matrix as a matrix.
     offset_test <- offset[forecast_rows]
-    
     
     # (VIII) Fit our model
     train_locs <- (YX_use %>% pull(location))[train_indices]
@@ -682,9 +625,7 @@ model_matrix <- function(dat, intercept = TRUE, features = NULL){
 
 model_formula <- function(features, intercept){
   # A function to create a formula with the main effects, interactions, and 
-  # intercepts we want.
-  # Inputs:
-  # -- features, intercept: see above.
+  # intercepts we want
   
   # (1) Create the main effect part of the formula
   main_effect_features <- features %>% 
@@ -701,7 +642,7 @@ model_formula <- function(features, intercept){
     main_effect_chr <- paste0(main_effect_chr, "- 1")
   }
   
-  # (1) Create the interaction part of the formula
+  # (2) Create the interaction part of the formula
   interaction_chr <- NULL
   
   # (3) Combine main effects and interactions
@@ -722,7 +663,6 @@ make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 10
   stopifnot(is.numeric(alpha) & 0 <= alpha & alpha <= 1)
   stopifnot(is.function(build_penalty_factor))
   cv_glmnet <- function(Y, X, wts, offset, intercept, locs, ...){
-    # See top of the script for description re: inputs.
     stopifnot(is.character(locs))
     
     # (1) Penalize interactions, either with locations or otherwise.
