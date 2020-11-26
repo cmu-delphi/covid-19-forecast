@@ -11,8 +11,7 @@ make_aardvark_forecaster <- function(ahead = 1,
                                      imputer = NULL, 
                                      modeler = NULL, 
                                      bootstrapper, B = 1000,
-                                     aligner = NULL,
-                                     verbose = 1){
+                                     aligner = NULL){
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -116,8 +115,7 @@ make_aardvark_forecaster <- function(ahead = 1,
                                                   forecast_date, incidence_period, ahead,
                                                   imputer, stratifier, aligner,
                                                   modeler, bootstrapper, B, covidhub_probs,
-                                                  features, intercept, alignment_variable,
-                                                  verbose = verbose)
+                                                  features, intercept, alignment_variable)
     
     ## (3) Fit model and issue predictions for ugly locations.
     df_point_preds_ugly <- df_train_ugly %>% 
@@ -146,9 +144,6 @@ make_aardvark_forecaster <- function(ahead = 1,
     
     predictions$ahead <- ahead
     
-    if ( verbose > 0 ){
-      print(forecast_date) 
-    }
     return(predictions)
   }
 }
@@ -158,15 +153,13 @@ local_lasso_daily_forecast <- function(df_use,
                                        forecast_date, incidence_period, ahead,
                                        imputer, stratifier, aligner,
                                        modeler, bootstrapper, B, covidhub_probs,
-                                       features, intercept, alignment_variable,
-                                       verbose = 1){
+                                       features, intercept, alignment_variable){
   # Produces a distributional forecast (represented by quantiles) on daily time series data, using 
   # -- local regression (glmnet with weights given by Gaussian kernel) with ridge? penalty on interactions
   #     to obtain the fitted/predicted conditional mean for each location. 
   # -- Monte Carlo to obtain a distribution of residuals for each location.
   # Train_forecast_dates are used exclusively to ensure that distributional forecasts are obtained in
   # a reasonable manner.
-  # Inputs: all inputs are as described in make_local_forecaster_with_shrinkage.
   
   # Use our bootstrapper information to determine our training forecast dates.
   stopifnot(incidence_period == "epiweek") # Currently, we do not support daily forecasting using this function.
@@ -274,8 +267,7 @@ local_lasso_daily_forecast <- function(df_use,
       df_point_preds_bad <- dat_bad %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
                                               forecast_date_ii, incidence_period, ahead,
-                                              features, intercept, df_align, modeler,
-                                              verbose)
+                                              features, intercept, df_align, modeler)
     }
     
     dat_good <- filter(df_with_lags, strata)
@@ -286,8 +278,7 @@ local_lasso_daily_forecast <- function(df_use,
       df_point_preds_good <- dat_good %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
                                               forecast_date_ii, incidence_period, ahead,
-                                              features, intercept, df_align, modeler,
-                                              verbose)
+                                              features, intercept, df_align, modeler)
     }
     
     # (5) Prepare output, by joining strata and adding original value of the response
@@ -335,8 +326,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
                                                   degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
                                                   features, intercept,
-                                                  df_align, modeler,
-                                                  verbose = 1){
+                                                  df_align, modeler){
   # Returns a data frame with point predictions for each (location, time_value)
   # pair satisfying location in "good" strata, and 
   #                 time_value in target_period.
@@ -487,14 +477,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response,
                                                locs = forecast_locs))
     
     preds[[ii]] <- preds_ii
-    # Some prints to let Alden know what the size of training and test sets are.
-    if ( verbose > 1 ){
-      print(paste0("Training X has total number of rows: ", dim(X_train)[1]))
-      print(paste0("Testing X has total number of rows: ", dim(X_test)[1]))
-    }
-    if ( verbose > 2 ){
-      graphics::plot(fit)
-    }
   }
   df_preds <- bind_rows(preds)
   
