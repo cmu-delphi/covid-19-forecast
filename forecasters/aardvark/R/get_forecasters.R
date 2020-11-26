@@ -43,22 +43,17 @@ get_forecasters <- function(response_source = "jhu-csse",
                             response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
                             geo_type = c("state", "county", "national", "hrr", "msa"),
-                            ahead, 
-                            forecast_date){
+                            ahead, forecast_date){
   
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
   response <- paste(response_source, response_signal, sep="-")
   cases <- paste(response_source, "confirmed_incidence_num", sep="-")
-
-  stopifnot("geo_type must be in c('state','county','national')"= geo_type %in% 
-              c("state", "county", "national"))
+  stopifnot(geo_type %in% c("state", "county", "national"))
   
   ## Return NULL forecaster until these functionalities are added
   if ( incidence_period != "epiweek" | geo_type == "national"){
-    return(list(
-      aardvark_forecaster = list(forecaster = NA, type = "standalone")
-      ))
+    return(list(aardvark_forecaster = list(forecaster = NA, type = "standalone")))
   }
   
   # Hyperparameters
@@ -87,12 +82,7 @@ get_forecasters <- function(response_source = "jhu-csse",
   }else{
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
-  features <- features %>% select(variable_name, 
-                                  type, 
-                                  lag, 
-                                  offset, 
-                                  main_effect,
-                                  impute)
+  features <- features %>% select(variable_name, type, lag, offset, main_effect, impute)
 
   # Modeler
   build_penalty_factor <- function(variable_names){

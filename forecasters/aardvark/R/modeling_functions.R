@@ -1,21 +1,15 @@
 make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", "day"),
                                      geo_type = c("state", "county", "national", "hrr", "msa"),
                                      backfill_buffer = 5,
-                                     response = "jhu-csse_deaths_incidence_num", 
-                                     features = NULL, 
-                                     bandwidth = 7, 
-                                     degree = 0, 
+                                     response = "jhu-csse_deaths_incidence_num", features = NULL, 
+                                     bandwidth = 7, degree = 0, 
                                      intercept = FALSE,
-                                     stratifier, 
-                                     imputer = NULL, 
-                                     modeler = NULL, 
-                                     bootstrapper, B = 1000,
-                                     aligner = NULL){
+                                     stratifier, imputer = NULL, modeler = NULL, aligner = NULL
+                                     bootstrapper, B = 1000){
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, 
-                                              ahead, geo_type){
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, ahead, geo_type){
     
     stopifnot(names(features) == c("variable_name","type","lag","offset","main_effect","impute"))
     stopifnot(names(modeler) == c("fitter", "predicter"))
@@ -37,8 +31,7 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
       df.tmp <- df
     }
     match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
-    df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), 
-                                                       covidcast::state_census$STATE)]
+    df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
     df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) %>%
       covidcast::aggregate_signals(format = "wide")
     match.string.2 <- with(df, paste0(variable_name, location, time_value))
@@ -47,12 +40,12 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     rm(df.tmp); gc()
     df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
     df$value <- as.double(df$value)
+    df_train <- df
     
-    saveRDS(df, file = "~/Desktop/df_train_0.rds")
+    saveRDS(df_train, file = "~/Desktop/df_train_0.rds")
     stopifnot(c("location", "time_value", "issue") %in% names(df))
 
     # (1) Concentrate on the variables we need.
-    df_train <- df
     alignment_variables <- environment(aligner)$variables
     df_train <- df_train %>% filter(variable_name %in% c(response, features$variable_name,
                                                          alignment_variables)) %>% distinct()
@@ -64,10 +57,9 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     
     saveRDS(df_train, file = "~/Desktop/df_train_1.rds")
 
-    # Preprocess.
-    ## (0) Stratification
+    # Stratification
     all_locs <- df_train %>% pull(location) %>% unique
-    # Ugly because too few responses to model as a continuous variable.
+    ## Ugly because too few responses to model as a continuous variable.
     locs_ugly_criterion1 <- df_train %>% 
       filter(variable_name == response) %>% group_by(location) %>% 
       summarize(n_response = sum(value, na.rm = T)) %>%
@@ -76,13 +68,12 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
       unique()
     df_align <- aligner(df_train, forecast_date)
     
-    # Ugly because pandemic time hasn't yet begun for this location.
-    locs_ugly_criterion2 <- setdiff(all_locs,
-                                    df_align %>% 
+    ## Ugly because pandemic time hasn't yet begun for this location.
+    locs_ugly_criterion2 <- setdiff(all_locs, df_align %>% 
                                       filter(!is.na(align_date)) %>% 
-                                      pull(location) %>% unique()) 
+                                      pull(location) %>% unique())
     
-    # Ugly because we don't have the response variable for this location.
+    ## Ugly because we don't have the response variable for this location.
     locs_ugly_criterion3 <- setdiff(all_locs, df_train %>%
                                       filter(variable_name == response) %>%
                                       filter(!is.na(value)) %>% pull(location) %>% unique()) 
@@ -612,20 +603,16 @@ make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 10
   #   alpha: numeric between 0 and 1
   #   build_penalty_factor: function, taking as input the names of X and producing output which
   #                         can be passed to cv.glmnet as the penalty.factor argument
-  #   fdev, mnlam: parameters to be passed to glmnet.control().
-  #                See help(glmnet.control) for details.
+  #   fdev, mnlam: parameters to be passed to glmnet.control(). See help(glmnet.control) for details.
   #   n_folds: number of folds to use for cross-validation.
   
-  stopifnot(is.numeric(alpha) & 0 <= alpha & alpha <= 1)
-  stopifnot(is.function(build_penalty_factor))
   cv_glmnet <- function(Y, X, wts, offset, intercept, locs, ...){
     stopifnot(is.character(locs))
     
     # (1) Penalize interactions, either with locations or otherwise.
     penalty_factor <- build_penalty_factor(colnames(X))
     if ( all(penalty_factor == 0) ){
-      # Ad-hoc adjustment --- when nothing is being penalized ---
-      # is to penalize everything equally.
+      # When nothing is being penalized, penalize everything equally.
       penalty_factor <- rep(1, length(penalty_factor))
     }
     
