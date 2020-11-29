@@ -7,10 +7,8 @@
 #'     function is not available for a given set of parameters, an 
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
-#'     
 #' @param response The response variable (\code{geo_type = "state"}), should be 
-#' "jhu-csse_deaths_incidence_num" -- the incident deaths reported by Johns Hopkins 
-#' University) -- assuming no data issues.
+#' "jhu-csse_deaths_incidence_num" -- the incident deaths reported by Johns Hopkins).
 #' @param incidence_period The incidence period ("epiweek" or "day"). This forecaster
 #' currently only supports forecasts at the "epiweek" level.
 #' @param ahead The number of incidence periods ahead to forecast the response.
@@ -26,13 +24,10 @@
 #' @export get_forecasters
 #' @examples 
 #' # Return the Aardvark state death forecaster function for 1 epiweek ahead
-#' library(aardvark)
 #' 
 #' ahead = 1
-#' signals <- tibble::tibble(data_source = "usa-facts",
-#' signal = c("deaths_incidence_num", "confirmed_incidence_num"),
-#' start_day = "2020-03-07"
-#' )
+#' signals <- tibble::tibble(data_source = "usa-facts", signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+#' start_day = "2020-03-07")
 #' my_forecaster <- aardvark::get_forecasters(response_signal = signals$signal[1],
 #'   response_source = signals$data_source[1], 
 #'   ahead = ahead,

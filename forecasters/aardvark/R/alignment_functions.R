@@ -12,7 +12,6 @@
 # --every location at which data has been observed
 # --every date at which data has been observed
 # --every date in the target period, defined by the forecast_date.
-#
 #--------------------------------------------------#
 
 make_days_since_threshold_attained_first_time_aligner <- function(variables, threshold, ahead){
@@ -145,7 +144,6 @@ make_days_since_threshold_crossed_most_recent_time_aligner <- function(variables
       summarise(align_date = ifelse(all(is.na(align_date)), 
                                      NA,
                                      min(align_date,na.rm = T)))
-    
     return(df_align)
   }
 }
