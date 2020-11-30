@@ -47,7 +47,7 @@ get_forecasters <- function(response_source = "jhu-csse",
   stopifnot(geo_type %in% c("state", "county", "national"))
   
   ## Return NULL forecaster until these functionalities are added
-  if ( incidence_period != "epiweek" | geo_type == "national"){
+  if ( incidence_period != "epiweek" | geo_type %in% c("national","hrr","msa") ){
     return(list(aardvark_forecaster = list(forecaster = NA, type = "standalone")))
   }
   
