@@ -22,7 +22,7 @@ make_stratifier_by_n_responses <- function(alpha){
       group_by(location, variable_name) %>%
       summarise(n_response = sum(value)) %>%
       ungroup %>%
-      mutate( strata = (n_response >= quantile(n_response,alpha)) ) %>%
+      mutate( strata = (n_response >= quantile(n_response, alpha)) ) %>%
       select(location, strata)
   }
 }

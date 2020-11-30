@@ -34,12 +34,12 @@
 #'   geo_type = "state",
 #'   forecast_date = forecast_date)[[1]]$forecaster
 
-get_forecasters <- function(response_source = "jhu-csse", 
-                            response_signal = "deaths_incidence_num",
+get_forecasters <- function(response_source = "jhu-csse", response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
                             geo_type = c("state", "county", "national", "hrr", "msa"),
-                            ahead, forecast_date){
+                            ahead, forecast_date, strata_alpha = 0.5){
   
+  data_start_date <- lubridate::ymd("2020-03-07")
   incidence_period <- match.arg(incidence_period)
   geo_type <- match.arg(geo_type)
   response <- paste(response_source, response_signal, sep="-")
@@ -47,17 +47,16 @@ get_forecasters <- function(response_source = "jhu-csse",
   stopifnot(geo_type %in% c("state", "county", "national"))
   
   ## Return NULL forecaster until these functionalities are added
-  if ( incidence_period != "epiweek" | geo_type %in% c("national","hrr","msa") ){
+  if ( incidence_period != "epiweek" | geo_type %in% c("national", "hrr", "msa") ){
     return(list(aardvark_forecaster = list(forecaster = NA, type = "standalone")))
   }
   
   # Hyperparameters
-  data_start_date <- lubridate::ymd("2020-03-07")
   bandwidth <- 7
   degree <- 0
 
   # Modeling pipeline functions to provide forecaster
-  stratifier <- make_stratifier_by_n_responses(alpha = 0.5)
+  stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   imputer <- make_average_imputer(k = 7, align = "center")
   
   alignment_variable <- cases
