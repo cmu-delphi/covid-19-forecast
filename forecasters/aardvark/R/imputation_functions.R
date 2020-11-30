@@ -1,4 +1,4 @@
-make_average_imputer <- function(k, align = "center", first_date = NULL, last_date = NULL, ave = rollmean){
+make_average_imputer <- function(k, align = "right", first_date = NULL, last_date = NULL, ave = rollmean){
   # Closure to make an imputation function.
   # Inputs:
   # -- k: number of days to take an average over

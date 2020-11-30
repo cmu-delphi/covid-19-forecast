@@ -57,7 +57,7 @@ get_forecasters <- function(response_source = "jhu-csse", response_signal = "dea
 
   # Modeling pipeline functions to provide forecaster
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
-  imputer <- make_average_imputer(k = 7, align = "center")
+  imputer <- make_average_imputer(k = 7, align = "right")
   
   alignment_variable <- cases
   threshold <- 500
