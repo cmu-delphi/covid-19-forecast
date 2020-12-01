@@ -1,13 +1,13 @@
-make_average_imputer <- function(k, align = "right", first_date = NULL, last_date = NULL, ave = rollmean){
+make_mean_imputer <- function(k, align = "right", first_date = NULL, last_date = NULL, ave = rollmean){
   # Closure to make an imputation function.
   # Inputs:
-  # -- k: number of days to take an average over
+  # -- k: number of days to take an mean over
   # -- align: one of "left", "right" or "center". See zoo::rollmean for details.
   # -- first_date: Date object, the first date on which we should see variables.
   # -- last_date: Date object, the last date on which we should see variables.
 
-  average_imputer <- function(dat){
-    # For each date and location, replace value by an average over the k nearest days.
+  mean_imputer <- function(dat){
+    # For each date and location, replace value by a mean over the k nearest days.
     # Input:
     # -- dat: data frame with columns "location", "date", and "value" 
     #         (and possibly others, which we will ignore)
