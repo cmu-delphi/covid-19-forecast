@@ -69,7 +69,7 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     df_align <- aligner(df_train, forecast_date)
     
     saveRDS(locs_ugly_criterion1, file = "~/Desktop/aardvark_files/locs_ugly_criterion1.rds")
-    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_align_1.rds")
+    saveRDS(df_align, file = "~/Desktop/aardvark_files/df_align.rds")
     
     ## Ugly because pandemic time hasn't yet begun for this location.
     locs_ugly_criterion2 <- setdiff(all_locs, df_align %>% 
@@ -132,6 +132,7 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
+    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), covidcast::state_census$STATE)]
     saveRDS(predictions, file = "~/Desktop/aardvark_files/predictions.rds")
     return(predictions)
   }
