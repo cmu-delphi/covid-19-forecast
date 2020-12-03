@@ -50,7 +50,7 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     saveRDS(alignment_variables, file = "~/Desktop/aardvark_files/alignment_variables.rds")
     df_train <- df_train %>% filter(variable_name %in% c(response, features$variable_name,
                                                          alignment_variables)) %>% distinct()
-    saveRDS(df_train_1, file = "~/Desktop/aardvark_files/df_train_1.rds")
+    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
