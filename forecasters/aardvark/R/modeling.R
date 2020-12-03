@@ -15,6 +15,8 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
+    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
+    
     # Manipulate evalcast df to the wide format previously used during evalforecast era
     # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
     if ( nrow(unique(df %>% select(data_source, signal, location, time_value))) < nrow(df) ){
@@ -66,10 +68,15 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
       unique()
     df_align <- aligner(df_train, forecast_date)
     
+    saveRDS(locs_ugly_criterion1, file = "~/Desktop/aardvark_files/locs_ugly_criterion1.rds")
+    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_align_1.rds")
+    
     ## Ugly because pandemic time hasn't yet begun for this location.
     locs_ugly_criterion2 <- setdiff(all_locs, df_align %>% 
                                       filter(!is.na(align_date)) %>% 
                                       pull(location) %>% unique())
+    
+    saveRDS(locs_ugly_criterion2, file = "~/Desktop/aardvark_files/locs_ugly_criterion2.rds")
     
     ## Ugly because we don't have the response variable for this location.
     locs_ugly_criterion3 <- setdiff(all_locs, df_train %>%
@@ -79,6 +86,7 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
     
+    saveRDS(locs_ugly_criterion3, file = "~/Desktop/aardvark_files/locs_ugly_criterion3.rds")
     saveRDS(df_train_pretty, file = "~/Desktop/aardvark_files/df_train_pretty.rds")
     saveRDS(df_train_ugly, file = "~/Desktop/aardvark_files/df_train_ugly.rds")
     
@@ -86,12 +94,16 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
     ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
     
+    saveRDS(df_all, file = "~/Desktop/aardvark_files/df_all.rds")
+    
     ## (2) Fit model and issue predictions for non-ugly locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
                                                   imputer, stratifier, aligner, modeler, 
                                                   bootstrapper, B, covidhub_probs,
                                                   features, intercept, alignment_variable)
+    
+    saveRDS(df_preds_pretty, file = "~/Desktop/aardvark_files/df_preds_pretty.rds")
     
     ## (3) Fit model and issue predictions for ugly locations.
     df_point_preds_ugly <- df_train_ugly %>% 
@@ -110,13 +122,17 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
         quantiles
       ))
     
+    saveRDS(df_preds_ugly, file = "~/Desktop/aardvark_files/df_preds_ugly.rds")
+    
     ## (4) Combine
     df_preds <- bind_rows(df_preds_ugly, df_preds_pretty)
+    saveRDS(df_preds, file = "~/Desktop/aardvark_files/df_preds.rds")
     
     ## (5) Replace NA and negative predictions by 0.
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
+    saveRDS(predictions, file = "~/Desktop/aardvark_files/predictions.rds")
     return(predictions)
   }
 }
