@@ -47,18 +47,21 @@ make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", 
 
     # (1) Concentrate on the variables we need.
     alignment_variables <- environment(aligner)$variables
+    saveRDS(alignment_variables, file = "~/Desktop/aardvark_files/alignment_variables.rds")
     df_train <- df_train %>% filter(variable_name %in% c(response, features$variable_name,
                                                          alignment_variables)) %>% distinct()
+    saveRDS(df_train_1, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
     df_train <- df_train %>% select(-issue)
     
-    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
+    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
 
     # Stratification
     all_locs <- df_train %>% pull(location) %>% unique
+    saveRDS(all_locs, file = "~/Desktop/aardvark_files/all_locs.rds")
     ## Ugly because too few responses to model as a continuous variable.
     locs_ugly_criterion1 <- df_train %>% 
       filter(variable_name == response) %>% group_by(location) %>% 
