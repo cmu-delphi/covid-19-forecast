@@ -1,4 +1,4 @@
-#' Get the Aardvark forecaster
+#' Get the aardvark forecaster
 #'
 #' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters

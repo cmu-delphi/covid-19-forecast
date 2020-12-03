@@ -9,8 +9,8 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
   # -- ave: a function which takes as inputs x and w, and computes a weighted average.
   # -- bandwidth: determines the weights for the weighted average function.
 
-  by_location_gaussian_bootstrap_weekly <- function(B, df_point_preds,
-                                                   forecast_date, incidence_period, ahead){
+  by_location_gaussian_bootstrap_weekly <- function(B, df_point_preds, forecast_date,
+                                                    incidence_period, ahead){
     # First, compute one scale parameter per location, by taking weighted average
     # of squared residuals.
     # Second, resample squared residuals using a separate Gaussian bootstrap **for each location**.
@@ -35,12 +35,10 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
       filter(!is.na(original_value)) %>%
       mutate(resids = original_value - preds,
              weights = tricube( as.numeric(forecast_date - time_value) / bandwidth)) %>%
-      select(-c(original_value,preds)) %>% # don't need these to compute variance
+      select(-c(original_value, preds)) %>% # don't need these to compute variance
       group_by(location) %>%
       arrange(time_value) %>%
-      mutate(resids = rollsum(resids, 7,
-                              fill = NA,
-                              align = "right"))
+      mutate(resids = rollsum(resids, 7, fill = NA, align = "right"))
 
     df_vars_empty <- data.frame(location = unique(df_point_preds$location))
     df_vars <- df_resids %>%
@@ -54,7 +52,7 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
     df_distribution <- left_join(point_preds, df_vars, by = "location")
     warning(paste0("A total of ", sum(is.na(df_vars$scale)), " locations have no validation set.
                    Imputing mean for standard deviation."))
-    df_distribution <- df_distribution %>% mutate(scale = if_else(is.na(scale),abs(preds),scale))
+    df_distribution <- df_distribution %>% mutate(scale = if_else(is.na(scale), abs(preds),scale))
 
     # (4) Draw replicates from a Gaussian distribution with given scale and mean.
     preds_vec <- df_distribution$preds
@@ -69,9 +67,8 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
     colnames(replicates) <- paste0("replicate_", 1:B)
 
     # (5) Prepare output
-    bootstrap_preds <- bind_cols(df_distribution,replicates) %>%
-      select(location,time_value,starts_with("replicate_"))
-
+    bootstrap_preds <- bind_cols(df_distribution, replicates) %>%
+      select(location, time_value, starts_with("replicate_"))
     return(bootstrap_preds)
   }
 }
