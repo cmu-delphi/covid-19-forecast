@@ -17,23 +17,11 @@
 #'     deprecated. Unavailable forecasters are marked as 
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
-#' @examples 
-#' # Return the aardvark death forecaster function (using usa-facts data)
-#' # for 1 epiweek ahead
-#' 
-#' signals <- tibble::tibble(data_source = "usa-facts",
-#' signal = c("deaths_incidence_num", "confirmed_incidence_num"),
-#' start_day = "2020-03-07")
-#' my_forecaster <- aardvark::get_forecasters(response_signal = signals$signal[1],
-#'   response_source = signals$data_source[1], 
-#'   ahead = 1)[[1]]$forecaster
 
-get_forecasters <- function(response_source = "jhu-csse", response_signal = "deaths_incidence_num",
-                            ahead, strata_alpha = 0.5){
+get_forecasters <- function(signals, ahead, strata_alpha = 0.5){
   
-  data_start_date <- lubridate::ymd("2020-03-07")
-  response <- paste(response_source, response_signal, sep="-")
-  cases <- paste(response_source, "confirmed_incidence_num", sep="-")
+  response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
+  cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
 
   # Hyperparameters
   bandwidth <- 7
