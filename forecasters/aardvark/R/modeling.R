@@ -1,5 +1,4 @@
 make_aardvark_forecaster <- function(ahead = 1, incidence_period = c("epiweek", "day"),
-                                     geo_type = c("state", "county", "national", "hrr", "msa"),
                                      backfill_buffer = 5, response = "jhu-csse_deaths_incidence_num", 
                                      features = NULL, bandwidth = 7, degree = 0, intercept = FALSE,
                                      stratifier, imputer = NULL, modeler = NULL, aligner = NULL,

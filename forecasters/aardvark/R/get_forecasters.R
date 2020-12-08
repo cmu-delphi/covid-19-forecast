@@ -31,23 +31,19 @@
 #' my_forecaster <- aardvark::get_forecasters(response_signal = signals$signal[1],
 #'   response_source = signals$data_source[1], 
 #'   ahead = ahead,
-#'   geo_type = "state",
 #'   forecast_date = forecast_date)[[1]]$forecaster
 
 get_forecasters <- function(response_source = "jhu-csse", response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
-                            geo_type = c("state", "county", "national", "hrr", "msa"),
                             ahead, forecast_date, strata_alpha = 0.5){
   
   data_start_date <- lubridate::ymd("2020-03-07")
   incidence_period <- match.arg(incidence_period)
-  geo_type <- match.arg(geo_type)
   response <- paste(response_source, response_signal, sep="-")
   cases <- paste(response_source, "confirmed_incidence_num", sep="-")
-  stopifnot(geo_type %in% c("state", "county", "national"))
   
   ## Return NULL forecaster until these functionalities are added
-  if ( incidence_period != "epiweek" | geo_type %in% c("national", "hrr", "msa") ){
+  if ( incidence_period != "epiweek" ){
     return(list(aardvark_forecaster = list(forecaster = NA, type = "standalone")))
   }
   
@@ -101,8 +97,7 @@ get_forecasters <- function(response_source = "jhu-csse", response_signal = "dea
                                             stratifier = stratifier,
                                             imputer = imputer,
                                             modeler = modeler,
-                                            bootstrapper = bootstrapper,
-                                            geo_type = geo_type)
+                                            bootstrapper = bootstrapper)
 
   ## Return the forecaster in the format expected by evalcast
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
