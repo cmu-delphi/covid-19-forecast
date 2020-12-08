@@ -28,14 +28,8 @@ NULL
 #'     `list(forecaster = NA, type = "standalone")`.
 #' @export get_forecasters
 get_forecasters  <- function(response,
-                             incidence_period=c("epiweek"),
-                             ahead,
-                             forecast_date,
-                             geo_type=c("county", "state", "hrr", "msa"),
+                             geo_type,
                              n_locations=200) {
-
-    incidence_period <- match.arg(incidence_period)
-    geo_type <- match.arg(geo_type)
 
     covidcast_cluster_covariates = list(
         ds.covariate("usa-facts_confirmed_incidence_num",
@@ -65,11 +59,7 @@ get_forecasters  <- function(response,
         impute_last_3_response_covariate = TRUE,
         seed = 2020,
         weeks_back = 4,
-        response = response,
-        ahead = ahead,
-        incidence_period = incidence_period,
-        forecast_date = forecast_date,
-        geo_type = geo_type
+        response = response
     )
 
     ## Currently we only work with "county" or "state" level forecasts
@@ -83,7 +73,6 @@ get_forecasters  <- function(response,
         list(
             zyzzyva_covidcast =
                 list(forecaster=stacked_forecaster(
-                         forecast_date=forecast_date,
                          n_locations=nlocations,
                          modeling_options=modeling_options),
                      type="standalone")

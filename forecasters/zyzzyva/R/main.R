@@ -14,7 +14,20 @@ stacked_forecaster <- function(forecast_date,
                                modeling_options = list(
                                   learner='stratified_linear',
                                   weeks_back=4)) {
-  function(df, forecast_date) {
+  function(df,
+           forecast_date,
+           signals,
+           incidence_period=c("epiweek"),
+           ahead=1,
+           geo_type=c("county", "state")) {
+    incidence_period <- match.arg(incidence_period)
+    geo_type <- match.arg(geo_type)
+
+    modeling_options$ahead <- ahead
+    modeling_options$incidence_period <- incidence_period
+    modeling_options$forecast_date <- forecast_date
+    modeling_options$geo_type <- geo_type
+
     raw_forecaster(
       df,
       forecast_date,
