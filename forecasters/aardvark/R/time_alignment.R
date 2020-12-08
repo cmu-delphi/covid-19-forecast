@@ -55,8 +55,7 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
     target_dates <-  evalcast::get_target_period(forecast_date, "epiweek", ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
-    df_empty <- expand_grid(location = locations,
-                            time_value = dates)
+    df_empty <- expand_grid(location = locations, time_value = dates)
     
     ## (B) Populate the empty data frame.
     df_align <- left_join(df_empty, day0, by = "location") %>%

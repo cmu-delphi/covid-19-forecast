@@ -13,7 +13,6 @@
 #' currently only supports forecasts at the "epiweek" level.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #' For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
-#' @param forecast_date The date of the forecast.
 #' @param geo_type the geographic type (e.g "state" or "county" or
 #'     "national", hrr", or "msa"... but for now only the first two),
 #' @return A list with an element named \code{aardvark_forecaster}, 
@@ -23,7 +22,7 @@
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
 #' @examples 
-#' # Return the Aardvark state death forecaster function for 1 epiweek ahead
+#' # Return the aardvark state death forecaster function for 1 epiweek ahead
 #' 
 #' ahead = 1
 #' signals <- tibble::tibble(data_source = "usa-facts", signal = c("deaths_incidence_num", "confirmed_incidence_num"),
@@ -31,19 +30,22 @@
 #' my_forecaster <- aardvark::get_forecasters(response_signal = signals$signal[1],
 #'   response_source = signals$data_source[1], 
 #'   ahead = ahead,
-#'   forecast_date = forecast_date)[[1]]$forecaster
+#'   geo_type = "state")[[1]]$forecaster
 
 get_forecasters <- function(response_source = "jhu-csse", response_signal = "deaths_incidence_num",
                             incidence_period = c("epiweek", "day"), 
-                            ahead, forecast_date, strata_alpha = 0.5){
+                            geo_type = c("state", "county", "national", "hrr", "msa"),
+                            ahead, strata_alpha = 0.5){
   
   data_start_date <- lubridate::ymd("2020-03-07")
   incidence_period <- match.arg(incidence_period)
+  geo_type <- match.arg(geo_type)
   response <- paste(response_source, response_signal, sep="-")
   cases <- paste(response_source, "confirmed_incidence_num", sep="-")
+  stopifnot(geo_type %in% c("state", "county", "national"))
   
   ## Return NULL forecaster until these functionalities are added
-  if ( incidence_period != "epiweek" ){
+  if ( incidence_period != "epiweek" | geo_type %in% c("national", "hrr", "msa") ){
     return(list(aardvark_forecaster = list(forecaster = NA, type = "standalone")))
   }
   
@@ -88,8 +90,7 @@ get_forecasters <- function(response_source = "jhu-csse", response_signal = "dea
   bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
 
   # The final state death forecaster function to pass to the evalcast evaluator
-  my_forecaster <- make_aardvark_forecaster(ahead = ahead,
-                                            response = response,
+  my_forecaster <- make_aardvark_forecaster(response = response,
                                             features = features,
                                             aligner = aligner,
                                             bandwidth = bandwidth,
