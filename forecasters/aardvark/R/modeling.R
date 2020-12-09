@@ -83,8 +83,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
-    
-    saveRDS(locs_ugly_criterion3, file = "~/Desktop/aardvark_files/locs_ugly_criterion3.rds")
+
     saveRDS(df_train_pretty, file = "~/Desktop/aardvark_files/df_train_pretty.rds")
     saveRDS(df_train_ugly, file = "~/Desktop/aardvark_files/df_train_ugly.rds")
     
