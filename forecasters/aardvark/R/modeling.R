@@ -47,10 +47,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_0.rds")
 
     # (1) Concentrate on the variables we need.
-    alignment_variables <- environment(aligner)$alignment_variable
-    saveRDS(alignment_variables, file = "~/Desktop/aardvark_files/alignment_variables.rds")
-    df_train <- df_train %>% filter(variable_name %in% c(response, features$variable_name,
-                                                         alignment_variables)) %>% distinct()
+    alignment_variable <- environment(aligner)$alignment_variable
+    saveRDS(alignment_variable, file = "~/Desktop/aardvark_files/alignment_variable.rds")
+    df_train <- df_train %>% filter(variable_name %in% 
+                                      c(response, features$variable_name, alignment_variable)) %>% distinct()
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified

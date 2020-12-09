@@ -1,7 +1,7 @@
 #--------------------------------------------------#
 # This script contains aligners: functions used to compute aligned time.
 # Each aligner should take as input:
-#   df_use: a data frame, of the same form as the upstream_df
+#   df_use: a data frame, of the same form as the upstream df
 #   forecast_date: a canonical parameter used by the evaluator.
 # and output a data frame
 #   df_align: a data frame with columns location, time_value, and align_date.
