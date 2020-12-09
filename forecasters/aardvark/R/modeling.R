@@ -59,33 +59,21 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                  is.na(issue)) # treat grandfathered data as solidified
     
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
+    
+    df_align <- aligner(df_train, forecast_date)
+    saveRDS(df_align, file = "~/Desktop/aardvark_files/df_align.rds")
 
     # Stratification
     all_locs <- df_train %>% pull(location) %>% unique
     saveRDS(all_locs, file = "~/Desktop/aardvark_files/all_locs.rds")
-    ## Ugly because too few responses to model as a continuous variable.
-    locs_ugly_criterion1 <- df_train %>% 
-      filter(variable_name == alignment_variable) %>% group_by(location) %>% 
-      filter(value <= 5) %>% 
-      pull(location) %>% 
-      unique()
-    df_align <- aligner(df_train, forecast_date)
-    
-    saveRDS(locs_ugly_criterion1, file = "~/Desktop/aardvark_files/locs_ugly_criterion1.rds")
-    saveRDS(df_align, file = "~/Desktop/aardvark_files/df_align.rds")
     
     ## Ugly because pandemic time hasn't yet begun for this location.
-    locs_ugly_criterion2 <- setdiff(all_locs, df_align %>% 
-                                      filter(!is.na(align_date)) %>% 
-                                      pull(location) %>% unique())
+    locs_ugly <- setdiff(all_locs, df_align %>% 
+                                     filter(!is.na(align_date)) %>% 
+                                     pull(location) %>% unique())
     
     saveRDS(locs_ugly_criterion2, file = "~/Desktop/aardvark_files/locs_ugly_criterion2.rds")
-    
-    ## Ugly because we don't have the response variable for this location.
-    locs_ugly_criterion3 <- setdiff(all_locs, df_train %>%
-                                      filter(variable_name == response) %>%
-                                      filter(!is.na(value)) %>% pull(location) %>% unique()) 
-    locs_ugly <- unique(c(locs_ugly_criterion1, locs_ugly_criterion2, locs_ugly_criterion3))
+
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
     
