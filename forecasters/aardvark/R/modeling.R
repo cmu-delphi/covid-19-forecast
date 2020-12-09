@@ -1,15 +1,18 @@
-make_aardvark_forecaster <- function(response = "jhu-csse_deaths_incidence_num", features = NULL, 
-                                     backfill_buffer = 5, bandwidth = 7, degree = 0, intercept = FALSE,
-                                     stratifier, imputer = NULL, modeler = NULL, aligner = NULL,
-                                     bootstrapper, B = 1000){
+make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
+                                     bandwidth = 7, degree = 0, intercept = FALSE,
+                                     stratifier = NULL, imputer = NULL, modeler = NULL, 
+                                     aligner = NULL, bootstrapper, B = 1000){
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period, ahead, geo_type){
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
+                                              incidence_period = c("epiweek","day"),
+                                              ahead, geo_type){
     
     stopifnot(names(features) == c("variable_name","type","lag","offset","main_effect","impute"))
     stopifnot(names(modeler) == c("fitter", "predicter"))
     stopifnot(is.function(aligner))
+    incidence_period <- match.arg(incidence_period)
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     

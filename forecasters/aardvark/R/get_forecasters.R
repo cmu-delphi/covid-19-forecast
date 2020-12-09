@@ -1,4 +1,4 @@
-#' Get the aardvark forecaster
+#' Return the aardvark forecaster
 #'
 #' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters
@@ -28,8 +28,8 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
 
   # Modeling pipeline functions to provide forecaster
-  stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   imputer <- make_mean_imputer(k = 7, align = "right")
+  stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   
   alignment_variable <- cases
   threshold <- 500
@@ -70,12 +70,11 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
                                             features = features,
                                             aligner = aligner,
                                             bandwidth = bandwidth,
-                                            degree =  0,
                                             stratifier = stratifier,
                                             imputer = imputer,
                                             modeler = modeler,
                                             bootstrapper = bootstrapper)
 
-  ## Return the forecaster in the format expected by evalcast
+  # Return the forecaster in the format expected by evalcast
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
 }

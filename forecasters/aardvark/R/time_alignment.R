@@ -45,7 +45,7 @@ make_days_since_threshold_attained_first_time_aligner <- function(variables, thr
       ungroup()
     
     # (3) Compute days since variable 
-    #     If the threshold has not yet been reached for a given (location,time_value), 
+    #     If the threshold has not yet been reached for a given (location, time_value), 
     #     we assign a value of NA.
     
     ## (A) Create an empty data frame we wish to populate.
