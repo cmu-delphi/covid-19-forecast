@@ -80,6 +80,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                      pull(location) %>% unique())
     
     saveRDS(locs_ugly, file = "~/Desktop/aardvark_files/locs_ugly.rds")
+    
+    df_train <- df_train %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num") %>%
+      select(-issue)
 
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
