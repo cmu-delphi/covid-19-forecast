@@ -72,7 +72,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                      filter(!is.na(align_date)) %>% 
                                      pull(location) %>% unique())
     
-    saveRDS(locs_ugly_criterion2, file = "~/Desktop/aardvark_files/locs_ugly_criterion2.rds")
+    saveRDS(locs_ugly, file = "~/Desktop/aardvark_files/locs_ugly.rds")
 
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
