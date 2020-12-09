@@ -25,15 +25,13 @@
 get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
-  cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
+  cases <- paste(signals$data_source[1], "confirmed_7dav_incidence_num", sep = "-")
+  cases_cumul <- paste(signals$data_source[1], "confirmed_7dav_cumulative_num", sep = "-")
 
   # Modeling pipeline functions to provide forecaster
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
-  
-  alignment_variable <- cases
-  threshold <- 500
-  aligner <- make_days_since_threshold_attained_first_time_aligner(variables = alignment_variable,
-                                                                   threshold = threshold, 
+  aligner <- make_days_since_threshold_attained_first_time_aligner(alignment_variable = cases_cumul,
+                                                                   threshold = 500, 
                                                                    ahead)
   
   # Build autoregressive case and death features

@@ -14,26 +14,25 @@
 # --every date in the target period, defined by the forecast_date.
 #--------------------------------------------------#
 
-make_days_since_threshold_attained_first_time_aligner <- function(variables, threshold, ahead){
+make_days_since_threshold_attained_first_time_aligner <- function(alignment_variable, threshold, ahead){
   # Closure, so that alignment functions can take standard input.
   # Inputs:
   #   
-  #   variables: what variable to use for alignment?
+  #   alignment_variable: what variable to use for alignment?
   # 
   #   threshold: how large a value of the variable to treat as the threshold for start of the pandemic?
   #  
   #   ahead, incidence_period: canonical parameters used by the evaluator.
-  stopifnot(length(variables) == 1)
+  stopifnot(length(alignment_variable) == 1)
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
     # Compute aligned time as the number of days since a given variable attained a given threshold
     # for the first time.
     # Inputs:
     #   df_use, forecast_date: see top of this script.
-    stopifnot(variables %in% unique(df_use %>% pull(variable_name))) # the variable we plan to align on better be in the data...
+    stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
     
     # (1) Restrict ourselves to the data we need
-    df_alignment_variable <- df_use %>%
-      filter(variable_name == variables)
+    df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
     stopifnot(all(!is.na(df_alignment_variable %>% pull(time_value)))) # alignment variable better be a temporal variable...
     
     # (2) Compute day0 --- the first date the threshold was attained --- for each location
