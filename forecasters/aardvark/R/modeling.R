@@ -56,7 +56,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
                                   is.na(issue)) # treat grandfathered data as solidified
-    df_train <- df_train %>% select(-issue)
     
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
 
