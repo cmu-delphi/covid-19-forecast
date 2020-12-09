@@ -588,10 +588,10 @@ make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 10
     }
     
     # (2) Determine folds for cross validation.
-    unq_locs <- unique(locs)
-    stopifnot(length(unq_locs) >= n_folds) # Need something to hold out.
-    fold_for_each_loc <- rep(1:n_folds, length.out = length(unq_locs))
-    names(fold_for_each_loc) <- unq_locs
+    unique_locs <- unique(locs)
+    stopifnot(length(unique_locs) >= n_folds) # Need something to hold out.
+    fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
+    names(fold_for_each_loc) <- unique_locs
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
     
     # (3) Fit our model.
