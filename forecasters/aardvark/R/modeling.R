@@ -9,12 +9,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                               incidence_period = c("epiweek","day"),
                                               ahead, geo_type){
     
-    stopifnot(names(features) == c("variable_name","type","lag","offset","main_effect"))
-    stopifnot(names(modeler) == c("fitter", "predicter"))
-    stopifnot(is.function(aligner))
     incidence_period <- match.arg(incidence_period)
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
+    
     
     saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
     
@@ -33,10 +31,19 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     }
     match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
     df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
-    df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) %>%
-      covidcast::aggregate_signals(format = "wide")
+    df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
+    # Need to open GitHub issue here
+    # --- covidcast::aggregate_signals gets rid of the cumulative cases signal
+    # --- unless I break the df up like this
+    # --- Maybe because the value column names are different character lengths?
+    df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
+    df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
+    df1 <- df1 %>% covidcast::aggregate_signals(format = "wide")
+    df2 <- df2 %>% covidcast::aggregate_signals(format = "wide")
+    names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
+    names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
+    df <- bind_rows(df1, df2)
     match.string.2 <- with(df, paste0(variable_name, location, time_value))
-    names(df)[which(substr(names(df),1,5) == "value")] <- "value"
     df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
     df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
     df$value <- as.double(df$value)
