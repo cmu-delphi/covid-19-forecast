@@ -519,7 +519,7 @@ model_formula <- function(features, intercept){
                                   feature_name)) %>%
     pull(feature_name)
   main_effect_chr <- paste0(main_effect_features, collapse = " + ")
-  if (intercept) {
+  if ( intercept ){
     main_effect_chr <- paste0(main_effect_chr, "+ location - 1")
   } else{
     main_effect_chr <- paste0(main_effect_chr, "- 1")
