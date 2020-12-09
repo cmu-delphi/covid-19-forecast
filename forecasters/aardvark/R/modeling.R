@@ -90,9 +90,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     # Predict.
     ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
-    
-    saveRDS(df_all, file = "~/Desktop/aardvark_files/df_all.rds")
-    
+
     ## (2) Fit model and issue predictions for non-ugly locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
