@@ -256,7 +256,6 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
   return(preds_df)
 }
 
-#' @importFrom graphics plot
 #' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,
