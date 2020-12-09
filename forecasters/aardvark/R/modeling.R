@@ -54,8 +54,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified
-    df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
-                                  is.na(issue)) # treat grandfathered data as solidified
+    df_train <- filter(df_train, (variable_name != response) |
+                                 (issue >= time_value + backfill_buffer) |
+                                 is.na(issue)) # treat grandfathered data as solidified
     
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
 
@@ -64,9 +65,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     saveRDS(all_locs, file = "~/Desktop/aardvark_files/all_locs.rds")
     ## Ugly because too few responses to model as a continuous variable.
     locs_ugly_criterion1 <- df_train %>% 
-      filter(variable_name == response) %>% group_by(location) %>% 
-      summarize(n_response = sum(value, na.rm = T)) %>%
-      filter(n_response <= 5) %>% 
+      filter(variable_name == alignment_variable) %>% group_by(location) %>% 
+      filter(value <= 5) %>% 
       pull(location) %>% 
       unique()
     df_align <- aligner(df_train, forecast_date)
