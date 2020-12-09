@@ -1,7 +1,7 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, intercept = FALSE,
-                                     stratifier = NULL, imputer = NULL, modeler = NULL, 
-                                     aligner = NULL, bootstrapper, B = 1000){
+                                     stratifier = NULL, modeler = NULL, aligner = NULL, 
+                                     bootstrapper, B = 1000){
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -9,7 +9,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                               incidence_period = c("epiweek","day"),
                                               ahead, geo_type){
     
-    stopifnot(names(features) == c("variable_name","type","lag","offset","main_effect","impute"))
+    stopifnot(names(features) == c("variable_name","type","lag","offset","main_effect"))
     stopifnot(names(modeler) == c("fitter", "predicter"))
     stopifnot(is.function(aligner))
     incidence_period <- match.arg(incidence_period)
@@ -103,7 +103,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     ## (2) Fit model and issue predictions for non-ugly locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
-                                                  imputer, stratifier, aligner, modeler, 
+                                                  stratifier, aligner, modeler, 
                                                   bootstrapper, B, covidhub_probs,
                                                   features, intercept, alignment_variable)
     
@@ -144,7 +144,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
                                        forecast_date, incidence_period, ahead,
-                                       imputer, stratifier, aligner, modeler,
+                                       stratifier, aligner, modeler,
                                        bootstrapper, B, covidhub_probs,
                                        features, intercept, alignment_variable){
   
@@ -188,41 +188,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
     
     df_train_use <- filter(df_train_use, location %in% response_locs & location %in% pretty_locs)
     df_original_response <- df_train_use %>% filter(variable_name == response)
-    
-    ## (C) Impute/smooth
-    if ( !is.null(imputer) ){
-      # (I) Variables to impute.
-      impute_variables <- unique(c(response, features %>% filter(impute) %>% pull(variable_name)))
-      df_impute <- filter(df_train_use, variable_name %in% impute_variables)
-      df_no_impute <- filter(df_train_use, !(variable_name %in% impute_variables))
-      
-      # (II) Make sure all variables are present in the data frame.
-      location_df <- distinct(select(df_impute, c(location)))
-      df_empty <- expand_grid(location_df,
-                              time_value = unique(df_impute$time_value),
-                              variable_name = unique(df_impute$variable_name))
-      df_impute_all <- left_join(df_empty, df_impute, by = c("location", "time_value", "variable_name"))
-      
-      # (III) Impute NA by 0.
-      warning("You are treating NA as 0 in the smoothing step.")
-      df_impute_all_no_na <- df_impute_all %>%
-        mutate(value = if_else(variable_name %in% impute_variables & is.na(value),
-                               replace_na(value,0),
-                               value))
-      
-      # (IV) Smooth out our data.
-      df_imputed <- df_impute_all_no_na %>%
-        group_by(variable_name) %>%
-        rename(date = time_value) %>% # adopt our old convention
-        group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% # impute
-        rename(original_value = value, value = imputed_value, time_value = date) %>%
-        ungroup() # go back to the new convention
-      
-      # (V) Add back in variables which were not supposed to be imputed
-      df_train_use <- bind_rows(df_imputed, df_no_impute)
-    } else{
-      df_train_use <- df_train_use %>% mutate(original_value = value)
-    }
+    df_train_use <- df_train_use %>% mutate(original_value = value)
     
     # (2) Add lagged variables as additional features
     #     and add rows for all dates (including training period dates and target period dates)

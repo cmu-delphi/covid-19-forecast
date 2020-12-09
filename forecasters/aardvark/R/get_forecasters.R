@@ -28,7 +28,6 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
 
   # Modeling pipeline functions to provide forecaster
-  imputer <- make_mean_imputer(k = 7, align = "right")
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   
   alignment_variable <- cases
@@ -41,8 +40,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), 
                      type = rep("n", 6),
                      offset = rep(F, 6), 
-                     main_effect = rep(T, 6), 
-                     impute = rep(T, 6)
+                     main_effect = rep(T, 6)
                      )
   
   if ( ahead == 1 ){
@@ -50,7 +48,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   }else{
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
-  features <- features %>% select(variable_name, type, lag, offset, main_effect, impute)
+  features <- features %>% select(variable_name, type, lag, offset, main_effect)
 
   # Modeler
   build_penalty_factor <- function(variable_names){
@@ -71,7 +69,6 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
                                             aligner = aligner,
                                             bandwidth = bandwidth,
                                             stratifier = stratifier,
-                                            imputer = imputer,
                                             modeler = modeler,
                                             bootstrapper = bootstrapper)
 
