@@ -128,6 +128,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
     predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), covidcast::state_census$STATE)]
+    predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
+      dplyr::mutate(ahead = as.integer(ahead))
     saveRDS(predictions, file = "~/Desktop/aardvark_files/predictions.rds")
     return(predictions)
   }
