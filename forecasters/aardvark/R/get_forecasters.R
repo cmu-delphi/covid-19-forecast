@@ -27,9 +27,13 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_7dav_incidence_num", sep = "-")
   cases_cumul <- paste(signals$data_source[1], "confirmed_cumulative_num", sep = "-")
-
+  
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases_cumul, threshold = 500, ahead)
+  model_fitter <- make_cv_glmnet(alpha = 1)
+  model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
+  modeler <- list(fitter = model_fitter, predicter = model_predicter)
+  bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
   
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
   if ( ahead == 1 ){
@@ -39,11 +43,6 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   }
   features <- features %>% select(variable_name, lag, offset)
 
-  model_fitter <- make_cv_glmnet(alpha = 1)
-  model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
-  modeler <- list(fitter = model_fitter, predicter = model_predicter)
-  bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
-
   my_forecaster <- make_aardvark_forecaster(response = response,
                                             features = features,
                                             aligner = aligner,
@@ -52,6 +51,5 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
                                             modeler = modeler,
                                             bootstrapper = bootstrapper)
 
-  # Return the forecaster in the format expected by evalcast
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
 }
