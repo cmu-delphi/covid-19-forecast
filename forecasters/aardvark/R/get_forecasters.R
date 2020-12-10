@@ -38,8 +38,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   # Build autoregressive case and death features
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), 
                      type = rep("n", 6),
-                     offset = rep(F, 6), 
-                     main_effect = rep(T, 6)
+                     offset = rep(F, 6)
                      )
   
   if ( ahead == 1 ){
