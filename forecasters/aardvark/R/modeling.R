@@ -161,13 +161,9 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
                                                   features, df_align, modeler){
-  # Returns a data frame with point predictions for each (location, time_value)
-  # pair satisfying location in a given stratum
-  #
   # Inputs:
   #   df_use: data used to make forecasts. At minimum, should have the columns
-  #           location, time_value, variable_name, original_value, value,
-  #           and align_date.
+  #           location, time_value, variable_name, original_value, value, and align_date.
   
   # (1) Preamble
   response_name <- paste0(response,"_lag_0")
@@ -202,10 +198,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     na_features <- names(YX %>% select(-response))[nas_by_feature > 0]
     stop("The following features: ", paste0(na_features, collapse = " and "), " have NA values.")
   }
-  
-  # (This check makes sure our stratifier has screened out any variables for which
-  #  all data has happened on an NA date; recall that align_date might be NA.)
-  stopifnot(length(setdiff(locations %>% pull(location), YX %>% pull(location) %>% unique)) == 0)
   
   # (4) Get predicted values.
   ## (A) Get all the dates we would like predicted values for.
@@ -278,10 +270,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   ## This function assembles all the data we will need for training and predicting.
   ## This means **I guarantee** the output of this function should have an entry 
   ## for each (variable_name, location, date) triple in either my training or test period. 
-  ## This guarantee should hold for both temporal and non-temporal variables,
-  ## which we do by treating non-temporal variables like a time series which only ever has
-  ## one value.
-  
+
   df_use <- df_use %>% filter(variable_name %in% features$variable_name)
   
   # (1) Separate temporal and non-temporal variables
