@@ -169,7 +169,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       left_join(df_use %>% 
                   filter(variable_name == response) %>%
                   select(location, time_value, value),
-                by = c("location","time_value")) %>%
+                by = c("location", "time_value")) %>%
       rename(original_value = value)
     
     point_preds_list[[ii]] <- df_point_preds_ii
@@ -351,73 +351,58 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   ## which we do by treating non-temporal variables like a time series which only ever has
   ## one value.
   
+  df_use <- df_use %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
+  
   # (1) Separate temporal and non-temporal variables
   df_temporal <- filter(df_use, !is.na(time_value))
-  df_non_temporal <- filter(df_use, is.na(time_value))
   
   # (2) Get all the locations and dates we need.
   locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location))
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
   target_dates <- seq(target_period$start, target_period$end, by = "days")
   time_values <- unique(c(df_temporal %>% pull(time_value), target_dates))
-  
-  # (3) Build df for non-temporal variables.
-  non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), c(response, features$variable_name))
-  if ( length(non_temporal_vars) > 0 ){
-    df_non_temporal_all <- expand_grid(locations, time_value = time_values,
-                                       variable_name = non_temporal_vars) %>%
-      left_join(df_non_temporal %>% select(-time_value), 
-                by = c("location","variable_name"))
-  } else{
-    df_non_temporal_all <- NULL
-  }
-  
+
   # (4) Build df for temporal variables.
   ## (A) All possible location, date, variable_name triples.
   all_dates <- seq(min(time_values), max(time_values), by = 1)
   temporal_vars <- intersect(unique(df_temporal$variable_name), c(response, features$variable_name))
   stopifnot(length(temporal_vars) > 0)
   df_temporal_all <- expand_grid(locations, time_value = all_dates, variable_name = temporal_vars) %>%
-    left_join(df_temporal, by = c("location","time_value","variable_name"))
+    left_join(df_temporal, by = c("location", "time_value", "variable_name"))
   
   ## (c) Add lags.
   lags <- setdiff( unique(features$lag), NA )
-  if ( !is.null(lags) ){
-    stopifnot(is.numeric(lags))
-    
-    # Lags for all variables.
-    lag_functions <- lags %>% 
-      map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
-    names(lag_functions) <- paste0("lag_", lags)
-    
-    df_temporal_all_with_lags <- df_temporal_all %>%
-      group_by(location, variable_name) %>%
-      arrange(time_value) %>%
-      mutate_at(vars(value),.funs = lag_functions) %>%
-      ungroup() %>%
-      rename(lag_0 = value) %>%
-      pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
-    
-    # Tidy up rows, by just selecting the dates we want.
-    df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
-      filter(time_value %in% time_values)
-    
-    # Tidy up columns
-    df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
-      mutate(variable_name = paste0(variable_name, "_", lag)) %>%
-      select(-lag)
-    
-    # Just select the ones we want. 
-    feature_names <- paste0(features$variable_name, "_lag_", features$lag)
-    response_name <- paste0(response, "_lag_", 0)
-    df_temporal_with_lags <- df_temporal_all_with_lags %>% 
-      filter(variable_name %in% c(feature_names, response_name))
-  } else{
-    df_temporal_with_lags <- df_temporal_all %>%
-      mutate(variable_name = paste0(variable_name, "_lag_0"))
-  }
-  df_with_lags <- bind_rows(df_temporal_with_lags, df_non_temporal_all)
-  return(df_with_lags)
+  stopifnot(is.numeric(lags))
+  
+  # Lags for all variables.
+  lag_functions <- lags %>% 
+    map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
+  names(lag_functions) <- paste0("lag_", lags)
+  
+  df_temporal_all_with_lags <- df_temporal_all %>%
+    group_by(location, variable_name) %>%
+    arrange(time_value) %>%
+    mutate_at(vars(value), .funs = lag_functions) %>%
+    ungroup() %>%
+    rename(lag_0 = value) %>%
+    pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
+  
+  # Tidy up rows, by just selecting the dates we want.
+  df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
+    filter(time_value %in% time_values)
+  
+  # Tidy up columns
+  df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
+    mutate(variable_name = paste0(variable_name, "_", lag)) %>%
+    select(-lag)
+  
+  # Just select the ones we want. 
+  feature_names <- paste0(features$variable_name, "_lag_", features$lag)
+  response_name <- paste0(response, "_lag_", 0)
+  df_temporal_with_lags <- df_temporal_all_with_lags %>% 
+    filter(variable_name %in% c(feature_names, response_name))
+
+  return(df_temporal_with_lags)
 }
 
 #' @importFrom Matrix Matrix
