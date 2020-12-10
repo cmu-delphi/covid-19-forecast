@@ -1,3 +1,4 @@
+#' @import covidcast
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
@@ -399,7 +400,6 @@ make_predict_glmnet <- function(lambda_choice){
   }
 }
 
-#' @importFrom covidcast aggregate_signals
 long_to_wide <- function(df){
   # Manipulate evalcast df to the wide format previously used during evalforecast era
   # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
