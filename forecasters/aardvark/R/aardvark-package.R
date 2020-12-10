@@ -21,6 +21,7 @@
 #' @import zoo
 #' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom 
 #' @importFrom stats quantile rnorm weighted.mean end offset start weights
+#' @importFrom covidcast aggregate_signals state_census
 #' @keywords package
 #' @seealso Relevant links:
 #' \itemize{
