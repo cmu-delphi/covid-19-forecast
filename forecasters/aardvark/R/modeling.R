@@ -4,69 +4,29 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals,
                                               incidence_period = c("epiweek","day"),
                                               ahead, geo_type){
     
     incidence_period <- match.arg(incidence_period)
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
+    alignment_variable <- environment(aligner)$alignment_variable
     
     df_train <- long_to_wide(df)
-    stopifnot(c("location", "time_value", "issue") %in% names(df_train))
-
-    # (1) Concentrate on the variables we need.
-    alignment_variable <- environment(aligner)$alignment_variable
     df_train <- df_train %>% filter(variable_name %in% 
                                       c(response, features$variable_name, alignment_variable)) %>% distinct()
-
-    # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
                                  is.na(issue)) # treat grandfathered data as solidified
-    df_align <- aligner(df_train, forecast_date)
-
-    # Stratification
-    all_locs <- df_train %>% pull(location) %>% unique
-    
-    ## Ugly because pandemic time hasn't yet begun for this location.
-    locs_ugly <- setdiff(all_locs, df_align %>% filter(!is.na(align_date)) %>%
-                           pull(location) %>% unique())
     df_train <- df_train %>% select(-issue)
-    df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
-    df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
     
-    # Predict.
-    ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
-
-    ## (2) Fit model and issue predictions for pretty locations.
-    df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, response, degree, bandwidth,
-                                                  forecast_date, incidence_period, ahead,
-                                                  stratifier, aligner, modeler, 
-                                                  bootstrapper, B, covidhub_probs,
-                                                  features, alignment_variable)
+    df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth,
+                                           forecast_date, incidence_period, ahead,
+                                           stratifier, aligner, modeler, bootstrapper, 
+                                           B, covidhub_probs, features, alignment_variable)
     
-    ## (3) Fit model and issue predictions for ugly locations.
-    df_point_preds_ugly <- df_train_ugly %>% 
-      filter(variable_name == response) %>%
-      group_by(location) %>%
-      summarise(preds = pmax(mean(value, na.rm = T), 0)) %>%
-      ungroup()
-    df_preds_ugly <- expand_grid(df_point_preds_ugly, probs = covidhub_probs) %>%
-      mutate(quantiles = qnbinom(p = probs, mu = preds, size = 0.25)) %>%
-      select(-preds)
-    non_zero_locs <- filter(df_point_preds_ugly, preds > 0) %>% pull(location) %>% unique()
-    df_preds_ugly <- df_preds_ugly %>%
-      mutate(quantiles = if_else(
-        probs >= 0.95 & location %in% non_zero_locs,
-        pmax(quantiles, 2),
-        quantiles
-      ))
-    
-    ## (4) Combine
-    df_preds <- bind_rows(df_preds_ugly, df_preds_pretty)
-    
-    ## (5) Replace NA and negative predictions by 0.
+    ## Replace NA and negative predictions by 0.
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
@@ -448,7 +408,7 @@ make_predict_glmnet <- function(lambda_choice){
   # Closure, allowing us to pass parameters to predict.glmnet.
   # Inputs:
   #   lambda_choice: either "lambda.1se" or "lambda.min"
-  predict_glmnet <- function(fit, X, offset,...){
+  predict_glmnet <- function(fit, X, offset, ...){
     stopifnot(is.character(lambda_choice))
     preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
     return(preds)
