@@ -32,7 +32,8 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_days_since_threshold_attained_first_time_aligner(alignment_variable = cases_cumul,
                                                                    threshold = 500, 
-                                                                   ahead)
+                                                                   ahead,
+                                                                   incidence_period = "epiweek")
   
   # Build autoregressive case and death features
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), 

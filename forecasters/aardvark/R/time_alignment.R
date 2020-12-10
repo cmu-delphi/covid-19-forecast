@@ -14,7 +14,8 @@
 # --every date in the target period, defined by the forecast_date.
 #--------------------------------------------------#
 
-make_days_since_threshold_attained_first_time_aligner <- function(alignment_variable, threshold, ahead){
+make_days_since_threshold_attained_first_time_aligner <- function(alignment_variable, threshold, ahead,
+                                                                  incidence_period = "epiweek"){
   # Closure, so that alignment functions can take standard input.
   # Inputs:
   #   
@@ -51,7 +52,7 @@ make_days_since_threshold_attained_first_time_aligner <- function(alignment_vari
     ##     This makes sure we satisfy the aligner guarantee.
     locations <- unique(df_use %>% pull(location))
     train_dates <- unique(df_use %>% pull(time_value) )
-    target_dates <-  evalcast::get_target_period(forecast_date, "epiweek", ahead) %$%
+    target_dates <-  evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
     df_empty <- expand_grid(location = locations, time_value = dates)
