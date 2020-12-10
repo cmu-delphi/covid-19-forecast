@@ -67,7 +67,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     df_align <- aligner(df_train_use, forecast_date_ii)
     target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
-    pretty_locs <- unique(df_align %>% 
+    more_grim_locs <- unique(df_align %>% 
                             filter(time_value %in% target_dates) %>% # dates in the target period
                             group_by(location) %>%
                             summarise(n_na_align_dates = sum(is.na(align_date))) %>% # number of NA align_dates
@@ -75,13 +75,13 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
                             filter(n_na_align_dates == 0) %>% 
                             pull(location))
     
-    if ( length(response_locs) == 0 | length(pretty_locs) == 0 ){
-      warning(paste0("Training forecast date", forecast_date_ii, "has no pretty locations; moving on."))
+    if ( length(response_locs) == 0 | length(more_grim_locs) == 0 ){
+      warning(paste0("Training forecast date", forecast_date_ii, "has no 'more grim' locations; moving on."))
       point_preds_list[[ii]] <- NULL
       next
     }
     
-    df_train_use <- filter(df_train_use, location %in% response_locs & location %in% pretty_locs)
+    df_train_use <- filter(df_train_use, location %in% response_locs & location %in% more_grim_locs)
     df_original_response <- df_train_use %>% filter(variable_name == response)
     df_train_use <- df_train_use %>% mutate(original_value = value)
     
@@ -102,29 +102,29 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       left_join(df_strata, by = "location")
     
     # (4) Separate predictions for each strata.
-    dat_bad <- filter(df_with_lags, !strata)
-    if ( nrow(dat_bad) == 0 ){
-      warning("No data in bad strata.")
-      df_point_preds_bad <- NULL
+    dat_less_grim <- filter(df_with_lags, !strata)
+    if ( nrow(dat_less_grim) == 0 ){
+      warning("No data in less_grim stratum.")
+      df_point_preds_less_grim <- NULL
     } else{
-      df_point_preds_bad <- dat_bad %>% 
+      df_point_preds_less_grim <- dat_less_grim %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
                                               forecast_date_ii, incidence_period, ahead,
                                               features, df_align, modeler)
     }
     
-    dat_good <- filter(df_with_lags, strata)
-    if ( nrow(dat_good) == 0 ){
-      warnings("No data in good strata.")
-      df_point_preds_good <- NULL
+    dat_more_grim <- filter(df_with_lags, strata)
+    if ( nrow(dat_more_grim) == 0 ){
+      warnings("No data in more_grim stratum.")
+      df_point_preds_more_grim <- NULL
     } else{
-      df_point_preds_good <- dat_good %>% 
+      df_point_preds_more_grim <- dat_more_grim %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_date_ii, 
                                               incidence_period, ahead, features, df_align, modeler)
     }
     
     # (5) Prepare output, by joining strata and adding original value of the response
-    df_point_preds_ii <- bind_rows(df_point_preds_bad, df_point_preds_good) %>%
+    df_point_preds_ii <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
       left_join(df_use %>% 
                   filter(variable_name == response) %>%
                   select(location, time_value, value),
