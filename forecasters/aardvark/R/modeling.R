@@ -1,3 +1,4 @@
+#' @importFrom covidcast state_census
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
@@ -30,7 +31,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
-    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), covidcast::state_census$STATE)]
+    predictions$geo_value <- state_census$ABBR[match(as.numeric(predictions$location), state_census$STATE)]
     predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
       dplyr::mutate(ahead = as.integer(ahead))
     return(predictions)
@@ -218,8 +219,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
     forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
-    
-    # (III) We don't need date any more.
     YX_use <- YX_use %>% select(-date)
     
     # (IV) Add polynomials in t.
@@ -272,8 +271,6 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   ## for each (variable_name, location, date) triple in either my training or test period. 
 
   df_use <- df_use %>% filter(variable_name %in% features$variable_name)
-  
-  # (1) Separate temporal and non-temporal variables
   df_temporal <- filter(df_use, !is.na(time_value))
   
   # (2) Get all the locations and dates we need.
@@ -295,8 +292,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   stopifnot(is.numeric(lags))
   
   # Lags for all variables.
-  lag_functions <- lags %>% 
-    map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
+  lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
   names(lag_functions) <- paste0("lag_", lags)
   
   df_temporal_all_with_lags <- df_temporal_all %>%
@@ -404,6 +400,7 @@ make_predict_glmnet <- function(lambda_choice){
   }
 }
 
+#' @importFrom covidcast aggregate_signals state_census
 long_to_wide <- function(df){
   # Manipulate evalcast df to the wide format previously used during evalforecast era
   # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
@@ -419,15 +416,15 @@ long_to_wide <- function(df){
     df.tmp <- df
   }
   match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
-  df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
+  df$geo_value <- state_census$ABBR[match(as.numeric(df$location), state_census$STATE)]
   df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
   df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
   df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
-  df1 <- df1 %>% covidcast::aggregate_signals(format = "wide")
-  df2 <- df2 %>% covidcast::aggregate_signals(format = "wide")
+  df1 <- df1 %>% aggregate_signals(format = "wide")
+  df2 <- df2 %>% aggregate_signals(format = "wide")
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
   df <- bind_rows(df1, df2)
