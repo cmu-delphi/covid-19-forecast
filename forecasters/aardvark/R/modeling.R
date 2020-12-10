@@ -6,13 +6,11 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
-                                              incidence_period = c("epiweek","day"),
-                                              ahead, geo_type){
+                                              incidence_period = c("epiweek","day"), ahead, geo_type){
     
     incidence_period <- match.arg(incidence_period)
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
-    
     
     saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
     
@@ -33,8 +31,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
     df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
     # Need to open GitHub issue here
-    # --- covidcast::aggregate_signals gets rid of the cumulative cases signal
-    # --- unless I break the df up like this
+    # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
     # --- Maybe because the value column names are different character lengths?
     df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
     df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
@@ -61,8 +58,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified
-    df_train <- filter(df_train, (variable_name != response) |
-                                 (issue >= time_value + backfill_buffer) |
+    df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
                                  is.na(issue)) # treat grandfathered data as solidified
     
     saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
@@ -75,15 +71,13 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     saveRDS(all_locs, file = "~/Desktop/aardvark_files/all_locs.rds")
     
     ## Ugly because pandemic time hasn't yet begun for this location.
-    locs_ugly <- setdiff(all_locs, df_align %>% 
-                                     filter(!is.na(align_date)) %>% 
-                                     pull(location) %>% unique())
+    locs_ugly <- setdiff(all_locs, df_align %>% filter(!is.na(align_date)) %>%
+                           pull(location) %>% unique())
     
     saveRDS(locs_ugly, file = "~/Desktop/aardvark_files/locs_ugly.rds")
     
     df_train <- df_train %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num") %>%
       select(-issue)
-
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
 
@@ -138,11 +132,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
   }
 }
 
-local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
-                                       forecast_date, incidence_period, ahead,
-                                       stratifier, aligner, modeler,
-                                       bootstrapper, B, covidhub_probs,
-                                       features, intercept, alignment_variable){
+local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
+                                       stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
+                                       intercept, alignment_variable){
   
   # Use our bootstrapper information to determine our training forecast dates
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -185,6 +177,8 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
     df_train_use <- filter(df_train_use, location %in% response_locs & location %in% pretty_locs)
     df_original_response <- df_train_use %>% filter(variable_name == response)
     df_train_use <- df_train_use %>% mutate(original_value = value)
+    
+    saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use.rds")
     
     # (2) Add lagged variables as additional features
     #     and add rows for all dates (including training period dates and target period dates)
@@ -239,8 +233,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth,
   
   # Put response back on original scale.
   df_bootstrap_preds <- df_bootstrap_preds %>%
-    pivot_longer(-c(location, time_value), 
-                 names_to = "replicate", values_to = "value")
+    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value")
   
   # If we need to sum over multiple dates...
   df_bootstrap_preds <- df_bootstrap_preds %>%
@@ -307,8 +300,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   nas_by_feature <- colSums(is.na(YX %>% select(-response)))
   if ( any(nas_by_feature > 0) ){
     na_features <- names(YX %>% select(-response))[nas_by_feature > 0]
-    stop("The following features: ", paste0(na_features, collapse = " and "),
-         " have NA values.")
+    stop("The following features: ", paste0(na_features, collapse = " and "), " have NA values.")
   }
   
   # (This check makes sure our stratifier has screened out any variables for which
