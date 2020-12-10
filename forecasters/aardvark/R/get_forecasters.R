@@ -32,13 +32,12 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   aligner <- make_time_aligner(alignment_variable = cases_cumul, threshold = 500, ahead)
   
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), offset = rep(F, 6))
-  
   if ( ahead == 1 ){
     features[["lag"]] <- rep(c(1, 7, 14), times = 2)
   }else{
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
-  features <- features %>% select(variable_name, type, lag, offset, main_effect)
+  features <- features %>% select(variable_name, lag, offset)
 
   model_fitter <- make_cv_glmnet(alpha = 1)
   model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
