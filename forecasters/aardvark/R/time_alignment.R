@@ -14,8 +14,7 @@
 # --every date in the target period, defined by the forecast_date.
 #--------------------------------------------------#
 
-make_days_since_threshold_attained_first_time_aligner <- function(alignment_variable, threshold, ahead,
-                                                                  incidence_period = "epiweek"){
+make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_period = "epiweek"){
   # Closure, so that alignment functions can take standard input.
   # Inputs:
   #   

@@ -28,17 +28,10 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   cases <- paste(signals$data_source[1], "confirmed_7dav_incidence_num", sep = "-")
   cases_cumul <- paste(signals$data_source[1], "confirmed_cumulative_num", sep = "-")
 
-  # Modeling pipeline functions to provide forecaster
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
-  aligner <- make_days_since_threshold_attained_first_time_aligner(alignment_variable = cases_cumul,
-                                                                   threshold = 500, 
-                                                                   ahead,
-                                                                   incidence_period = "epiweek")
+  aligner <- make_time_aligner(alignment_variable = cases_cumul, threshold = 500, ahead)
   
-  # Build autoregressive case and death features
-  features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), 
-                     offset = rep(F, 6)
-                     )
+  features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), offset = rep(F, 6))
   
   if ( ahead == 1 ){
     features[["lag"]] <- rep(c(1, 7, 14), times = 2)
