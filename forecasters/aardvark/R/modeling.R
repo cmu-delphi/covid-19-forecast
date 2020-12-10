@@ -351,7 +351,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   ## which we do by treating non-temporal variables like a time series which only ever has
   ## one value.
   
-  df_use <- df_use %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
+  df_use <- df_use %>% filter(variable_name %in% features$variable_name)
   
   # (1) Separate temporal and non-temporal variables
   df_temporal <- filter(df_use, !is.na(time_value))
@@ -426,10 +426,7 @@ model_matrix <- function(dat, intercept = TRUE, features = NULL){
 }
 
 model_formula <- function(features, intercept){
-  # A function to create a formula with the main effects, interactions, and intercepts
-  # (1) Create the main effect part of the formula
   main_effect_features <- features %>% 
-    filter(main_effect) %>%
     mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
     mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
                                   feature_name)) %>% pull(feature_name)
@@ -440,11 +437,7 @@ model_formula <- function(features, intercept){
     main_effect_chr <- paste0(main_effect_chr, "- 1")
   }
   
-  # (2) Create the interaction part of the formula
-  interaction_chr <- NULL
-  
-  # (3) Combine main effects and interactions
-  formula_chr <- paste0( c("~ ", main_effect_chr, interaction_chr), collapse = " + ")
+  formula_chr <- paste0("~ ", main_effect_chr)
   return(as.formula(formula_chr))
 }
 
