@@ -16,9 +16,11 @@ Description: This package produces the Carnegie Mellon Delphi Lab COVID-19
 License: MIT + file LICENSE
 Encoding: UTF-8
 Suggests: testthat
-Imports: evalcast, lubridate, tidyr, dplyr, utils, purrr, stats,
-        Matrix, glmnet, zoo, magrittr, covidcast
-Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast
+Imports: evalcast, covidcast, lubridate, tidyr, dplyr, utils, purrr, stats,
+         Matrix, glmnet, zoo, magrittr
+Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast,
+cmu-delphi/covidcast/R-packages/covidcast@main
+RemoteType: github
 RoxygenNote: 7.1.1
 NeedsCompilation: no
 Packaged: 2020-10-16 16:47:50 UTC; collin
