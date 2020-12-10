@@ -234,7 +234,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
       feature_name <- paste0(features$variable_name[ii], "_lag_", features$lag[ii])
     }
     stopifnot(feature_name %in% names(YX))
-    
     YX[[feature_name]] <- as.numeric(YX[[feature_name]])
   }
   
@@ -249,32 +248,13 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   #  all data has happened on an NA date; recall that align_date might be NA.)
   stopifnot(length(setdiff(locations %>% pull(location), YX %>% pull(location) %>% unique)) == 0)
   
-  # (3) If we have specified an offset, extract it.
-  offset <- NULL
-  if ( !is.null(features) ){
-    offset_df <- filter(features, offset)
-    feature_df <- filter(features, !offset)
-    stopifnot(nrow(offset_df) <= 1)
-    if ( nrow(offset_df) > 0 ){
-      offset_variable <- paste0(offset_df$variable_name, "_lag_", offset_df$lag)
-      if ( offset_variable %in% names(YX) ){
-        offset <- YX %>% pull(offset_variable)
-        if ( is.null(feature_df) | !(offset_df$variable_name %in% feature_df$variable_name )){
-          # Remove the offset variable, unless it is also a feature.
-          YX <- YX %>% select(-offset_variable)
-        }
-      }
-    }
-  }
-  
   # (4) Get predicted values.
   ## (A) Get all the dates we would like predicted values for.
   target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
-  dates <- unique(df_align %>% 
-                    filter(location %in% locations$location, time_value %in% target_dates) %>%
+  dates <- unique(df_align %>% filter(location %in% locations$location, time_value %in% target_dates) %>%
                     pull(align_date))
-  
+
   ## (B) One fit per time
   preds <- list()
   for ( ii in 1:length(dates) ){
@@ -311,19 +291,17 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     X_train <- X_train_test[train_indices,,drop = F]
     Y_train <- (YX_use %>% pull(response))[train_indices]
     wts_train <- wts[train_indices]
-    offset_train <- offset[train_indices]
     X_test <- X_train_test[forecast_rows,,drop = F] # Keep a one row matrix as a matrix.
-    offset_test <- offset[forecast_rows]
     
     # (VIII) Fit our model
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
-    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, offset = offset_train, 
+    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, offset = NULL, 
                           intercept = intercept, locs = train_locs, t = train_t)
     
     # (IX) Predict using our model.
     preds_ii <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                           preds = modeler$predicter(fit  = fit, X = X_test, offset = offset_test,
+                           preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL,
                                                      locs = forecast_locs))
     preds[[ii]] <- preds_ii
   }

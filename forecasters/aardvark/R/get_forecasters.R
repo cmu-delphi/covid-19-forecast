@@ -31,7 +31,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases_cumul, threshold = 500, ahead)
   
-  features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)), offset = rep(F, 6))
+  features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
   if ( ahead == 1 ){
     features[["lag"]] <- rep(c(1, 7, 14), times = 2)
   }else{
@@ -44,7 +44,6 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
   bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
 
-  # The final state death forecaster function to pass to the evalcast evaluator
   my_forecaster <- make_aardvark_forecaster(response = response,
                                             features = features,
                                             aligner = aligner,
