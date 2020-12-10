@@ -235,13 +235,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     }
     stopifnot(feature_name %in% names(YX))
     
-    # (B) Recast the column type in YX
-    stopifnot(features$type %in% c("n","f"))
-    if ( features$type[ii] == "n" ){
-      YX[[feature_name]] <- as.numeric(YX[[feature_name]])
-    } else if ( features$type[ii] == "f" ){
-      YX[[feature_name]] <- as.factor(YX[[feature_name]])
-    }
+    YX[[feature_name]] <- as.numeric(YX[[feature_name]])
   }
   
   # Do some checks.
