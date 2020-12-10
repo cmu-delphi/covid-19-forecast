@@ -13,7 +13,7 @@
 #' response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #' For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
-#' @param stata_alpha Stratification proportion parameter
+#' @param strata_alpha Stratification proportion parameter
 #' @param bandwidth Kernel bandwidth (in days) for the local weighting kernel
 #' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
