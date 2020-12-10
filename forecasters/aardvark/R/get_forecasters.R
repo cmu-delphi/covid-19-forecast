@@ -49,15 +49,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   }
   features <- features %>% select(variable_name, type, lag, offset, main_effect)
 
-  # Modeler
-  build_penalty_factor <- function(variable_names){
-    penalty_factor <- case_when(
-      grepl("location", variable_names) ~ 1, # Penalize location-specific effects
-      grepl(":", variable_names)        ~ 0, # Don't penalize interactions
-      TRUE                             ~ 0 # Don't penalize intercept
-    )
-  }
-  model_fitter <- make_cv_glmnet(alpha = 1, build_penalty_factor = build_penalty_factor)
+  model_fitter <- make_cv_glmnet(alpha = 1)
   model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
   bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)

@@ -441,7 +441,7 @@ model_formula <- function(features, intercept){
   return(as.formula(formula_chr))
 }
 
-make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 100, n_folds = 10){
+make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
   # Closure, allowing us to pass tuning parameters to cv.glmnet
   # Inputs:
   #   alpha: numeric between 0 and 1
@@ -454,9 +454,13 @@ make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 10
     stopifnot(is.character(locs))
     
     # (1) Penalize interactions, either with locations or otherwise.
-    penalty_factor <- build_penalty_factor(colnames(X))
+    variable_names <- colnames(X)
+    penalty_factor <- case_when(
+      grepl("location", variable_names) ~ 1, # Penalize location-specific effects
+      grepl(":", variable_names)        ~ 0, # Don't penalize interactions
+      TRUE                             ~ 0 # Don't penalize intercept
+    )
     if ( all(penalty_factor == 0) ){
-      # When nothing is being penalized, penalize everything equally.
       penalty_factor <- rep(1, length(penalty_factor))
     }
     
