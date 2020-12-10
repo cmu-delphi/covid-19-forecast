@@ -1,7 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
-                                     bandwidth = 7, degree = 0, intercept = FALSE,
-                                     stratifier = NULL, modeler = NULL, aligner = NULL, 
-                                     bootstrapper, B = 1000){
+                                     bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
+                                     aligner = NULL, bootstrapper, B = 1000){
 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -45,7 +44,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                                   forecast_date, incidence_period, ahead,
                                                   stratifier, aligner, modeler, 
                                                   bootstrapper, B, covidhub_probs,
-                                                  features, intercept, alignment_variable)
+                                                  features, alignment_variable)
     
     ## (3) Fit model and issue predictions for ugly locations.
     df_point_preds_ugly <- df_train_ugly %>% 
@@ -80,7 +79,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
                                        stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
-                                       intercept, alignment_variable){
+                                       alignment_variable){
   
   # Use our bootstrapper information to determine our training forecast dates
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -151,7 +150,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       df_point_preds_bad <- dat_bad %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
                                               forecast_date_ii, incidence_period, ahead,
-                                              features, intercept, df_align, modeler)
+                                              features, df_align, modeler)
     }
     
     dat_good <- filter(df_with_lags, strata)
@@ -161,7 +160,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     } else{
       df_point_preds_good <- dat_good %>% 
         local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_date_ii, 
-                                              incidence_period, ahead, features, intercept, df_align, modeler)
+                                              incidence_period, ahead, features, df_align, modeler)
     }
     
     # (5) Prepare output, by joining strata and adding original value of the response
@@ -201,7 +200,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 #' @importFrom evalcast get_target_period
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
-                                                  features, intercept, df_align, modeler){
+                                                  features, df_align, modeler){
   # Returns a data frame with point predictions for each (location, time_value)
   # pair satisfying location in a given stratum
   #
@@ -287,7 +286,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     
     # (VII) Build training and test sets
     train_indices <- !is.na(YX_use$response) # response is NA only in the target period...
-    X_train_test <- model_matrix(YX_use, intercept, features)
+    X_train_test <- model_matrix(YX_use, features)
     X_train <- X_train_test[train_indices,,drop = F]
     Y_train <- (YX_use %>% pull(response))[train_indices]
     wts_train <- wts[train_indices]
@@ -297,7 +296,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
     fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, offset = NULL, 
-                          intercept = intercept, locs = train_locs, t = train_t)
+                          intercept = FALSE, locs = train_locs, t = train_t)
     
     # (IX) Predict using our model.
     preds_ii <- data.frame(location = forecast_locs, time_value = forecast_time_values,
@@ -378,13 +377,13 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 }
 
 #' @importFrom Matrix Matrix
-model_matrix <- function(dat, intercept = TRUE, features = NULL){
+model_matrix <- function(dat, features = NULL){
   # A wrapper around model.matrix,
   # allowing us to dynamically build the formula we would like to feed to model matrix.
   X_frame <- dat %>% select(-response)
 
   if ( length(unique(X_frame$location)) > 1 ){
-    X_formula <- model_formula(features, intercept)
+    X_formula <- model_formula(features)
     X_train <- Matrix::Matrix( model.matrix(X_formula, X_frame), sparse = T)
   } else{
     if ( all(names(X_frame) == "location") ){
@@ -397,18 +396,13 @@ model_matrix <- function(dat, intercept = TRUE, features = NULL){
   return(X_train)
 }
 
-model_formula <- function(features, intercept){
+model_formula <- function(features){
   main_effect_features <- features %>% 
     mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
     mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
                                   feature_name)) %>% pull(feature_name)
   main_effect_chr <- paste0(main_effect_features, collapse = " + ")
-  if ( intercept ){
-    main_effect_chr <- paste0(main_effect_chr, "+ location - 1")
-  } else{
-    main_effect_chr <- paste0(main_effect_chr, "- 1")
-  }
-  
+  main_effect_chr <- paste0(main_effect_chr, "- 1")
   formula_chr <- paste0("~ ", main_effect_chr)
   return(as.formula(formula_chr))
 }
@@ -422,10 +416,9 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
   #   fdev, mnlam: parameters to be passed to glmnet.control(). See help(glmnet.control) for details.
   #   n_folds: number of folds to use for cross-validation.
   
-  cv_glmnet <- function(Y, X, wts, offset, intercept, locs, ...){
+  cv_glmnet <- function(Y, X, wts, offset, locs, ...){
     stopifnot(is.character(locs))
     
-    # (1) Penalize interactions, either with locations or otherwise.
     variable_names <- colnames(X)
     penalty_factor <- case_when(
       grepl("location", variable_names) ~ 1, # Penalize location-specific effects
@@ -446,7 +439,7 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
     # (3) Fit our model.
     glmnet.control(fdev = fdev, mnlam = mnlam)
     cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
-              penalty.factor = penalty_factor, intercept = intercept,
+              penalty.factor = penalty_factor, intercept = FALSE,
               nfolds = n_folds, foldid = fold_id, type.measure = "mse")
   }
 }
