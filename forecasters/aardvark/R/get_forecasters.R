@@ -21,6 +21,12 @@
 #'     deprecated. Unavailable forecasters are marked as 
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
+#' @examples 
+#' signals <- tibble::tibble(data_source = "jhu-csse",
+#' signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
+#' start_day = "2020-03-07")
+#' ahead <- 1
+#' my_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
 get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
