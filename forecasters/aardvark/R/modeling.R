@@ -94,7 +94,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     ## (1) Prepare data frame to hold predictions.
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
 
-    ## (2) Fit model and issue predictions for non-ugly locations.
+    ## (2) Fit model and issue predictions for pretty locations.
     df_preds_pretty <- local_lasso_daily_forecast(df_train_pretty, response, degree, bandwidth,
                                                   forecast_date, incidence_period, ahead,
                                                   stratifier, aligner, modeler, 
@@ -262,8 +262,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
                                                   forecast_date, incidence_period, ahead,
                                                   features, intercept, df_align, modeler){
   # Returns a data frame with point predictions for each (location, time_value)
-  # pair satisfying location in "good" strata, and 
-  #                 time_value in target_period.
+  # pair satisfying location in a given stratum
+  #
   # Inputs:
   #   df_use: data used to make forecasts. At minimum, should have the columns
   #           location, time_value, variable_name, original_value, value,
@@ -313,8 +313,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   
   # (This check makes sure our stratifier has screened out any variables for which
   #  all data has happened on an NA date; recall that align_date might be NA.)
-  stopifnot(length(setdiff(locations %>% pull(location),
-                           YX %>% pull(location) %>% unique)) == 0)
+  stopifnot(length(setdiff(locations %>% pull(location), YX %>% pull(location) %>% unique)) == 0)
   
   # (3) If we have specified an offset, extract it.
   offset <- NULL
@@ -397,8 +396,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   df_preds <- bind_rows(preds)
   
   # (5) Prepare output
-  df_empty <- expand_grid(locations,time_value = target_dates, strata = df_use$strata[1])
-  df_final <- left_join(df_empty,df_preds, by = c("location", "time_value"))
+  df_empty <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1])
+  df_final <- left_join(df_empty, df_preds, by = c("location", "time_value"))
   return(df_final)
 }
 
@@ -406,9 +405,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
 #' @import purrr
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
   ## This function assembles all the data we will need for training and predicting.
-  ## This means **I guarantee** the output of this function should have 
-  ## an entry for each (variable_name, location, date) triple
-  ## in either my training or test period. 
+  ## This means **I guarantee** the output of this function should have an entry 
+  ## for each (variable_name, location, date) triple in either my training or test period. 
   ## This guarantee should hold for both temporal and non-temporal variables,
   ## which we do by treating non-temporal variables like a time series which only ever has
   ## one value.
@@ -424,11 +422,9 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   time_values <- unique(c(df_temporal %>% pull(time_value), target_dates))
   
   # (3) Build df for non-temporal variables.
-  non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), 
-                                 c(response, features$variable_name))
+  non_temporal_vars <- intersect(unique(df_non_temporal$variable_name), c(response, features$variable_name))
   if ( length(non_temporal_vars) > 0 ){
-    df_non_temporal_all <- expand_grid(locations,
-                                       time_value = time_values,
+    df_non_temporal_all <- expand_grid(locations, time_value = time_values,
                                        variable_name = non_temporal_vars) %>%
       left_join(df_non_temporal %>% select(-time_value), 
                 by = c("location","variable_name"))
@@ -451,8 +447,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
     
     # Lags for all variables.
     lag_functions <- lags %>% 
-      map(function(x) ~ 
-            na.locf(lag(., n = x, default = first(.))))
+      map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
     names(lag_functions) <- paste0("lag_", lags)
     
     df_temporal_all_with_lags <- df_temporal_all %>%
@@ -461,8 +456,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
       mutate_at(vars(value),.funs = lag_functions) %>%
       ungroup() %>%
       rename(lag_0 = value) %>%
-      pivot_longer(contains("lag_"),
-                   names_to = "lag",values_to = "value")
+      pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
     
     # Tidy up rows, by just selecting the dates we want.
     df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
@@ -508,15 +502,12 @@ model_matrix <- function(dat, intercept = TRUE, features = NULL){
 
 model_formula <- function(features, intercept){
   # A function to create a formula with the main effects, interactions, and intercepts
-  
   # (1) Create the main effect part of the formula
   main_effect_features <- features %>% 
     filter(main_effect) %>%
     mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
-    mutate(feature_name = if_else(grepl("-", feature_name), 
-                                  paste0("`", feature_name, "`"),
-                                  feature_name)) %>%
-    pull(feature_name)
+    mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
+                                  feature_name)) %>% pull(feature_name)
   main_effect_chr <- paste0(main_effect_features, collapse = " + ")
   if ( intercept ){
     main_effect_chr <- paste0(main_effect_chr, "+ location - 1")
@@ -562,8 +553,7 @@ make_cv_glmnet <- function(alpha = 1, build_penalty_factor, fdev = 0, mnlam = 10
     glmnet.control(fdev = fdev, mnlam = mnlam)
     cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
               penalty.factor = penalty_factor, intercept = intercept,
-              nfolds = n_folds, foldid = fold_id,
-              type.measure = "mse")
+              nfolds = n_folds, foldid = fold_id, type.measure = "mse")
   }
 }
 
