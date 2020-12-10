@@ -12,46 +12,28 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     
-    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
-    
     df_train <- long_to_wide(df)
-    rm(df); gc()
     stopifnot(c("location", "time_value", "issue") %in% names(df_train))
-    
-    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_0.rds")
 
     # (1) Concentrate on the variables we need.
     alignment_variable <- environment(aligner)$alignment_variable
-    saveRDS(alignment_variable, file = "~/Desktop/aardvark_files/alignment_variable.rds")
     df_train <- df_train %>% filter(variable_name %in% 
                                       c(response, features$variable_name, alignment_variable)) %>% distinct()
-    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_1.rds")
 
     # (2) Don't use any response data that hasn't solidified
     df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
                                  is.na(issue)) # treat grandfathered data as solidified
-    
-    saveRDS(df_train, file = "~/Desktop/aardvark_files/df_train_2.rds")
-    
     df_align <- aligner(df_train, forecast_date)
-    saveRDS(df_align, file = "~/Desktop/aardvark_files/df_align.rds")
 
     # Stratification
     all_locs <- df_train %>% pull(location) %>% unique
-    saveRDS(all_locs, file = "~/Desktop/aardvark_files/all_locs.rds")
     
     ## Ugly because pandemic time hasn't yet begun for this location.
     locs_ugly <- setdiff(all_locs, df_align %>% filter(!is.na(align_date)) %>%
                            pull(location) %>% unique())
-    
-    saveRDS(locs_ugly, file = "~/Desktop/aardvark_files/locs_ugly.rds")
-    
     df_train <- df_train %>% select(-issue)
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
-
-    saveRDS(df_train_pretty, file = "~/Desktop/aardvark_files/df_train_pretty.rds")
-    saveRDS(df_train_ugly, file = "~/Desktop/aardvark_files/df_train_ugly.rds")
     
     # Predict.
     ## (1) Prepare data frame to hold predictions.
@@ -63,8 +45,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                                   stratifier, aligner, modeler, 
                                                   bootstrapper, B, covidhub_probs,
                                                   features, intercept, alignment_variable)
-    
-    saveRDS(df_preds_pretty, file = "~/Desktop/aardvark_files/df_preds_pretty.rds")
     
     ## (3) Fit model and issue predictions for ugly locations.
     df_point_preds_ugly <- df_train_ugly %>% 
@@ -83,11 +63,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
         quantiles
       ))
     
-    saveRDS(df_preds_ugly, file = "~/Desktop/aardvark_files/df_preds_ugly.rds")
-    
     ## (4) Combine
     df_preds <- bind_rows(df_preds_ugly, df_preds_pretty)
-    saveRDS(df_preds, file = "~/Desktop/aardvark_files/df_preds.rds")
     
     ## (5) Replace NA and negative predictions by 0.
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
@@ -96,7 +73,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), covidcast::state_census$STATE)]
     predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
       dplyr::mutate(ahead = as.integer(ahead))
-    saveRDS(predictions, file = "~/Desktop/aardvark_files/predictions.rds")
     return(predictions)
   }
 }
