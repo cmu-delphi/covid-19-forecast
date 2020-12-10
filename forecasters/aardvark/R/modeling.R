@@ -46,8 +46,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     saveRDS(locs_ugly, file = "~/Desktop/aardvark_files/locs_ugly.rds")
     
-    df_train <- df_train %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num") %>%
-      select(-issue)
+    df_train <- df_train %>% select(-issue)
     df_train_pretty <- df_train %>% filter( !(location %in% locs_ugly) )
     df_train_ugly <- df_train %>% filter(location %in% locs_ugly)
 
@@ -127,6 +126,8 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     response_locs <- unique(df_train_use %>% filter(variable_name == response & value > 0) %>% pull(location))
     
     ## (B) Only keep locations for which aligned time is never NA in the target period
+    saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use_0.rds")
+    
     df_align <- aligner(df_train_use, forecast_date_ii)
     target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
@@ -148,7 +149,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     df_original_response <- df_train_use %>% filter(variable_name == response)
     df_train_use <- df_train_use %>% mutate(original_value = value)
     
-    saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use.rds")
+    saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use_1.rds")
     
     # (2) Add lagged variables as additional features
     #     and add rows for all dates (including training period dates and target period dates)
