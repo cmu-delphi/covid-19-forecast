@@ -47,7 +47,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   }else{
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
-  features <- features %>% select(variable_name, lag, offset)
+  features <- features %>% select(variable_name, lag)
 
   my_forecaster <- make_aardvark_forecaster(response = response,
                                             features = features,
