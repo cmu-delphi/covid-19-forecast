@@ -24,5 +24,4 @@ RemoteType: github
 RoxygenNote: 7.1.1
 NeedsCompilation: no
 Packaged: 2020-10-16 16:47:50 UTC; collin
-Author: Alden Green [aut, cre]
 Maintainer: Collin Politsch <capolitsch@cmu.edu>

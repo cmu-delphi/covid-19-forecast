@@ -299,6 +299,41 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   return(df_temporal_with_lags)
 }
 
+#' @import covidcast
+long_to_wide <- function(df){
+  # Manipulate evalcast df to the wide format previously used during evalforecast era
+  # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
+  if ( nrow(unique(df %>% select(data_source, signal, location, time_value))) < nrow(df) ){
+    min_issue <- min(df$issue, na.rm = TRUE)
+    df.tmp <- df %>% 
+      mutate(issue = replace_na(issue, min_issue - 1)) %>%
+      group_by(data_source, signal, location, time_value) %>%
+      top_n(1, wt = issue) %>% # NA only chosen if that's all there is
+      ungroup %>%
+      mutate(issue = na_if(issue, min_issue - 1)) # go back to NA
+  }else{
+    df.tmp <- df
+  }
+  match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
+  df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location),covidcast::state_census$STATE)]
+  df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
+  # Need to open GitHub issue here
+  # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
+  # --- Maybe because the value column names are different character lengths?
+  df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
+  df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
+  df1 <- df1 %>% aggregate_signals(format = "wide")
+  df2 <- df2 %>% aggregate_signals(format = "wide")
+  names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
+  names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
+  df <- bind_rows(df1, df2)
+  match.string.2 <- with(df, paste0(variable_name, location, time_value))
+  df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
+  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
+  df$value <- as.double(df$value)
+  return(df)
+}
+
 #' @importFrom Matrix Matrix
 model_matrix <- function(dat, features = NULL){
   # A wrapper around model.matrix,
@@ -376,39 +411,4 @@ make_predict_glmnet <- function(lambda_choice){
     preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
     return(preds)
   }
-}
-
-#' @import covidcast
-long_to_wide <- function(df){
-  # Manipulate evalcast df to the wide format previously used during evalforecast era
-  # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
-  if ( nrow(unique(df %>% select(data_source, signal, location, time_value))) < nrow(df) ){
-    min_issue <- min(df$issue, na.rm = TRUE)
-    df.tmp <- df %>% 
-      mutate(issue = replace_na(issue, min_issue - 1)) %>%
-      group_by(data_source, signal, location, time_value) %>%
-      top_n(1, wt = issue) %>% # NA only chosen if that's all there is
-      ungroup %>%
-      mutate(issue = na_if(issue, min_issue - 1)) # go back to NA
-  }else{
-    df.tmp <- df
-  }
-  match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
-  df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location),covidcast::state_census$STATE)]
-  df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
-  # Need to open GitHub issue here
-  # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
-  # --- Maybe because the value column names are different character lengths?
-  df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
-  df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
-  df1 <- df1 %>% aggregate_signals(format = "wide")
-  df2 <- df2 %>% aggregate_signals(format = "wide")
-  names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
-  names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
-  df <- bind_rows(df1, df2)
-  match.string.2 <- with(df, paste0(variable_name, location, time_value))
-  df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
-  df$value <- as.double(df$value)
-  return(df)
 }
