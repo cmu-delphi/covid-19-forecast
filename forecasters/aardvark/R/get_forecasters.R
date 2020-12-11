@@ -26,7 +26,7 @@
 #' signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
 #' start_day = "2020-03-07")
 #' ahead <- 1
-#' my_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+#' aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
 get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
@@ -51,9 +51,9 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   my_forecaster <- make_aardvark_forecaster(response = response,
                                             features = features,
                                             aligner = aligner,
-                                            bandwidth = bandwidth,
                                             stratifier = stratifier,
                                             modeler = modeler,
+                                            bandwidth = bandwidth,
                                             bootstrapper = bootstrapper)
 
   return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
