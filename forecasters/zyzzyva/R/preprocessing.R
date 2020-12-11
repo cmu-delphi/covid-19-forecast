@@ -161,34 +161,7 @@ pp.select_dates <- function(base_df,
 pp._get_training_set <- function(lagged_df,
                                 location_info_df,
                                 modeling_options,
-                                forecast_date) {
-  sub_df <- lagged_df
-  
-  # fixme: issue hack!  necessary because "upstream_df" often lacks issue
-  # get recommended dates for target forecast_date. this should be removed once data is 
-  # inputted using an API.
-  sub_df$issue <- lubridate::ymd("2020-01-01")
-  meta_dates <- pp.select_dates(sub_df, forecast_date)
-
-  # fixme: hack to keep hospitalization data due to Rdata only containing
-  # one issue date per reference date. this should be removed once data is 
-  # inputted using an API.
-  if (meta_dates %>%
-      filter(grepl("hospitalizations", variable_name)) %>%
-      nrow > 0) {
-    closest_hosp_ref_date <- sub_df %>%
-      filter(grepl("hospitalizations", variable_name),
-             time_value <= forecast_date) %>%
-      pull(time_value) %>%
-      max
-    meta_dates <- meta_dates %>%
-      mutate(time_value = replace(
-        time_value,
-        grepl("hospitalizations", variable_name),
-        closest_hosp_ref_date
-      ))
-  }
-
+                                forecast_date) { 
   # get response (y)
   target_period_df <-
     evalforecast::get_target_period(forecast_date,
@@ -208,10 +181,8 @@ pp._get_training_set <- function(lagged_df,
     tidyr::pivot_wider(names_from = "variable_name", values_from = "value")
 
   # get original covariates (X)
-  X <- sub_df %>%
+  X <- lagged_df %>%
     select(-geo_value) %>%
-    inner_join(meta_dates,
-               by = c("variable_name", "issue", "time_value")) %>%
     tidyr::pivot_longer(
       -c(geo_value, issue, time_value, variable_name),
       names_to = "lag_names",
@@ -545,9 +516,6 @@ pp.make_train_test <- function(base_df,
                                location_info_df,
                                forecast_date,
                                modeling_options) {
-  print(typeof(base_df))
-  print(length(base_df))
-  print(tibble(base_df))
   # filter to available data as of forecast_date
   filtered_df <- base_df %>%
     filter((is.na(issue) & (time_value <= forecast_date)) |
