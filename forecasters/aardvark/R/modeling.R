@@ -378,6 +378,7 @@ make_predict_glmnet <- function(lambda_choice){
   }
 }
 
+#' @import covidcast
 long_to_wide <- function(df){
   # Manipulate evalcast df to the wide format previously used during evalforecast era
   # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
