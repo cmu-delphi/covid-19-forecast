@@ -15,9 +15,9 @@ response.}
 \item{ahead}{The number of incidence periods ahead to forecast the response.
 For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
 
-\item{bandwidth}{Kernel bandwidth (in days) for the local weighting kernel}
+\item{strata_alpha}{Stratification proportion parameter}
 
-\item{stata_alpha}{Stratification proportion parameter}
+\item{bandwidth}{Kernel bandwidth (in days) for the local weighting kernel}
 }
 \value{
 A list with an element named \code{aardvark_forecaster}, 
@@ -40,5 +40,5 @@ signals <- tibble::tibble(data_source = "jhu-csse",
 signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
 start_day = "2020-03-07")
 ahead <- 1
-my_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 }
