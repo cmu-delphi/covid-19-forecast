@@ -7,7 +7,7 @@
 get_forecasters(signals, ahead, strata_alpha = 0.5, bandwidth = 7)
 }
 \arguments{
-\item{signals}{Tibble with columns \code{data_source} and signal that specifies 
+\item{signals}{Tibble with columns \code{data_source} and signal that specifies
 which variables from the COVIDcast API will be used by forecaster. Each row 
 of signals represents a separate signal, and first row is taken to be the 
 response.}

@@ -32,8 +32,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
-    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), 
-                                                                covidcast::state_census$STATE)]
+    predictions$geo_value <- state_census$ABBR[match(as.numeric(predictions$location),state_census$STATE)]
     predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
       dplyr::mutate(ahead = as.integer(ahead))
     return(predictions)
@@ -393,7 +392,7 @@ long_to_wide <- function(df){
     df.tmp <- df
   }
   match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
-  df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location), covidcast::state_census$STATE)]
+  df$geo_value <- state_census$ABBR[match(as.numeric(df$location),state_census$STATE)]
   df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
