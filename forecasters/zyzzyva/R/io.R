@@ -55,5 +55,5 @@ io.load_location_info <- function(geo_type) {
         -location_name,
       )
   }
-  location_df
+  location_df %>% rename(geo_type=location)
 }

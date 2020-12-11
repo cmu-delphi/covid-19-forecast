@@ -28,8 +28,10 @@ stacked_forecaster <- function(forecast_date,
     modeling_options$forecast_date <- forecast_date
     modeling_options$geo_type <- geo_type
 
+    full_df <- bind_rows(df) %>% mutate(variable_name = paste(data_source, signal, sep="_"))
+
     raw_forecaster(
-      df,
+      full_df,
       forecast_date,
       modeling_options=modeling_options
     )
@@ -47,7 +49,7 @@ raw_forecaster <- function(base_df,
                            forecast_date,
                            modeling_options) {
   set.seed(modeling_options$seed)
-  modeling_options$earliest_data_date <- min(base_df[['reference_date']])
+  modeling_options$earliest_data_date <- min(base_df[['time_value']])
   modeling_options <- ds.set_modeling_defaults(modeling_options)
   location_info_df <- io.load_location_info(modeling_options$geo_type)
   train_test <- pp.make_train_test(base_df,

@@ -183,7 +183,7 @@ ds.set_modeling_defaults <- function(modeling_options) {
   modeling_options <- ds.set_default_list(modeling_options,
                                           MUTUAL_DEFAULTS)
   max_possible_weeks_back <- floor(
-    ((modeling_options$forecast_date
+    (as.numeric(modeling_options$forecast_date
       - modeling_options$earliest_data_date)
     / 7) - modeling_options$ahead + 1)
   if (modeling_options$weeks_back > max_possible_weeks_back) {
