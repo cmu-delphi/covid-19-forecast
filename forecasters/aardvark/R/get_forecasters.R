@@ -7,7 +7,7 @@
 #'     function is not available for a given set of parameters, an 
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
-#' @param signals Tibble with columns \code{data_source} and signal that specifies 
+#' @param signals Tibble with columns \code{data_source} and signal that specifies
 #' which variables from the COVIDcast API will be used by forecaster. Each row 
 #' of signals represents a separate signal, and first row is taken to be the 
 #' response.

@@ -1,4 +1,3 @@
-#' @import covidcast
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
@@ -14,6 +13,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
     
+    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
+    
     df_train <- long_to_wide(df)
     df_train <- df_train %>% filter(variable_name %in% 
                                       c(response, features$variable_name, alignment_variable)) %>% distinct()
@@ -27,11 +28,11 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                            stratifier, aligner, modeler, bootstrapper, 
                                            B, covidhub_probs, features, alignment_variable)
     
-    ## Replace NA and negative predictions by 0.
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
     predictions$ahead <- ahead
-    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), covidcast::state_census$STATE)]
+    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location), 
+                                                                covidcast::state_census$STATE)]
     predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
       dplyr::mutate(ahead = as.integer(ahead))
     return(predictions)
@@ -76,12 +77,6 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
                             filter(n_na_align_dates == 0) %>% 
                             pull(location))
     
-    if ( length(response_locs) == 0 | length(more_grim_locs) == 0 ){
-      warning(paste0("Training forecast date", forecast_date_ii, "has no 'more grim' locations; moving on."))
-      point_preds_list[[ii]] <- NULL
-      next
-    }
-    
     df_train_use <- filter(df_train_use, location %in% response_locs & location %in% more_grim_locs)
     df_original_response <- df_train_use %>% filter(variable_name == response)
     df_train_use <- df_train_use %>% mutate(original_value = value)
@@ -95,10 +90,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
                                         ahead, response, features)
     
     # (3) Add columns "strata" and "align_date".
-    ## (A) Compute strata
     df_strata <- stratifier(df_train_use, response)
-    
-    ## (B) Augment df_with_lags
     df_with_lags <- left_join(df_with_lags, df_align, by = c("location", "time_value")) %>%
       left_join(df_strata, by = "location")
     
@@ -152,8 +144,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   # Obtain quantiles.
   preds_df <- df_bootstrap_preds %>% 
     group_by(location) %>% 
-    group_modify(~ data.frame(probs = covidhub_probs,
-                              quantiles = round(quantile(.x$value,covidhub_probs))))
+    group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
   return(preds_df)
 }
 
@@ -256,8 +247,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     preds[[ii]] <- preds_ii
   }
   df_preds <- bind_rows(preds)
-  
-  # (5) Prepare output
   df_empty <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1])
   df_final <- left_join(df_empty, df_preds, by = c("location", "time_value"))
   return(df_final)
@@ -268,34 +257,26 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
   ## This function assembles all the data we will need for training and predicting.
   ## This means **I guarantee** the output of this function should have an entry 
-  ## for each (variable_name, location, date) triple in either my training or test period. 
+  ## for each (variable_name, location, date) triple in either our training or test period. 
 
-  df_use <- df_use %>% filter(variable_name %in% features$variable_name)
-  df_temporal <- filter(df_use, !is.na(time_value))
+  df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
   
-  # (2) Get all the locations and dates we need.
   locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location))
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
   target_dates <- seq(target_period$start, target_period$end, by = "days")
-  time_values <- unique(c(df_temporal %>% pull(time_value), target_dates))
+  time_values <- unique(c(df_use %>% pull(time_value), target_dates))
 
-  # (4) Build df for temporal variables.
-  ## (A) All possible location, date, variable_name triples.
+  # All possible location, date, variable_name triples.
   all_dates <- seq(min(time_values), max(time_values), by = 1)
-  temporal_vars <- intersect(unique(df_temporal$variable_name), c(response, features$variable_name))
-  stopifnot(length(temporal_vars) > 0)
-  df_temporal_all <- expand_grid(locations, time_value = all_dates, variable_name = temporal_vars) %>%
-    left_join(df_temporal, by = c("location", "time_value", "variable_name"))
-  
-  ## (c) Add lags.
-  lags <- setdiff( unique(features$lag), NA )
-  stopifnot(is.numeric(lags))
-  
-  # Lags for all variables.
+  variables <- unique(c(response, features$variable_name))
+  df_all <- expand_grid(locations, time_value = all_dates, variable_name = variables) %>%
+    left_join(df_use, by = c("location", "time_value", "variable_name"))
+
+  lags <- unique(features$lag)
   lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
   names(lag_functions) <- paste0("lag_", lags)
   
-  df_temporal_all_with_lags <- df_temporal_all %>%
+  df_all_with_lags <- df_all %>%
     group_by(location, variable_name) %>%
     arrange(time_value) %>%
     mutate_at(vars(value), .funs = lag_functions) %>%
@@ -304,13 +285,9 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
     pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
   
   # Tidy up rows, by just selecting the dates we want.
-  df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
-    filter(time_value %in% time_values)
-  
-  # Tidy up columns
-  df_temporal_all_with_lags <- df_temporal_all_with_lags %>%
-    mutate(variable_name = paste0(variable_name, "_", lag)) %>%
-    select(-lag)
+  df_all_with_lags <- df_all_with_lags %>% filter(time_value %in% time_values)
+  df_all_with_lags <- df_all_with_lags %>%
+    mutate(variable_name = paste0(variable_name, "_", lag)) %>% select(-lag)
   
   # Just select the ones we want. 
   feature_names <- paste0(features$variable_name, "_lag_", features$lag)
