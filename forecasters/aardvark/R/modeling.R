@@ -1,4 +1,4 @@
-#' @import covidcast
+#' @import covidcast 
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
