@@ -14,6 +14,7 @@
 #' @docType package
 #' @author Alden Green and Collin A. Politsch \cr \cr
 #' \strong{Maintainer}: Collin A. Politsch <ceubanks@andrew.cmu.edu>
+#' @import covidcast
 #' @import lubridate
 #' @import tidyr
 #' @import dplyr
@@ -21,7 +22,6 @@
 #' @import zoo
 #' @importFrom stats as.formula dnorm lm model.matrix poly predict qnbinom 
 #' @importFrom stats quantile rnorm weighted.mean end offset start weights
-#' @importFrom covidcast aggregate_signals state_census
 #' @keywords package
 #' @seealso Relevant links:
 #' \itemize{
