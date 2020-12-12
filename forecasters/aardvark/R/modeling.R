@@ -15,7 +15,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
 
-    df_train <- df %>%
+    df_train <- df %>% bind_rows %>%
+      long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
       distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) |
@@ -325,7 +326,7 @@ long_to_wide <- function(df){
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
   df <- bind_rows(df1, df2)
-  match.string.2 <- with(df, paste0(variable_name, location, time_value))
+  match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
   df <- df %>% select(location, geo_value, variable_name, value, time_value, issue) %>%
     mutate(geo_value = toupper(geo_value))
