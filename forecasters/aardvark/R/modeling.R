@@ -13,13 +13,11 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
-    
-    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
-    
+
     df_train <- df %>% bind_rows %>%
       long_to_wide %>% 
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
-      distinct() %>% 
+      distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) |
               is.na(issue)) %>% # treat grandfathered data as solidified
       select(-issue)
@@ -32,11 +30,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0),
-             ahead = ahead)
-    predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location),
-                                                                covidcast::state_census$STATE)]
-    predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
-      dplyr::mutate(ahead = as.integer(ahead))
+             ahead = ahead,
+             geo_value = covidcast::state_census$ABBR[match(as.numeric(predictions$location),covidcast::state_census$STATE)]) %>% 
+      select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>%
+      mutate(ahead = as.integer(ahead))
     return(predictions)
   }
 }
@@ -304,19 +301,19 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 long_to_wide <- function(df){
   # Manipulate evalcast df to the wide format previously used during evalforecast era
   # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
-  if ( nrow(unique(df %>% select(data_source, signal, location, time_value))) < nrow(df) ){
+  if ( nrow(unique(df %>% select(data_source, signal, geo_value, time_value))) < nrow(df) ){
     min_issue <- min(df$issue, na.rm = TRUE)
     df.tmp <- df %>% 
       mutate(issue = replace_na(issue, min_issue - 1)) %>%
-      group_by(data_source, signal, location, time_value) %>%
+      group_by(data_source, signal, geo_value, time_value) %>%
       top_n(1, wt = issue) %>% # NA only chosen if that's all there is
       ungroup %>%
       mutate(issue = na_if(issue, min_issue - 1)) # go back to NA
   }else{
     df.tmp <- df
   }
-  match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, location, time_value))
-  df$geo_value <- covidcast::state_census$ABBR[match(as.numeric(df$location),covidcast::state_census$STATE)]
+  match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, geo_value, time_value))
+  df$location <- covidcast::state_census$STATE[match(toupper(df$geo_value),covidcast::state_census$ABBR)]
   df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-")) 
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
@@ -330,7 +327,8 @@ long_to_wide <- function(df){
   df <- bind_rows(df1, df2)
   match.string.2 <- with(df, paste0(variable_name, location, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
+  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue) %>%
+    mutate(geo_value = toupper(geo_value))
   df$value <- as.double(df$value)
   return(df)
 }
