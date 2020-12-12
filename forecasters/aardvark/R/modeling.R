@@ -245,7 +245,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
   names(lag_functions) <- paste0("lag_", lags)
   
-  df_all_with_lags <- df_all %>%
+  df_with_lags <- df_all %>%
     group_by(location, variable_name) %>%
     arrange(time_value) %>%
     mutate_at(vars(value), .funs = lag_functions) %>%
@@ -254,18 +254,15 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
     pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
   
   # Tidy up rows, by just selecting the dates we want.
-  df_all_with_lags <- df_all_with_lags %>% 
-    filter(time_value %in% time_values) %>%
-    mutate(variable_name = paste0(variable_name, "_", lag)) %>% 
-    select(-lag)
-  
-  # Just select the ones we want. 
   feature_names <- paste0(features$variable_name, "_lag_", features$lag)
   response_name <- paste0(response, "_lag_", 0)
-  df_temporal_with_lags <- df_temporal_all_with_lags %>% 
+  
+  df_with_lags <- df_with_lags %>% filter(time_value %in% time_values) %>%
+    mutate(variable_name = paste0(variable_name, "_", lag)) %>% 
+    select(-lag) %>% 
     filter(variable_name %in% c(feature_names, response_name))
 
-  return(df_temporal_with_lags)
+  return(df_with_lags)
 }
 
 #' @import covidcast
