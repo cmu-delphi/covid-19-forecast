@@ -12,8 +12,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
-    
-    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
 
     df_train <- df %>% bind_rows %>%
       long_to_wide %>%
@@ -69,17 +67,17 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     df_align <- aligner(df_train_use, forecast_date_ii)
     target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
-    more_grim_locs <- unique(df_align %>% 
-                            filter(time_value %in% target_dates) %>% # dates in the target period
-                            group_by(location) %>%
-                            summarise(n_na_align_dates = sum(is.na(align_date))) %>% # number of NA align_dates
-                            ungroup %>%
-                            filter(n_na_align_dates == 0) %>% 
-                            pull(location))
+    more_grim_locs <- df_align %>%
+      filter(time_value %in% target_dates) %>% # dates in the target period
+      group_by(location) %>%
+      summarise(n_na_align_dates = sum(is.na(align_date))) %>% # number of NA align_dates
+      ungroup %>%
+      filter(n_na_align_dates == 0) %>%
+      pull(location) %>%
+      unique
     
-    df_train_use <- filter(df_train_use, location %in% response_locs & location %in% more_grim_locs)
-    df_original_response <- df_train_use %>% filter(variable_name == response)
-    df_train_use <- df_train_use %>% mutate(original_value = value)
+    df_train_use <- df_train_use %>% filter(location %in% response_locs & location %in% more_grim_locs) %>% 
+      mutate(original_value = value)
     
     saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use_1.rds")
     
