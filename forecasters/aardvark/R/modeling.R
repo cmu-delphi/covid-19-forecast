@@ -55,20 +55,20 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   for ( ii in 1:length(forecast_dates) ){
     # (0) Treat train forecast date as forecast date.
     forecast_date_ii <- forecast_dates[ii]
-    df_train_use <- filter(df_use, time_value <= forecast_date_ii | is.na(time_value))
+    df_train_use <- df_use %>% filter(time_value <= forecast_date_ii | is.na(time_value))
     
     # (1) Preprocess
     ## (A) Only keep variables for which we've observed a non-zero response.
-    response_locs <- unique(df_train_use %>% filter(variable_name == response & value > 0) %>% pull(location))
+    response_locs <- df_train_use %>% filter(variable_name == response & value > 0) %>% 
+      pull(location) %>% unique
     
     ## (B) Only keep locations for which aligned time is never NA in the target period
-    saveRDS(df_train_use, file = "~/Desktop/aardvark_files/df_train_use_0.rds")
-    
     df_align <- aligner(df_train_use, forecast_date_ii)
     target_dates <-  evalcast::get_target_period(forecast_date_ii, incidence_period, ahead) %$%
       seq(start, end, by = "days")
+    
     more_grim_locs <- df_align %>%
-      filter(time_value %in% target_dates) %>% # dates in the target period
+      filter(time_value %in% target_dates) %>%
       group_by(location) %>%
       summarise(n_na_align_dates = sum(is.na(align_date))) %>% # number of NA align_dates
       ungroup %>%
@@ -94,25 +94,17 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     
     # (4) Separate predictions for each strata.
     dat_less_grim <- filter(df_with_lags, !strata)
-    if ( nrow(dat_less_grim) == 0 ){
-      warning("No data in less_grim stratum.")
-      df_point_preds_less_grim <- NULL
-    } else{
-      df_point_preds_less_grim <- dat_less_grim %>% 
-        local_lasso_daily_forecast_by_stratum(response, degree, bandwidth,
-                                              forecast_date_ii, incidence_period, ahead,
-                                              features, df_align, modeler)
-    }
-    
     dat_more_grim <- filter(df_with_lags, strata)
-    if ( nrow(dat_more_grim) == 0 ){
-      warnings("No data in more_grim stratum.")
-      df_point_preds_more_grim <- NULL
-    } else{
-      df_point_preds_more_grim <- dat_more_grim %>% 
-        local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_date_ii, 
-                                              incidence_period, ahead, features, df_align, modeler)
-    }
+    
+    df_point_preds_less_grim <- local_lasso_daily_forecast_by_stratum(dat_less_grim, response, degree, 
+                                                                      bandwidth,forecast_date_ii, 
+                                                                      incidence_period, ahead,features, 
+                                                                      df_align, modeler)
+    
+    df_point_preds_more_grim <- local_lasso_daily_forecast_by_stratum(dat_more_grim, response, degree, 
+                                                                      bandwidth, forecast_date_ii,
+                                                                      incidence_period, ahead, features, 
+                                                                      df_align, modeler)
     
     # (5) Prepare output, by joining strata and adding original value of the response
     df_point_preds_ii <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
@@ -124,17 +116,10 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     
     point_preds_list[[ii]] <- df_point_preds_ii
   }
+  
   df_point_preds <- bind_rows(point_preds_list)
-  
-  # Monte Carlo estimate of distribution of response
-  df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead)
-  
-  # Put response back on original scale.
-  df_bootstrap_preds <- df_bootstrap_preds %>%
-    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value")
-  
-  # If we need to sum over multiple dates...
-  df_bootstrap_preds <- df_bootstrap_preds %>%
+  df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead) %>%
+    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% # Put response back on original scale.
     group_by(location, replicate) %>%
     summarise(value = sum(pmax(value, 0))) %>%
     ungroup()
@@ -193,8 +178,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   ## (A) Get all the dates we would like predicted values for.
   target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
-  dates <- unique(df_align %>% filter(location %in% locations$location, time_value %in% target_dates) %>%
-                    pull(align_date))
+  dates <- df_align %>% filter(location %in% locations$location, time_value %in% target_dates) %>%
+    pull(align_date) %>% unique
 
   ## (B) One fit per time
   preds <- list()
