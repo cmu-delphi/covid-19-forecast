@@ -48,13 +48,13 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
 
-  my_forecaster <- make_aardvark_forecaster(response = response,
-                                            features = features,
-                                            aligner = aligner,
-                                            stratifier = stratifier,
-                                            modeler = modeler,
-                                            bandwidth = bandwidth,
-                                            bootstrapper = bootstrapper)
+  aardvark_forecaster <- make_aardvark_forecaster(response = response,
+                                                  features = features,
+                                                  aligner = aligner,
+                                                  stratifier = stratifier,
+                                                  modeler = modeler,
+                                                  bandwidth = bandwidth,
+                                                  bootstrapper = bootstrapper)
 
-  return(list(aardvark_forecaster = list(forecaster = my_forecaster, type = "standalone")))
+  return(list(aardvark_forecaster = list(forecaster = aardvark_forecaster, type = "standalone")))
 }
