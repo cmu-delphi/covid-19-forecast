@@ -12,9 +12,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     forecast_date <- lubridate::ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
+    
+    saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
 
-    df_train <- df %>% bind_rows %>%
-      long_to_wide %>% 
+    df_train <- df %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
       distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) |
