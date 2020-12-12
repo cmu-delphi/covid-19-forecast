@@ -259,16 +259,15 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 
   df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
   
-  locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location))
+  locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location, geo_value))
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
   target_dates <- seq(target_period$start, target_period$end, by = "days")
   time_values <- unique(c(df_use %>% pull(time_value), target_dates))
-
-  # All possible location, date, variable_name triples.
   all_dates <- seq(min(time_values), max(time_values), by = 1)
   variables <- unique(c(response, features$variable_name))
+  
   df_all <- expand_grid(locations, time_value = all_dates, variable_name = variables) %>%
-    left_join(df_use, by = c("location", "time_value", "variable_name"))
+    left_join(df_use, by = c("location", "geo_value", "time_value", "variable_name"))
 
   lags <- unique(features$lag)
   lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
@@ -283,9 +282,10 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
     pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
   
   # Tidy up rows, by just selecting the dates we want.
-  df_all_with_lags <- df_all_with_lags %>% filter(time_value %in% time_values)
-  df_all_with_lags <- df_all_with_lags %>%
-    mutate(variable_name = paste0(variable_name, "_", lag)) %>% select(-lag)
+  df_all_with_lags <- df_all_with_lags %>% 
+    filter(time_value %in% time_values) %>%
+    mutate(variable_name = paste0(variable_name, "_", lag)) %>% 
+    select(-lag)
   
   # Just select the ones we want. 
   feature_names <- paste0(features$variable_name, "_lag_", features$lag)
