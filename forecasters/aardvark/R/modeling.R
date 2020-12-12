@@ -13,8 +13,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
 
-    df_train <- df %>% bind_rows %>%
-      long_to_wide %>%
+    df_train <- df %>% bind_rows %>% long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
       distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) | is.na(issue)) %>%
@@ -27,8 +26,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                            B, covidhub_probs, features, alignment_variable)
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
-      mutate(quantiles = pmax(replace_na(quantiles, 0), 0),
-             ahead = ahead,
+      mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
              geo_value = covidcast::state_census$ABBR[match(as.numeric(predictions$location),covidcast::state_census$STATE)]) %>% 
       select(location, geo_value, ahead, probs, quantiles, .id = "ahead") %>%
       mutate(ahead = as.integer(ahead))
@@ -36,6 +34,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
   }
 }
 
+#' @importFrom magrittr %$%
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
                                        stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
                                        alignment_variable){
@@ -66,13 +65,10 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     target_dates <-  evalcast::get_target_period(forecast_date_itr, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     
-    locs2 <- df_align %>%
-      filter(time_value %in% target_dates) %>%
+    locs2 <- df_align %>% filter(time_value %in% target_dates) %>%
       group_by(location) %>%
-      summarise(n_na_align_dates = sum(is.na(align_date))) %>%
-      ungroup %>%
-      filter(n_na_align_dates == 0) %>%
-      pull(location) %>% unique
+      summarise(n_na_align_dates = sum(is.na(align_date))) %>% ungroup %>%
+      filter(n_na_align_dates == 0) %>% pull(location) %>% unique
     
     df_train_use <- df_train_use %>% filter(location %in% c(locs1,locs2)) %>% 
       mutate(original_value = value)
@@ -244,6 +240,8 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   lags <- unique(features$lag)
   lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
   names(lag_functions) <- paste0("lag_", lags)
+  feature_names <- paste0(features$variable_name, "_lag_", features$lag)
+  response_name <- paste0(response, "_lag_", 0)
   
   df_with_lags <- df_all %>%
     group_by(location, variable_name) %>%
@@ -253,14 +251,10 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
     rename(lag_0 = value) %>%
     pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
   
-  # Tidy up rows, by just selecting the dates we want.
-  feature_names <- paste0(features$variable_name, "_lag_", features$lag)
-  response_name <- paste0(response, "_lag_", 0)
-  
   df_with_lags <- df_with_lags %>% filter(time_value %in% time_values) %>%
     mutate(variable_name = paste0(variable_name, "_", lag)) %>% 
-    select(-lag) %>% 
-    filter(variable_name %in% c(feature_names, response_name))
+    filter(variable_name %in% c(feature_names, response_name)) %>%
+    select(-lag)
 
   return(df_with_lags)
 }
