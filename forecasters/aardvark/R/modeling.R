@@ -1,4 +1,4 @@
-#' @import covidcast 
+#' @import covidcast
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
@@ -16,12 +16,13 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     saveRDS(df, file = "~/Desktop/aardvark_files/df_0.rds")
     
-    df_train <- long_to_wide(df)
-    df_train <- df_train %>% filter(variable_name %in% 
-                                      c(response, features$variable_name, alignment_variable)) %>% distinct()
-    df_train <- filter(df_train, (variable_name != response) | (issue >= time_value + backfill_buffer) |
-                                 is.na(issue)) # treat grandfathered data as solidified
-    df_train <- df_train %>% select(-issue)
+    df_train <- df %>% bind_rows %>%
+      long_to_wide %>% 
+      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
+      distinct() %>% 
+      filter((variable_name != response) | (issue >= time_value + backfill_buffer) |
+              is.na(issue)) %>% # treat grandfathered data as solidified
+      select(-issue)
     
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth,
@@ -30,8 +31,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                            B, covidhub_probs, features, alignment_variable)
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
-      mutate(quantiles = pmax(replace_na(quantiles, 0), 0))
-    predictions$ahead <- ahead
+      mutate(quantiles = pmax(replace_na(quantiles, 0), 0),
+             ahead = ahead)
     predictions$geo_value <- covidcast::state_census$ABBR[match(as.numeric(predictions$location),
                                                                 covidcast::state_census$STATE)]
     predictions <- predictions %>% select(location,geo_value,ahead,probs,quantiles, .id = "ahead") %>% 
