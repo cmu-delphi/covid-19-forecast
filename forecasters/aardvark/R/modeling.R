@@ -105,8 +105,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     
     # (5) Prepare output, by joining strata and adding original value of the response
     df_point_preds_itr <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
-      left_join(df_use %>% 
-                  filter(variable_name == response) %>%
+      left_join(df_use %>% filter(variable_name == response) %>%
                   select(location, time_value, value),
                 by = c("location", "time_value")) %>%
       rename(original_value = value)
@@ -118,8 +117,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead) %>%
     pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% # Put response back on original scale.
     group_by(location, replicate) %>%
-    summarise(value = sum(pmax(value, 0))) %>%
-    ungroup()
+    summarise(value = sum(pmax(value, 0))) %>% ungroup()
   
   # Obtain quantiles.
   preds_df <- df_bootstrap_preds %>% group_by(location) %>% 
@@ -214,8 +212,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     
     # (VII) Predict using our model.
     preds_itr <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                           preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL,
-                                                     locs = forecast_locs))
+                            preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL,
+                                                      locs = forecast_locs))
     preds[[itr]] <- preds_itr
   }
   df_preds <- bind_rows(preds)
