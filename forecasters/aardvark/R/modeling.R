@@ -226,32 +226,29 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   ## for each (variable_name, location, date) triple in either our training or test period. 
 
   df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
-  
-  locations <- distinct(df_use %>% filter(variable_name == response) %>% select(location, geo_value))
+  locations <- df_use %>% filter(variable_name == response) %>% select(location, geo_value) %>% 
+    distinct %>% arrange(geo_value)
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
   target_dates <- seq(target_period$start, target_period$end, by = "days")
   time_values <- unique(c(df_use %>% pull(time_value), target_dates))
   all_dates <- seq(min(time_values), max(time_values), by = 1)
   variables <- unique(c(response, features$variable_name))
   
-  df_all <- expand_grid(locations, time_value = all_dates, variable_name = variables) %>%
-    left_join(df_use, by = c("location", "geo_value", "time_value", "variable_name"))
-
   lags <- unique(features$lag)
   lag_functions <- lags %>% map(function(x) ~ na.locf(lag(., n = x, default = first(.))))
   names(lag_functions) <- paste0("lag_", lags)
   feature_names <- paste0(features$variable_name, "_lag_", features$lag)
   response_name <- paste0(response, "_lag_", 0)
   
-  df_with_lags <- df_all %>%
+  df_with_lags <- expand_grid(locations, time_value = all_dates, variable_name = variables) %>%
+    left_join(as_tibble(df_use), by = c("location", "geo_value", "time_value", "variable_name")) %>%
     group_by(location, variable_name) %>%
     arrange(time_value) %>%
     mutate_at(.vars = vars(value), .funs = lag_functions) %>%
     ungroup() %>%
     rename(lag_0 = value) %>%
-    pivot_longer(contains("lag_"), names_to = "lag", values_to = "value")
-  
-  df_with_lags <- df_with_lags %>% filter(time_value %in% time_values) %>%
+    pivot_longer(contains("lag_"), names_to = "lag", values_to = "value") %>% 
+    filter(time_value %in% time_values) %>%
     mutate(variable_name = paste0(variable_name, "_", lag)) %>% 
     filter(variable_name %in% c(feature_names, response_name)) %>%
     select(-lag)
