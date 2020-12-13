@@ -8,6 +8,7 @@ params:
   forecast_date: !r Sys.getenv("FORECAST_DATE")
   response: "usa-facts_confirmed_incidence_num"
   geo: "county"
+  correction_type: !r Sys.getenv("CORRECTION_TYPE")
   upstream_data_path: !r file.path(Sys.getenv("PROD_DIR"), "upstream_df_outputs")
   forecast_dir_path: !r file.path(Sys.getenv("PROD_DIR"), "forecaster_predictions")
 ---
@@ -22,7 +23,7 @@ attach(params)
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 ggplot2::theme_set(theme_bw())
 
-forecast_dir <- file.path(forecast_dir_path,forecast_date)
+forecast_dir <- file.path(forecast_dir_path,forecast_date, correction_type)
 upstream_date = upstream_df_date
 
 init_date <- "2020-03-01"
@@ -33,7 +34,7 @@ prev_epiweek <- 3
 forecaster <- forecasters <- c('zyzzyva_covidcast')
 #c("aardvark_chocolate","poiszero","aardvark_cookies_and_cream","stackedLasso_customized","aardvark_vanilla","stackedLasso_cvquantile")
 
-upstream_filename <- sprintf("upstream_df_%s_%s_corrected.Rdata",geo,upstream_df_date)
+upstream_filename <- sprintf("upstream_df_%s_%s_%s_corrected.Rdata",geo,upstream_df_date, correction_type)
 upstream_path <- file.path(upstream_data_path,upstream_filename)
 
 load(upstream_path)  

@@ -9,6 +9,7 @@ params:
   path_to_production_run_output: !r file.path(Sys.getenv("PROD_DIR"), "forecaster_predictions")
   forecast_date: !r Sys.getenv("FORECAST_DATE")
   aheads: !r 4:1
+  correction_type: !r Sys.getenv("CORRECTION_TYPE")
   response_state: "jhu-csse_deaths_incidence_num"
   response_cty: "usa-facts_confirmed_incidence_num"
   incidence_period: "epiweek"
@@ -191,7 +192,7 @@ forecaster <- "zyzzyva_covidcast"
 predictions_cards <- list()
 for(ahead in aheads){
   path_to_prediction_card <- file.path(path_to_production_run_output,
-                                       forecast_date,ahead,response_cty,geo_type,
+                                       forecast_date,correction_type, ahead,response_cty,geo_type,
                                        incidence_period,n_locations,forecaster,
                                        "out.RDS")
   prediction_card <- readRDS(path_to_prediction_card)
