@@ -280,10 +280,10 @@ long_to_wide <- function(df){
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
-  df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") 
-  df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num")
-  df1 <- df1 %>% aggregate_signals(format = "wide")
-  df2 <- df2 %>% aggregate_signals(format = "wide")
+  df1 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") %>% 
+    aggregate_signals(format = "wide")
+  df2 <- df %>% filter(variable_name != "jhu-csse-confirmed_cumulative_num") %>% 
+    aggregate_signals(format = "wide")
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
   df <- bind_rows(df1, df2)
