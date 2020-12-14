@@ -28,7 +28,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
-             geo_value = covidcast::state_census$ABBR[match(as.numeric(predictions$location),covidcast::state_census$STATE)]) %>% 
+             geo_value = covidcast::state_census$ABBR[match(as.numeric(location),covidcast::state_census$STATE)]) %>% 
       select(location, geo_value, ahead, probs, quantiles, .id = "ahead") %>%
       mutate(ahead = as.integer(ahead))
     return(predictions)
