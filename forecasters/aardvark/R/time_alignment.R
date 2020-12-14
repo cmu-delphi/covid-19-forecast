@@ -20,19 +20,15 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
   #   alignment_variable: what variable to use for alignment?
   #   threshold: how large a value of the variable to treat as the threshold for start of the pandemic?
   #   ahead, incidence_period: canonical parameters used by the evaluator.
-  stopifnot(length(alignment_variable) == 1)
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
     # Compute aligned time as the number of days since a given variable attained a given threshold
     # for the first time.
-    # Inputs:
-    #   df_use, forecast_date: see top of this script.
     stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
     
     # (1) Restrict ourselves to the data we need
     df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
-    stopifnot(all(!is.na(df_alignment_variable %>% pull(time_value)))) # alignment variable better be a temporal variable...
     
-    # (2) Compute day0 --- the first date the threshold was attained --- for each location
+    # (2) Compute day0 --- the first date the threshold was attained for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
@@ -40,15 +36,15 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
       summarise(value = min(time_value)) %>%
       ungroup()
     
-    # (3) Compute days since variable 
+    # (3) Compute days since variable crossed threshold
     #     If the threshold has not yet been reached for a given (location, time_value), 
     #     we assign a value of NA.
 
     ## (A) Create an empty data frame we wish to populate.
     ##     This makes sure we satisfy the aligner guarantee.
-    locations <- unique(df_use %>% pull(location))
-    train_dates <- unique(df_use %>% pull(time_value) )
-    target_dates <-  evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
+    locations <- df_use %>% pull(location) %>% unique
+    train_dates <- df_use %>% pull(time_value) %>% unique
+    target_dates <-  get_target_period(forecast_date, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
     df_empty <- expand_grid(location = locations, time_value = dates)
