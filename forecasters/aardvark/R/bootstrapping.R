@@ -31,11 +31,11 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
 
     # (2) Get conditional standard deviation estimates, on weekly scale
     df_resids <-  df_point_preds %>%
-      select(location, time_value, original_value, preds) %>% # we don't use strata for a by location bootstrap.
-      filter(!is.na(original_value)) %>%
-      mutate(resids = original_value - preds,
+      select(location, time_value, observed_value, preds) %>% # we don't use strata for a by location bootstrap.
+      filter(!is.na(observed_value)) %>%
+      mutate(resids = observed_value - preds,
              weights = tricube( as.numeric(forecast_date - time_value) / bandwidth)) %>%
-      select(-c(original_value, preds)) %>% # don't need these to compute variance
+      select(-c(observed_value, preds)) %>% # don't need these to compute variance
       group_by(location) %>%
       arrange(time_value) %>%
       mutate(resids = rollsum(resids, 7, fill = NA, align = "right"))

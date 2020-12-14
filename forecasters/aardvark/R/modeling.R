@@ -16,7 +16,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     df_train <- df %>% bind_rows %>% long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) | is.na(issue)) %>%
-      select(-issue)
+      select(-issue) %>% arrange(geo_value, time_value)
     
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
@@ -59,7 +59,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       filter(n_na_align_dates == 0) %>% pull(location) %>% unique
     
     df_train_use <- df_train_use %>% filter(location %in% c(locs1,locs2)) %>% 
-      mutate(original_value = value)
+      mutate(observed_value = value)
     df_strata <- stratifier(df_train_use, response)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                         ahead, response, features) %>%
@@ -77,7 +77,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     point_preds_list[[itr]] <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
       left_join(df_use %>% filter(variable_name == response) %>% select(location, time_value, value),
                 by = c("location", "time_value")) %>%
-      rename(original_value = value)
+      rename(observed_value = value)
   }
   
   df_point_preds <- bind_rows(point_preds_list)
