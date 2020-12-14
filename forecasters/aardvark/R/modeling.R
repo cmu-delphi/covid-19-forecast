@@ -2,7 +2,7 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
                                      bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
-
+  
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
@@ -14,8 +14,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     alignment_variable <- environment(aligner)$alignment_variable
 
     df_train <- df %>% bind_rows %>% long_to_wide %>%
-      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>%
-      distinct %>% 
+      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% distinct %>% 
       filter((variable_name != response) | (issue >= time_value + backfill_buffer) | is.na(issue)) %>%
       select(-issue)
     
@@ -27,8 +26,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
              geo_value = covidcast::state_census$ABBR[match(as.numeric(location),covidcast::state_census$STATE)]) %>% 
-      select(location, geo_value, ahead, probs, quantiles, .id = "ahead") %>%
-      mutate(ahead = as.integer(ahead))
+      select(location, geo_value, ahead, probs, quantiles) %>% mutate(ahead = as.integer(ahead)) %>% 
+      arrange(geo_value)
     return(predictions)
   }
 }
@@ -109,16 +108,14 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 
 #' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
-local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,
-                                                  forecast_date, incidence_period, ahead,
-                                                  features, df_align, modeler){
+local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,forecast_date, 
+                                                  incidence_period, ahead, features, df_align, modeler){
   # Inputs:
   #   df_use: data used to make forecasts. At minimum, should have the columns
   #           location, time_value, variable_name, original_value, value, and align_date.
 
   response_name <- paste0(response,"_lag_0")
-  locations <- df_use %>% filter(variable_name == response_name) %>%
-    select(location) %>% distinct
+  locations <- df_use %>% filter(variable_name == response_name) %>% select(location) %>% distinct
   
   # Pivot wider, for model matrix form.
   YX <- df_use %>% select(location, align_date, time_value, variable_name, value) %>% 
@@ -157,8 +154,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   preds <- list()
   for ( itr in 1:length(dates) ){
     YX_use <- YX %>% mutate(t = as.numeric(date - dates[itr])) # Add time relative to date.
-    forecast_rows <- which(YX_use$date == dates[itr] & # right align date
-                             YX_time_values %in% target_dates) # right time value
+    forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates) # right align date and right time value
     forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
     forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
