@@ -168,7 +168,7 @@ forecaster <- "aardvark_cookies_and_cream"
 predictions_cards <- list()
 for(ahead in aheads){
   path_to_prediction_card <- file.path(path_to_production_run_output,
-                                       forecast_date,ahead,response_state,geo_type,
+                                       forecast_date,correction_type,ahead,response_state,geo_type,
                                        incidence_period,n_locations,forecaster,
                                        "out.RDS")
   prediction_card <- readRDS(path_to_prediction_card)
