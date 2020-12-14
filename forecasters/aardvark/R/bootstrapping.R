@@ -41,8 +41,7 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
       mutate(resids = rollsum(resids, 7, fill = NA, align = "right"))
 
     df_vars_empty <- data.frame(location = unique(df_point_preds$location))
-    df_vars <- df_resids %>%
-      group_by(location) %>%
+    df_vars <- df_resids %>% group_by(location) %>%
       summarize(scale = sqrt(ave(resids^2, w = weights, na.rm = T))) %>%
       ungroup()
     df_vars <- left_join(df_vars_empty, df_vars, by = "location")
@@ -58,11 +57,8 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
     preds_vec <- df_distribution$preds
     sds_vec <- df_distribution$scale
     replicates <- as.data.frame(
-      matrix(
-        rnorm(B * length(preds_vec), mean = preds_vec, sd = sds_vec),
-        ncol = B,
-        nrow = length(preds_vec)
-      )
+      matrix(rnorm(B * length(preds_vec), mean = preds_vec, sd = sds_vec),
+             ncol = B, nrow = length(preds_vec))
     )
     colnames(replicates) <- paste0("replicate_", 1:B)
 
