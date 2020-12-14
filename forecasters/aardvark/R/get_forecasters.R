@@ -3,16 +3,16 @@
 #' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters
 #'     available for the given parameter specifications. It expects to get back 
-#'     a named list of lists of forecasting functions and types. If a forecasting 
+#'     a named list of lists of forecaster functions and types. If a forecaster 
 #'     function is not available for a given set of parameters, an 
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
 #' @param signals Tibble with columns \code{data_source} and signal that specifies
-#' which variables from the COVIDcast API will be used by forecaster. Each row 
-#' of signals represents a separate signal, and first row is taken to be the 
-#' response.
+#'     which variables from the COVIDcast API will be used by forecaster. Each row 
+#'     of signals represents a separate signal, and first row is taken to be the 
+#'     response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
-#' For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
+#'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
 #' @param strata_alpha Stratification proportion parameter
 #' @param bandwidth Kernel bandwidth (in days) for the local weighting kernel
 #' @return A list with an element named \code{aardvark_forecaster}, 
@@ -22,11 +22,11 @@
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
 #' @examples 
-#' signals <- tibble::tibble(data_source = "jhu-csse",
-#' signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
-#' start_day = "2020-03-07")
-#' ahead <- 1
-#' aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+#'     signals <- tibble::tibble(data_source = "jhu-csse",
+#'     signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
+#'     start_day = "2020-03-07")
+#'     ahead <- 1
+#'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
 get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
