@@ -171,7 +171,6 @@ for(ahead in aheads){
                                        forecast_date,correction_type,ahead,response_state,geo_type,
                                        incidence_period,n_locations,forecaster,
                                        "out.RDS")
-  print(path_to_prediction_card)
   prediction_card <- readRDS(path_to_prediction_card)
   predictions_cards[[ahead]] <- prediction_card
 }
