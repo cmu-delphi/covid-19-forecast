@@ -51,7 +51,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 
     locs1 <- df_train_use %>% filter(variable_name == response & value > 0) %>% pull(location) %>% unique
     df_align <- aligner(df_train_use, forecast_dates[itr])
-    target_dates <-  evalcast::get_target_period(forecast_dates[itr], incidence_period, ahead) %$%
+    target_dates <-  get_target_period(forecast_dates[itr], incidence_period, ahead) %$%
       seq(start, end, by = "days")
     locs2 <- df_align %>% filter(time_value %in% target_dates) %>%
       group_by(location) %>%
@@ -96,7 +96,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,forecast_date, 
                                                   incidence_period, ahead, features, df_align, modeler){
   response_name <- paste0(response,"_lag_0")
-  locations <- df_use %>% filter(variable_name == response_name) %>% select(location) %>% distinct
+  locations <- df_use %>% filter(variable_name == response_name) %>% select(location, geo_value) %>% distinct
   
   YX <- df_use %>% select(location, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
