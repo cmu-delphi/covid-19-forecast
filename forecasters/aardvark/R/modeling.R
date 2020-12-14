@@ -22,10 +22,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
       select(-issue)
     
     df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
-    df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth,
-                                           forecast_date, incidence_period, ahead,
-                                           stratifier, aligner, modeler, bootstrapper, 
-                                           B, covidhub_probs, features, alignment_variable)
+    df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
+                                           ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
+                                           features, alignment_variable)
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
@@ -85,10 +84,10 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     # Separate predictions for each strata.
     df_point_preds_less_grim <- df_with_lags %>% filter(!strata) %>%
       local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr], 
-                                            incidence_period, ahead,features, df_align, modeler)
+                                            incidence_period, ahead, features, df_align, modeler)
     
     df_point_preds_more_grim <- df_with_lags %>% filter(strata) %>%
-      local_lasso_daily_forecast_by_stratum(response, degreebandwidth, forecast_dates[itr],
+      local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr],
                                             incidence_period, ahead, features, df_align, modeler)
     
     # Prepare output, by joining strata and adding original value of the response
