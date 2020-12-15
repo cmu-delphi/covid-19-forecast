@@ -15,17 +15,16 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
     df_train <- df %>% bind_rows %>% long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% distinct %>% 
-      filter((variable_name != response) | (issue >= time_value + backfill_buffer) | is.na(issue)) %>%
-      select(-issue) %>% arrange(geo_value, time_value)
+      #filter((variable_name != response) | (issue >= time_value + backfill_buffer) ) %>%
+      select(-issue) %>% arrange(variable_name, geo_value, desc(time_value))
     
-    df_all <- expand_grid(location = unique(df_train$location), probs = covidhub_probs)
+    df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
                                            ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
-      mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
-             geo_value = state_census$ABBR[match(as.numeric(location),state_census$STATE)]) %>% 
+      mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       select(location, geo_value, ahead, probs, quantiles) %>% mutate(ahead = as.integer(ahead)) %>% arrange(geo_value)
     return(predictions)
   }
@@ -95,8 +94,8 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 #' @importFrom evalcast get_target_period
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,forecast_date, 
                                                   incidence_period, ahead, features, df_align, modeler){
-  response_name <- paste0(response,"_lag_0")
-  locations <- df_use %>% filter(variable_name == response_name) %>% select(location, geo_value) %>% distinct
+  response_name <- paste0(response, "_lag_0")
+  locations <- df_use %>% filter(variable_name == all_of(response_name)) %>% select(location, geo_value) %>% distinct
   
   YX <- df_use %>% select(location, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
