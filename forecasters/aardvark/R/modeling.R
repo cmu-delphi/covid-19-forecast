@@ -9,7 +9,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                               ahead, geo_type){
     
     incidence_period <- match.arg(incidence_period)
-    forecast_date <- lubridate::ymd(forecast_date)
+    forecast_date <- ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
 
@@ -25,7 +25,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead,
-             geo_value = covidcast::state_census$ABBR[match(as.numeric(location),covidcast::state_census$STATE)]) %>% 
+             geo_value = state_census$ABBR[match(as.numeric(location),state_census$STATE)]) %>% 
       select(location, geo_value, ahead, probs, quantiles) %>% mutate(ahead = as.integer(ahead)) %>% arrange(geo_value)
     return(predictions)
   }
