@@ -58,7 +58,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       summarise(n_na_align_dates = sum(is.na(align_date))) %>% ungroup %>%
       filter(n_na_align_dates == 0) %>% pull(location) %>% unique
     
-    df_train_use <- df_train_use %>% filter(location %in% c(locs1,locs2)) %>% 
+    df_train_use <- df_train_use %>% filter(location %in% intersect(locs1,locs2)) %>% 
       mutate(observed_value = value)
     df_strata <- stratifier(df_train_use, response)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
