@@ -24,32 +24,26 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
     # Compute aligned time as the number of days since a given variable attained a given threshold
     # for the first time.
     stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
-    
-    # (1) Restrict ourselves to the data we need
     df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
     
-    # (2) Compute day0 --- the first date the threshold was attained for each location
+    # (1) Compute day0 --- the first date the threshold was attained for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
       group_by(location) %>%
       summarise(value = min(time_value))
     
-    # (3) Compute days since variable crossed threshold
+    # (2) Compute days since variable crossed threshold
     #     If the threshold has not yet been reached for a given (location, time_value), 
     #     we assign a value of NA.
 
-    ## (A) Create an empty data frame we wish to populate.
-    ##     This makes sure we satisfy the aligner guarantee.
     locations <- df_use %>% pull(location) %>% unique
     train_dates <- df_use %>% pull(time_value) %>% unique
     target_dates <-  get_target_period(forecast_date, incidence_period, ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
-    df_empty <- expand_grid(location = locations, time_value = dates)
-    
-    ## (B) Populate the empty data frame.
-    df_align <- left_join(df_empty, day0, by = "location") %>%
+    df_align <- expand_grid(location = locations, time_value = dates) %>% 
+      left_join(day0, by = "location") %>%
       mutate(align_date = ifelse(time_value - value >= 0, time_value - value, NA)) %>%
       select(-value)
     
