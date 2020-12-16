@@ -26,7 +26,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
-      select(ahead, geo_value, quantile, probs) %>% mutate(ahead = as.integer(ahead)) %>% 
+      select(ahead, geo_value, quantile, value) %>% mutate(ahead = as.integer(ahead)) %>% 
       arrange(geo_value)
     return(predictions)
   }
