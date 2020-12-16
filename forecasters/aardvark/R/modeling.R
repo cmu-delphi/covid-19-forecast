@@ -54,7 +54,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       seq(start, end, by = "days")
     locs2 <- df_align %>% filter(time_value %in% target_dates) %>%
       group_by(location) %>%
-      summarise(n_na_align_dates = sum(is.na(align_date)), .groups = "drop") %>%
+      summarize(n_na_align_dates = sum(is.na(align_date)), .groups = "drop") %>%
       filter(n_na_align_dates == 0) %>% pull(location) %>% unique
     
     df_train_use <- df_train_use %>% filter(location %in% intersect(locs1,locs2)) %>% 
@@ -83,7 +83,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead) %>%
     pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% # Put response back on original scale.
     group_by(location, replicate) %>%
-    summarise(value = sum(pmax(value, 0)), .groups = "drop")
+    summarize(value = sum(pmax(value, 0)), .groups = "drop")
   
   preds_df <- df_bootstrap_preds %>% group_by(location) %>% 
     group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
