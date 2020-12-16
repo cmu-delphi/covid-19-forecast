@@ -23,9 +23,11 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                            ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
-    predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
+    predictions <- left_join(df_all, df_preds, by = c("geo_value", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
-      select(location, geo_value, ahead, probs, quantiles) %>% mutate(ahead = as.integer(ahead)) %>% arrange(geo_value)
+      rename(quantile = probs, value = quantiles) %>%
+      select(ahead, geo_value, quantile, probs) %>% mutate(ahead = as.integer(ahead)) %>% 
+      arrange(geo_value)
     return(predictions)
   }
 }
@@ -221,8 +223,7 @@ long_to_wide <- function(df){
   df <- bind_rows(df1, df2, df3)
   match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue) %>%
-    mutate(geo_value = toupper(geo_value))
+  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
   df$value <- as.double(df$value)
   return(df)
 }
