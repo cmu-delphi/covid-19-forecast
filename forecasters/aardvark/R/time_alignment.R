@@ -31,7 +31,7 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
       filter(value >= threshold) %>%
       select(-value) %>%
       group_by(location) %>%
-      summarise(value = min(time_value))
+      summarise(value = min(time_value), .groups = "drop")
     
     # (2) Compute days since variable crossed threshold
     #     If the threshold has not yet been reached for a given (location, time_value), 

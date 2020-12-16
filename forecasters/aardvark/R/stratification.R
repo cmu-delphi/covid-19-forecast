@@ -17,8 +17,7 @@ make_stratifier_by_n_responses <- function(alpha){
 
     df_strata <- df_response %>%
       group_by(location, variable_name) %>%
-      summarise(n_response = sum(value)) %>%
-      ungroup %>%
+      summarise(n_response = sum(value), .groups = "drop") %>%
       mutate( strata = (n_response >= quantile(n_response, alpha)) ) %>%
       select(location, strata)
   }
