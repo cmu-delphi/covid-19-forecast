@@ -23,7 +23,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                                            ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
-    predictions <- left_join(df_all, df_preds, by = c("geo_value", "probs")) %>%
+    predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
       select(ahead, geo_value, quantile, probs) %>% mutate(ahead = as.integer(ahead)) %>% 
