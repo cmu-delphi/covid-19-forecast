@@ -13,20 +13,26 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
 
-    df_train <- df %>% bind_rows %>% long_to_wide %>%
-      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% distinct %>% 
+    df_train <- df %>% 
+      bind_rows %>% 
+      long_to_wide %>%
+      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% 
+      distinct %>% 
       #filter((variable_name != response) | (issue >= time_value + backfill_buffer) ) %>%
-      select(-issue) %>% arrange(variable_name, geo_value, desc(time_value))
+      select(-issue) %>% 
+      arrange(variable_name, geo_value, desc(time_value))
     
     df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
                                            ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
-    predictions <- left_join(df_all, df_preds, by = c("location", "probs")) %>%
+    predictions <- df_all %>% 
+      left_join(df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
-      select(ahead, geo_value, quantile, value) %>% mutate(ahead = as.integer(ahead)) %>% 
+      select(ahead, geo_value, quantile, value) %>% 
+      mutate(ahead = as.integer(ahead)) %>% 
       arrange(geo_value)
     return(predictions)
   }
@@ -54,12 +60,16 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     df_align <- aligner(df_train_use, forecast_dates[itr])
     target_dates <-  get_target_period(forecast_dates[itr], incidence_period, ahead) %$%
       seq(start, end, by = "days")
-    locs2 <- df_align %>% filter(time_value %in% target_dates) %>%
+    locs2 <- df_align %>% 
+      filter(time_value %in% target_dates) %>%
       group_by(location) %>%
       summarize(n_na_align_dates = sum(is.na(align_date)), .groups = "drop") %>%
-      filter(n_na_align_dates == 0) %>% pull(location) %>% unique
+      filter(n_na_align_dates == 0) %>% 
+      pull(location) %>% 
+      unique
     
-    df_train_use <- df_train_use %>% filter(location %in% intersect(locs1,locs2)) %>% 
+    df_train_use <- df_train_use %>% 
+      filter(location %in% intersect(locs1,locs2)) %>% 
       mutate(observed_value = value)
     df_strata <- stratifier(df_train_use, response)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
@@ -67,11 +77,13 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
       left_join(df_align, by = c("location", "time_value")) %>%
       left_join(df_strata, by = "location")
     
-    df_point_preds_less_grim <- df_with_lags %>% filter(!strata) %>%
+    df_point_preds_less_grim <- df_with_lags %>% 
+      filter(!strata) %>%
       local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr], 
                                             incidence_period, ahead, features, df_align, modeler)
     
-    df_point_preds_more_grim <- df_with_lags %>% filter(strata) %>%
+    df_point_preds_more_grim <- df_with_lags %>% 
+      filter(strata) %>%
       local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr],
                                             incidence_period, ahead, features, df_align, modeler)
 
@@ -87,7 +99,8 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     group_by(location, replicate) %>%
     summarize(value = sum(pmax(value, 0)), .groups = "drop")
   
-  preds_df <- df_bootstrap_preds %>% group_by(location) %>% 
+  preds_df <- df_bootstrap_preds %>% 
+    group_by(location) %>% 
     group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
   return(preds_df)
 }
@@ -97,9 +110,13 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,forecast_date, 
                                                   incidence_period, ahead, features, df_align, modeler){
   response_name <- paste0(response, "_lag_0")
-  locations <- df_use %>% filter(variable_name == all_of(response_name)) %>% select(location, geo_value) %>% distinct
+  locations <- df_use %>% 
+    filter(variable_name == all_of(response_name)) %>% 
+    select(location, geo_value) %>% 
+    distinct
   
-  YX <- df_use %>% select(location, align_date, time_value, variable_name, value) %>% 
+  YX <- df_use %>% 
+    select(location, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
     pivot_wider(names_from = "variable_name", values_from = "value") %>%
     rename(response = response_name, date = align_date)
@@ -118,8 +135,10 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
 
   target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
-  dates <- df_align %>% filter(location %in% locations$location, time_value %in% target_dates) %>%
-    pull(align_date) %>% unique
+  dates <- df_align %>% 
+    filter(location %in% locations$location, time_value %in% target_dates) %>%
+    pull(align_date) %>% 
+    unique
 
   preds <- list()
   for ( itr in 1:length(dates) ){
@@ -158,8 +177,11 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
 
   df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
-  locations <- df_use %>% filter(variable_name == response) %>% select(location, geo_value) %>% 
-    distinct %>% arrange(geo_value)
+  locations <- df_use %>% 
+    filter(variable_name == response) %>% 
+    select(location, geo_value) %>% 
+    distinct %>% 
+    arrange(geo_value)
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
   target_dates <- seq(target_period$start, target_period$end, by = "days")
   time_values <- unique(c(df_use %>% pull(time_value), target_dates))
