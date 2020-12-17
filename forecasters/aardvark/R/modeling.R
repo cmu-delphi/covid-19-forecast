@@ -226,10 +226,9 @@ long_to_wide <- function(df){
     df.tmp <- df
   }
   match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, geo_value, time_value))
-  df <- df %>% mutate(variable_name = paste(data_source, signal, sep = "-"),
-                      location = formatC(covidcast::state_census$STATE[match(toupper(df$geo_value),
-                                                                             covidcast::state_census$ABBR)], 
-                                         width = 2, flag = "0")) 
+  df <- df %>% 
+    mutate(variable_name = paste(data_source, signal, sep = "-"),
+           location = abbr_2_fips(df$geo_value))
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
