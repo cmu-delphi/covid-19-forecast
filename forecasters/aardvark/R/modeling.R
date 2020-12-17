@@ -211,6 +211,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 }
 
 #' @import covidcast
+#' @importFrom evalcast abbr_2_fips
 long_to_wide <- function(df){
   # Manipulate evalcast df to the wide format previously used during evalforecast era
   # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
