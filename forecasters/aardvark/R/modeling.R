@@ -250,7 +250,6 @@ long_to_wide <- function(df){
   return(df)
 }
 
-#' @importFrom Matrix Matrix
 model_matrix <- function(dat, features = NULL){
   # A wrapper around model.matrix,
   # allowing us to dynamically build the formula we would like to feed to model matrix.
