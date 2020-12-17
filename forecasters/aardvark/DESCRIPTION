@@ -17,7 +17,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Imports: evalcast, covidcast, lubridate, tidyr, dplyr, utils, purrr, stats,
          Matrix, glmnet, zoo, magrittr
-Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast,
+Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards,
   cmu-delphi/covidcast/R-packages/covidcast@main
 RemoteType: github
 RoxygenNote: 7.1.1
