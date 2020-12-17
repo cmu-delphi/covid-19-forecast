@@ -2,38 +2,25 @@
 % Please edit documentation in R/get_forecasters.R
 \name{get_forecasters}
 \alias{get_forecasters}
-\title{Get the Aardvark state death production forecaster}
+\title{Return the aardvark forecaster}
 \usage{
-get_forecasters(
-  response = "jhu-csse_deaths_incidence_num",
-  incidence_period = c("epiweek"),
-  ahead,
-  forecast_date,
-  geo_type = c("state", "county", "hrr", "msa"),
-  n_locations = 52
-)
+get_forecasters(signals, ahead, strata_alpha = 0.5, bandwidth = 7)
 }
 \arguments{
-\item{response}{The response variable (for this forecaster, should be 
-"jhu-csse_deaths_incidence_num" -- the incident deaths reported by Johns Hopkins 
-University).}
+\item{signals}{Tibble with columns \code{data_source} and signal that specifies
+which variables from the COVIDcast API will be used by forecaster. Each row 
+of signals represents a separate signal, and first row is taken to be the 
+response.}
 
-\item{incidence_period}{The incidence period. This state death forecaster
-currently only supports forecasts at the "epiweek" level.}
+\item{ahead}{The number of incidence periods ahead to forecast the response.
+For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
 
-\item{ahead}{The number of incidence periods ahead to forecast state deaths.
-One of 1, 2, 3, 4.}
+\item{strata_alpha}{Stratification proportion parameter}
 
-\item{forecast_date}{The date of the forecast.}
-
-\item{geo_type}{the geographic type (e.g "state" or "county" or
-"hrr" or "msa"... but for now only the first two),}
-
-\item{n_locations}{The number of geo locations. Up to 52 for \code{geo_type = "state"}
-(states + D.C. and Puerto Rico)}
+\item{bandwidth}{Kernel bandwidth (in days) for the local weighting kernel}
 }
 \value{
-A list with an element named \code{aardvark_state_death_forecaster}, 
+A list with an element named \code{aardvark_forecaster}, 
     which is itself a list consisting of the forecaster function and a \code{type} 
     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
     deprecated. Unavailable forecasters are marked as 
@@ -49,10 +36,9 @@ The \link[evalcast]{evalcast-package} production
     evaluator to ignore that forecaster in that run.
 }
 \examples{
-# Return the Aardvark state death forecaster function for 1 epiweek ahead
-library(aardvark)
-
-ahead = 1
-my_forecaster <- get_forecasters(response = "jhu-csse_deaths_incidence_num",
-                                 ahead = ahead)[["aardvark_state_death_forecaster"]][["forecaster"]]
+signals <- tibble::tibble(data_source = "jhu-csse",
+signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
+start_day = "2020-03-07")
+ahead <- 1
+aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 }
