@@ -37,7 +37,7 @@ pp.add_lagged_columns <- function(base_df,
 
     last_3_imputed_df <- base_df %>%
       filter(variable_name == modeling_options$response) %>%
-      group_by(geo_value, issue, variable_name) %>%
+      group_by(geo_value, variable_name) %>%
       arrange(time_value) %>%
       tidyr::complete(
         time_value = seq.Date(min(time_value), max_ref_date, by = "day"),
@@ -55,7 +55,7 @@ pp.add_lagged_columns <- function(base_df,
 
     lagged_df <- bind_rows(base_df %>% filter(variable_name != modeling_options$response),
                            last_3_imputed_df) %>%
-      group_by(geo_value, issue, variable_name) %>%
+      group_by(geo_value, variable_name) %>%
       arrange(time_value) %>%
       tidyr::complete(
         time_value = seq.Date(min(time_value), max_ref_date, by = "day"),
@@ -66,7 +66,7 @@ pp.add_lagged_columns <- function(base_df,
 
   } else {
     lagged_df <- base_df %>%
-      group_by(geo_value, issue, variable_name) %>%
+      group_by(geo_value, variable_name) %>%
       arrange(time_value) %>%
       tidyr::complete(
         time_value = seq.Date(min(time_value), max_ref_date, by = "day"),
@@ -119,34 +119,6 @@ pp.add_pc <- function(location_info_df,
 }
 
 
-#' Helper function to get for each variable the appropriate issue date and reference date.
-#'
-#' @param base_df the data frame
-#' @param forecast_date the forecast date
-#'
-#' @return a dataframe specifying the reference dates and issue dates to use for each
-#                             variable in constructing the target covariates
-#' @importFrom tibble enframe
-pp.select_dates <- function(base_df,
-                            forecast_date) {
-  # unique issue dates for each variable
-  train_issue_dates <- base_df %>%
-    group_by(variable_name) %>%
-    group_modify(~ unique(.x$issue) %>%
-                   tibble::enframe(name = NULL, value = "issue")) %>%
-    ungroup
-
-  # for each variable, the reference date and the issue date will be as late as possible.
-  ## fixme! right now the reference date is just set to the forecast date
-  target_dates <- train_issue_dates %>%
-    group_by(variable_name) %>%
-    summarise(issue = max(issue)) %>%
-    ungroup %>%
-    mutate(time_value = forecast_date)
-
-  target_dates
-}
-
 #' Make predictors X and target y for a single forecast_date,
 #' intermediate fitting function that returns all lagged covariates
 #'
@@ -168,23 +140,22 @@ pp._get_training_set <- function(lagged_df,
                                     modeling_options$incidence_period,
                                     modeling_options$ahead)
 
-  y <- sub_df %>%
+  y <- lagged_df %>%
     filter(
       variable_name == modeling_options$response,
       time_value >= target_period_df$start &
         time_value <= target_period_df$end
     ) %>%
-    group_by(geo_value, time_value, variable_name) %>% top_n(n = 1, wt = issue) %>% ungroup %>%
-    group_by(geo_value, variable_name, issue) %>%
+    group_by(geo_value, variable_name) %>%
     mutate(value = ifelse(is.na(value), mean(value, na.rm = TRUE), value)) %>% # impute NAs with group mean
     summarize(value = sum(value)) %>% ungroup %>%
     tidyr::pivot_wider(names_from = "variable_name", values_from = "value")
 
   # get original covariates (X)
   X <- lagged_df %>%
-    select(-geo_value) %>%
+    filter(time_value == forecast_date) %>%
     tidyr::pivot_longer(
-      -c(geo_value, issue, time_value, variable_name),
+      -c(geo_value, variable_name, time_value),
       names_to = "lag_names",
       values_to = "value"
     ) %>%
@@ -201,7 +172,7 @@ pp._get_training_set <- function(lagged_df,
     left_join(location_info_df, by = "geo_value")
 
   # ensure rows in X and y correspond to the same location
-  all_locations <- tibble(geo_value = unique(sub_df$geo_value))
+  all_locations <- tibble(geo_value = unique(lagged_df$geo_value))
   if (forecast_date == modeling_options$forecast_date) {
     # Evaluation y
     y <- NULL
@@ -517,17 +488,7 @@ pp.make_train_test <- function(base_df,
                                forecast_date,
                                modeling_options) {
   # filter to available data as of forecast_date
-  filtered_df <- base_df %>%
-    filter((is.na(issue) & (time_value <= forecast_date)) |
-             issue <= forecast_date)
-
-  # filter to locations of interest
-  # filt_locations <- filtered_df %>%
-  #   filter(variable_name == "location_to_be_forecast" & value == 1) %>%
-  #   pull(location) %>%
-  #   unique()
-  # filtered_df <- filtered_df %>%
-  #   filter(location %in% filt_locations)
+  filtered_df <- base_df %>% filter(time_value <= forecast_date)
 
   # filter to variables of interest
   vars_to_keep <-

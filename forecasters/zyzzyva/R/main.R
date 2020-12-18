@@ -28,7 +28,9 @@ stacked_forecaster <- function(forecast_date,
     modeling_options$forecast_date <- forecast_date
     modeling_options$geo_type <- geo_type
 
-    full_df <- bind_rows(df) %>% mutate(variable_name = paste(data_source, signal, sep="_"))
+    full_df <- bind_rows(df) %>%
+      mutate(variable_name = paste(data_source, signal, sep="_")) %>%
+      select(-c(lag, data_source, signal, stderr, sample_size, issue))
 
     raw_forecaster(
       full_df,
