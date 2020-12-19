@@ -31,7 +31,7 @@ init_date <- "2020-03-01"
 dvar_type <- "epiweek"
 dvar <- 200
 smooth_window_len <- 7
-prev_epiweek <- 3
+prev_epiweek <- 7 # how many epiweeks back do we show on trajectories?
 forecaster <- forecasters <- c('aardvark_cookies_and_cream')
 #c("aardvark_chocolate","poiszero","aardvark_cookies_and_cream","stackedLasso_customized","aardvark_vanilla","stackedLasso_cvquantile")
 

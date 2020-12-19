@@ -8,4 +8,4 @@
 .Rproj.user
 *_cache/
 *_files/
-utilities/current-pipeline/*.html
+utilities/current-pipeline/01-corrections/*.html
