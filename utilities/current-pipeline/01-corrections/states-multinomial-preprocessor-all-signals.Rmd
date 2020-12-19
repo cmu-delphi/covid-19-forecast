@@ -129,6 +129,7 @@ corrected_states = states_all %>%
 * Yellow: original value; purple: corrected value; red dot: flagged outlier
 
 ```{r show-corrections, fig.height = 60, fig.width = 10, dev="CairoSVG"}
+mtv <- max(corrected_states$time_value)
 corrected_states %>% 
   group_by(geo_value) %>% 
   dplyr::select(geo_value, time_value, value, corrected, flag) %>%
@@ -137,6 +138,7 @@ corrected_states %>%
   geom_point(data = filter(corrected_states, flag), aes(y=value), color="red") +
   facet_wrap(~signal + geo_value , scales = "free", ncol = 2) +
   theme_cowplot() + xlab("date") + 
+  coord_cartesian(xlim = mtv + c(-90,0)) +
   ylab(attributes(states)$metadata$signal) +
   scale_color_viridis_d() + 
   scale_x_date(date_breaks = "months" , date_labels = "%b")

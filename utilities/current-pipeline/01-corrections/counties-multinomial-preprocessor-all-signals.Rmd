@@ -181,7 +181,7 @@ nn = names(simple_labs)
 simple_labs = paste(simple_labs, sta)
 names(simple_labs) = nn
 
-
+mtv <- max(corrected_counties$time_value)
 corrected_counties %>% group_by(geo_value) %>% 
   filter(any(flag == 'TRUE')) %>% 
   dplyr::select(geo_value, time_value, value, corrected, flag) %>%
@@ -194,6 +194,7 @@ corrected_counties %>% group_by(geo_value) %>%
              labeller = labeller(geo_value = simple_labs))+
   theme_cowplot()+xlab("date")+
   ylab(attributes(county_filtered)$metadata$signal)+
+  coord_cartesian(xlim = mtv + c(-90,0)) +
   scale_color_viridis_d() + 
   scale_x_date(date_breaks = "months" , date_labels = "%b")
 ```
