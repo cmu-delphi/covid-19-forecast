@@ -17,7 +17,7 @@ params:
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
   covidcast_signal: !r c("deaths_incidence_num","confirmed_incidence_num")
-  corrections_db_path: "./data_corrections-all-signal.sqlite"
+  corrections_db_path: "./data_corrections-all-signals.sqlite"
   excess_cut: 0
   write_RDS: TRUE
 ---
