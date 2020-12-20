@@ -51,7 +51,7 @@ county_data <- function(data.source) {
         data_source = data.source[i], 
         covidcast_signal,
         geo_type = "county", 
-        start_day = outlier_start_date)
+        start_day = outlier_start_date))
     county_data[[i]] <- aggregate_signals(data, format = "long") 
   }
   if (length(data.source) == 1) {
