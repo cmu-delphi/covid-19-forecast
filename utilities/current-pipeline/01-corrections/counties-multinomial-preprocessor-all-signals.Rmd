@@ -66,7 +66,7 @@ county_data <- function(data.source) {
 counties_all <- county_data(covidcast_data_source)
 
 #round double with decimals to integers
-counties_all$value <- round(counties_all$value,digits = 0)
+counties_all$value <- as.integer(round(counties_all$value,digits = 0))
 ```
 
 
