@@ -7,16 +7,6 @@
 #'
 #' @return a tibble for conversion to csv
 #' @export
-#' @examples
-#' baby_predictions = get_predictions(
-#'   baseline_forecaster, "baby",
-#'   tibble::tibble(
-#'     data_source=c("jhu-csse", "usa-facts"),
-#'     signal = c("deaths_incidence_num","confirmed_incidence_num"),
-#'     start_day=lubridate::ymd("2020-09-15")),
-#'   lubridate::ymd("2020-10-01"),
-#'   "epiweek", ahead = 1:4, "state", "mi")
-#' long_tbl = format_predictions_cards_for_reichlab_submission(baby_predictions)
 #' @importFrom purrr map map_lgl map_int map2
 #' @importFrom dplyr bind_rows filter
 #' @importFrom assertthat assert_that
