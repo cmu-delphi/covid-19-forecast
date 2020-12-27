@@ -16,7 +16,7 @@ params:
   cache_data: FALSE
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
-  covidcast_signal: !r c("deaths_incidence_num","confirmed_incidence_num")
+  covidcast_signal: !r c("deaths_incidence_num", "confirmed_incidence_num")
   corrections_db_path: "./data_corrections-all-signals.sqlite"
   excess_cut: 0
   write_RDS: TRUE
@@ -117,7 +117,7 @@ corrected_states = states_all %>%
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
     corrected = corrected + # imputes forward due to weekly releases
-      missing_future(state=="RI", time_value, excess, fmean)
+      missing_future(TRUE, time_value, excess, fmean)
       #missing_future(state=="WI", time_value, excess, fmedian)
   )
 #corrected_states$corrected[corrected_states$state=="NC" & corrected_states$time_value > ymd("2020-10-22")] = c(32,30,13,13,41,34,38)
@@ -128,7 +128,7 @@ corrected_states = states_all %>%
 * These are states in which corrections are made
 * Yellow: original value; purple: corrected value; red dot: flagged outlier
 
-```{r show-corrections, fig.height = 60, fig.width = 10, dev="CairoSVG"}
+```{r show-corrections, fig.height = 120, fig.width = 10, dev="CairoSVG"}
 mtv <- max(corrected_states$time_value)
 corrected_states %>% 
   group_by(geo_value) %>% 

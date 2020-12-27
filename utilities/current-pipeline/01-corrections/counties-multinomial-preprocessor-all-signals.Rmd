@@ -169,7 +169,7 @@ corrected_counties <- county_filtered %>%
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
     corrected = corrected + # imputes forward due to weekly releases
-      missing_future(state=="RI", time_value, excess, fmean)
+      missing_future(TRUE, time_value, excess, fmean)
     )
 ```
 
