@@ -2,7 +2,7 @@
 devtools::install("~/Fellowship/repos/delphi/covid-19-forecast/forecasters/zyzzyva")
 library(tidyverse)
 
-zz <- zyzzyva::get_forecasters("jhu-csse_deaths_incidence_num", "state")$zyzzyva_covidcast$forecaster
+zz <- zyzzyva::get_forecasters("usa-facts_confirmed_incidence_num", "county")$zyzzyva_covidcast$forecaster
 signals <- tibble(
     data_source = c("jhu-csse",
                     "usa-facts",
@@ -13,11 +13,11 @@ signals <- tibble(
                "smoothed_hh_cmnty_cli",
                "nmf_day_doc_fbc_fbs_ght")
 )
-evalcast::get_predictions(forecaster=zz,
-                          name_of_forecaster="zyzzyva",
-                          signals=signals,
-                          forecast_dates=as.Date("2020-10-05"),
-                          incidence_period="epiweek",
-                          ahead=1,
-                          geo_type="state",
-                          geo_values="*")
+x <- evalcast::get_predictions(forecaster=zz,
+                               name_of_forecaster="zyzzyva",
+                               signals=signals,
+                               forecast_dates=as.Date("2020-10-05"),
+                               incidence_period="epiweek",
+                               ahead=1,
+                               geo_type="county",
+                               geo_values="*")
