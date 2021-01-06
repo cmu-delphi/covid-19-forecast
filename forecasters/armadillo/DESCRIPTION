@@ -1,0 +1,42 @@
+Package: armadillo
+Title: The armadillo forecaster (Larry and Valerie's mobility model)
+Version: 0.0.0.9000
+Authors@R: 
+    c(person(given = "Larry",
+           family = "Wasserman",
+           email = "larry@stat.cmu.edu",
+           role = c("aut")),
+    person(given = "Valerie",
+           family = "Ventura",
+           email = "vventura@stat.cmu.edu",
+           role = c("aut")),
+    person(given = "James",
+           family = "Sharpnack",
+           email = "jsharpna@ucdavis.edu",
+           role = c("aut")),
+    person(given = "Stephen",
+           family = "Sheng",
+           email = "sxsheng@math.ucdavis.edu",
+           role = c("aut")),
+    person(given = "Shitong",
+           family = "Wei",
+           email = "swei@ucdavis.edu",
+           role = c("aut", "cre")))
+Description: This package implements Larry and Valerie's mobility model as the armadillo forecaster. It works with the package evalcast. Now this forecaster only returns point forecasts, no quantile forecasts. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
+Remotes: cmu-delphi/covidcast/R-packages/evalcast
+Imports: 
+  lubridate,
+  magrittr,
+  dplyr,
+  stats,
+  tibble,
+  rlang,
+  optimization,
+  evalcast,
+  utils
+Suggests: 
+    testthat (>= 2.1.0)
