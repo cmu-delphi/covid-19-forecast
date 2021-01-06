@@ -184,7 +184,7 @@ ml.stratified_linear <- function(train_test,
     logger::log_debug(paste("Fitting cluster", i))
     locs_in_cluster <- cluster_locs %>% 
       filter(cluster_id == i) %>%
-      pull(location)
+      pull(geo_value)
     train_idx <- which(train_row_locations %in% locs_in_cluster)
     test_idx <- which(test_row_locations %in% locs_in_cluster)
     
