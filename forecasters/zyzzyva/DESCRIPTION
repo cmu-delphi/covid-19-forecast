@@ -46,7 +46,7 @@ Imports:
     logger
 Remotes:
     github::ryantibs/quantgen/R-package/quantgen,
-    github::cmu-delphi/covidcast/R-package/evalcast@evalcast-killcards
+    github::cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards
 RoxygenNote: 7.1.0
 Collate: 
     'calibration.R'
