@@ -128,7 +128,7 @@ pp.add_pc <- function(location_info_df,
 #' @param forecast_date the forecast date
 #'
 #' @return list with names X, y, row_locations.  y is NA if forecast_date is in the future
-#' @importFrom evalforecast get_target_period
+#' @importFrom evalcast get_target_period
 #' @importFrom lubridate ymd
 pp._get_training_set <- function(lagged_df,
                                 location_info_df,
@@ -136,9 +136,9 @@ pp._get_training_set <- function(lagged_df,
                                 forecast_date) { 
   # get response (y)
   target_period_df <-
-    evalforecast::get_target_period(forecast_date,
-                                    modeling_options$incidence_period,
-                                    modeling_options$ahead)
+    evalcast::get_target_period(forecast_date,
+                                modeling_options$incidence_period,
+                                modeling_options$ahead)
 
   y <- lagged_df %>%
     filter(
@@ -286,7 +286,7 @@ pp.impute_and_select <- function(train_test,
 #' @param forecast_date the forecast date
 #'
 #' @return list with names X, y, row_locations.  y is NA if forecast_date is in the future
-#' @importFrom evalforecast get_target_period
+#' @importFrom evalcast get_target_period
 #' @importFrom lubridate ymd
 pp.get_training_set <- function(lagged_df,
                                 location_info_df,

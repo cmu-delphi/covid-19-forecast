@@ -29,6 +29,7 @@ Depends: R(>= 3.5.0)
 Encoding: UTF-8
 Suggests: testthat
 Imports:
+    evalcast,
     forecast,
     fuzzyjoin,
     lubridate,
@@ -43,7 +44,9 @@ Imports:
     Iso,
     zoo,
     logger
-Remotes: github::ryantibs/quantgen/R-package/quantgen
+Remotes:
+    github::ryantibs/quantgen/R-package/quantgen,
+    github::cmu-delphi/covidcast/R-package/evalcast@evalcast-killcards
 RoxygenNote: 7.1.0
 Collate: 
     'calibration.R'
