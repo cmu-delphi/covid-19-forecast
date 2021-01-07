@@ -1,0 +1,26 @@
+Package: aardvark
+Title: The Delphi Lab aardvark forecaster
+Version: 20201016-125353
+Authors@R: 
+    c(person(given = "Alden",
+           family = "Green",
+           role = c("aut", "cre"),
+           email = "ajgreen@andrew.cmu.edu"),
+      person(given = "Collin",
+           family = "Politsch",
+           role = c("aut"),
+           email = "capolitsch@cmu.edu")
+           )
+Description: This package produces the Carnegie Mellon Delphi Lab COVID-19 
+  state death forecaster.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports: evalcast, covidcast, lubridate, tidyr, dplyr, utils, purrr, stats,
+         Matrix, glmnet, zoo, magrittr
+Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards,
+  cmu-delphi/covidcast/R-packages/covidcast@main
+RemoteType: github
+RoxygenNote: 7.1.1
+NeedsCompilation: no
+Packaged: 2020-10-16 16:47:50 UTC; collin
+Maintainer: Collin Politsch <capolitsch@cmu.edu>
