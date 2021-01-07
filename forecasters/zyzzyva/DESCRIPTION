@@ -30,7 +30,6 @@ Encoding: UTF-8
 Suggests: testthat
 Imports:
     forecast,
-    evalforecast,
     fuzzyjoin,
     lubridate,
     tibble,
