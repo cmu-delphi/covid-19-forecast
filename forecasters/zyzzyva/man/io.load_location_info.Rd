@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{io.load_location_info}
 \alias{io.load_location_info}
-\title{Load health data}
+\title{Load location information}
 \usage{
 io.load_location_info(geo_type)
 }
@@ -10,8 +10,12 @@ io.load_location_info(geo_type)
 \item{geo_type}{the geo type}
 }
 \value{
-tibble
+tibble containing the location information
 }
 \description{
-Load health data
+Location information (static in time) are provided through the "County
+Health Rankings" datasets.  Therefore, legacy code may use this older
+terminology.  From a modeling standpoint, any static covariates that
+are location specific fall under the broader "location information"
+umbrella, hence the renaming in this package.
 }

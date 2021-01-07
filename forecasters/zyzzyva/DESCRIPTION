@@ -47,7 +47,7 @@ Imports:
 Remotes:
     github::ryantibs/quantgen/R-package/quantgen,
     github::cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Collate: 
     'calibration.R'
     'transformation.R'

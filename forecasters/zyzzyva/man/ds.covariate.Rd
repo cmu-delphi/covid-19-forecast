@@ -24,8 +24,7 @@ ds.covariate(
 
 \item{do_rollavg}{bool to roll avg the covariate}
 
-\item{do_penalize}{bool to penalize the covariate in the lasso
-##@param use_for_nn bool use the covariate for NN matching}
+\item{do_penalize}{bool to penalize the covariate in the lasso}
 }
 \value{
 a named list

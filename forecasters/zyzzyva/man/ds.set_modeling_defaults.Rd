@@ -13,5 +13,10 @@ ds.set_modeling_defaults(modeling_options)
 a named list
 }
 \description{
-Sets modeling defaults
+This function takes a named list, containing user-specified modeling
+options, and returns a named list, where specific modeling options that
+were not explicitly set by the user are set to package defaults, as
+defined in this file.  This function also verifies that only valid modeling
+options (both keys and values) are passed in by the user, and if an invalid
+modeling option is specified, an error will be raised.
 }

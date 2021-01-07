@@ -5,17 +5,16 @@
 \title{Get the list of forecasters and associated forecaster types
 provided by this package.}
 \usage{
-get_forecasters(
-  response,
-  incidence_period = c("epiweek"),
-  ahead,
-  forecast_date,
-  geo_type = c("county", "state", "hrr", "msa"),
-  n_locations = 200
-)
+get_forecasters(response, geo_type, n_locations = 200)
 }
 \arguments{
 \item{response}{the response (e.g. "usa-facts_deaths_incidence_num")}
+
+\item{geo_type}{the geographic type (e.g "county" or "state" or
+"hrr" or "msa"... but for now only the first two),}
+
+\item{n_locations}{the number of locations (for now we will use 200
+for this)}
 
 \item{incidence_period}{the incidence period (e.g. "epiweek" for
 now, for all forecasters)}
@@ -23,12 +22,6 @@ now, for all forecasters)}
 \item{ahead}{the ahead parameter (e.g. 1, 2, 3, 4)}
 
 \item{forecast_date}{the date of the forecast}
-
-\item{geo_type}{the geographic type (e.g "county" or "state" or
-"hrr" or "msa"... but for now only the first two),}
-
-\item{n_locations}{the number of locations (for now we will use 200
-for this)}
 }
 \value{
 a named list, with each element of the list consisting of a
