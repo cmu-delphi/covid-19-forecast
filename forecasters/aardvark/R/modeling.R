@@ -13,7 +13,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     alignment_variable <- environment(aligner)$alignment_variable
 
     df_train <- df %>% 
-      bind_rows %>% 
+      bind_rows %>%
       long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% 
       distinct %>% 
@@ -321,7 +321,6 @@ make_predict_glmnet <- function(lambda_choice){
   # Inputs:
   #   lambda_choice: either "lambda.1se" or "lambda.min"
   predict_glmnet <- function(fit, X, offset, ...){
-    stopifnot(is.character(lambda_choice))
     preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
     return(preds)
   }

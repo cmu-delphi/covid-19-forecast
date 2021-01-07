@@ -26,7 +26,7 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
     stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
     df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
     
-    # (1) Compute day0 --- the first date the threshold was attained for each location
+    # (1) Compute day 0 --- the first date the threshold was attained for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
