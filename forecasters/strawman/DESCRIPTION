@@ -17,6 +17,8 @@ Imports:
     stringr,
     zoo,
     MMWRweek,
-    evalforecast,
-    magrittr
+    zookeeper,
+    magrittr,
+    evalcast
+Remote: cmu-delphi/covid-19-forecast/utilities/zookeeper@develop
 RoxygenNote: 7.1.1
