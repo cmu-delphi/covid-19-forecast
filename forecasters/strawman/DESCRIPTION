@@ -13,10 +13,14 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Suggests: testthat
 Imports:
-    dplyr,
-    stringr,
-    zoo,
-    MMWRweek,
-    evalforecast,
-    magrittr
+  dplyr,
+  stringr,
+  zoo,
+  MMWRweek,
+  zookeeper,
+  magrittr,
+  evalcast
+Remotes: 
+    cmu-delphi/covid-19-forecast/utilities/zookeeper@develop,
+    cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards
 RoxygenNote: 7.1.1
