@@ -95,7 +95,7 @@ strawman_forecaster_raw <- function(df,
     select(-.data$issue_date) %>%
     {.}
 
-  df_train <- zookeeper::multinomial_preprocesser(
+  df_train <- zookeeper::multinomial_preprocessor(
     df_train, response = response, max_lag = 5)
 
 
