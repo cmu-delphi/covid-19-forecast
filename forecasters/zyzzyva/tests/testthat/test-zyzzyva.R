@@ -1,15 +1,14 @@
-# devtools::install("~/Fellowship/repos/delphi/covidcast/R-packages/evalcast/")
-devtools::install("~/Fellowship/repos/delphi/covid-19-forecast/forecasters/zyzzyva")
+devtools::install()
 library(tidyverse)
 
 zz <- zyzzyva::get_forecasters("usa-facts_confirmed_incidence_num", "county")$zyzzyva_covidcast$forecaster
 signals <- tibble(
-    data_source = c("jhu-csse",
-                    "usa-facts",
+    data_source = c("usa-facts",
+                    "jhu-csse",
                     "fb-survey",
                     "indicator-combination"),
-    signal = c("deaths_incidence_num",
-               "confirmed_incidence_num",
+    signal = c("confirmed_incidence_num",
+               "deaths_incidence_num",
                "smoothed_hh_cmnty_cli",
                "nmf_day_doc_fbc_fbs_ght")
 )
