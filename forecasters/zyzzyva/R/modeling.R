@@ -286,11 +286,12 @@ ml.stratified_linear <- function(train_test,
   # format for output
   final_out <- NULL
   for (i in 1:length(modeling_options$cdc_probs)) {
-    final_out <- rbind(final_out, cbind(train_test$test_row_locations, 
+    final_out <- rbind(final_out, cbind(modeling_options$ahead,
+                                        train_test$test_row_locations, 
                                         modeling_options$cdc_probs[i],
                                         out[, i]))
   }
-  names(final_out) <- c("location", "probs", "quantiles")
+  names(final_out) <- c("ahead", "geo_value", "quantile", "value")
   
   final_out
 }
