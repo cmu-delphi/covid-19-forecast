@@ -1,6 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
-                                     bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
-                                     aligner = NULL, bootstrapper, B = 1000){
+                                     bandwidth = 7, degree = 0, imputer = NULL, stratifier = NULL, 
+                                     modeler = NULL, aligner = NULL, bootstrapper, B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -21,9 +21,35 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
+
+    # (II) Make sure all variables are present in the data frame.
+    location_df <- distinct(select(df_impute, c(location)))
+    df_empty <- expand_grid(location_df,
+                            time_value = unique(df_impute$time_value),
+                            variable_name = unique(df_impute$variable_name))
+    df_impute_all <- left_join(df_empty, df_impute, by = c("location", "time_value", "variable_name"))
+    
+    # (III) Impute NA by 0 
+    df_impute_all_no_na <- df_impute_all %>%
+      mutate(value = if_else(variable_name %in% impute_variables & is.na(value),
+                             replace_na(value,0),
+                             value))
+    
+    # (IV) Smooth out our data.
+    df_imputed <- df_impute_all_no_na %>%
+      group_by(variable_name) %>%
+      rename(date = time_value) %>% # adopt our old convention
+      group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% # impute
+      rename(original_value = value, value = imputed_value, time_value = date) %>%
+      ungroup() # go back to the new convention
+    
+    # (V) Add back in variables which were not supposed to be imputed
+    df_train_use <- bind_rows(df_imputed, df_no_impute)
+
+    
     df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
-                                           ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
+                                           ahead, imputer, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
     predictions <- df_all %>% 
@@ -39,7 +65,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
 #' @importFrom magrittr %$%
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
-                                       stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
+                                       imputer, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
                                        alignment_variable){
 
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -232,16 +258,13 @@ long_to_wide <- function(df){
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
-  df1 <- df %>% filter(variable_name == "jhu-csse-deaths_7dav_incidence_num") %>% 
+  df1 <- df %>% filter(variable_name == "jhu-csse-deaths_incidence_num") %>% 
     aggregate_signals(format = "wide")
-  df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_7dav_incidence_num") %>% 
-    aggregate_signals(format = "wide")
-  df3 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") %>% 
+  df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_incidence_num") %>% 
     aggregate_signals(format = "wide")
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
-  names(df3)[which(substr(names(df3),1,5) == "value")] <- "value"
-  df <- bind_rows(df1, df2, df3)
+  df <- bind_rows(df1, df2)
   match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
   df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)

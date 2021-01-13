@@ -23,7 +23,7 @@
 #' @export get_forecasters
 #' @examples 
 #'     signals <- tibble::tibble(data_source = "jhu-csse",
-#'     signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
+#'     signal = c("deaths_incidence_num", "confirmed_incidence_num"),
 #'     start_day = "2020-03-07")
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
@@ -31,11 +31,12 @@
 get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
-  cases <- paste(signals$data_source[1], "confirmed_7dav_incidence_num", sep = "-")
-  cases_cumul <- paste(signals$data_source[1], "confirmed_cumulative_num", sep = "-")
+  cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
+  imputer <- make_mean_imputer(k = 7, align = "right")
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
-  aligner <- make_time_aligner(alignment_variable = cases_cumul, threshold = 500, ahead)
+  aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
+  
   model_fitter <- make_cv_glmnet(alpha = 1)
   model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
@@ -50,6 +51,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
+                                                  imputer = imputer,
                                                   aligner = aligner,
                                                   stratifier = stratifier,
                                                   modeler = modeler,
