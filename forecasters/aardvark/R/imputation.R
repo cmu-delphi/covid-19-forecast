@@ -7,7 +7,6 @@ make_mean_imputer <- function(k, first_date = NULL, last_date = NULL, ave = roll
 
   mean_imputer <- function(dat){
 
-    stopifnot(c("location", "time_value", "value") %in% names(dat))
     if (is.null(first_date)){
       first_date <- min(dat %>% pull(time_value))
     }

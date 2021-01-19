@@ -23,8 +23,7 @@
 #' @export get_forecasters
 #' @examples 
 #'     signals <- tibble::tibble(data_source = "jhu-csse",
-#'     signal = c("deaths_incidence_num", "confirmed_incidence_num"),
-#'     start_day = "2020-03-07")
+#'     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
@@ -33,7 +32,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
-  imputer <- make_mean_imputer(k = 7, align = "right")
+  imputer <- make_mean_imputer(k = 7)
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
