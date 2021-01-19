@@ -15,19 +15,18 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     df_train <- df %>% 
       bind_rows %>%
       long_to_wide %>%
-      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% 
+      filter(variable_name %in% c(response, features$variable_name)) %>% 
       distinct %>% 
       #filter((variable_name != response) | (issue >= time_value + backfill_buffer) ) %>%
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
-
     # (II) Make sure all variables are present in the data frame.
-    location_df <- distinct(select(df_impute, c(location)))
+    location_df <- distinct(select(df_train, c(location)))
     df_empty <- expand_grid(location_df,
-                            time_value = unique(df_impute$time_value),
-                            variable_name = unique(df_impute$variable_name))
-    df_impute_all <- left_join(df_empty, df_impute, by = c("location", 
+                            time_value = unique(df_train$time_value),
+                            variable_name = unique(df_train$variable_name))
+    df_impute_all <- left_join(df_empty, df_train, by = c("location", 
                                                            "time_value", 
                                                            "variable_name"))
     
@@ -40,7 +39,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     # (IV) Smooth out our data.
     df_imputed <- df_impute_all_no_na %>%
       group_by(variable_name) %>%
-      group_modify(~ if(.y$variable_name %in% impute_variables) imputer(.x) else .x) %>% 
+      group_modify(~ if(.y$variable_name %in% impute_variables) smoother(.x) else .x) %>% 
       rename(original_value = value, value = imputed_value) %>%
       ungroup() 
     
@@ -257,8 +256,7 @@ long_to_wide <- function(df){
   }
   match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, geo_value, time_value))
   df <- df %>% 
-    mutate(variable_name = paste(data_source, signal, sep = "-"),
-           location = evalcast:::abbr_2_fips(df$geo_value))
+    mutate(variable_name = paste(data_source, signal, sep = "-"))
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
@@ -267,11 +265,14 @@ long_to_wide <- function(df){
   df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_incidence_num") %>% 
     aggregate_signals(format = "wide")
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
+  df1$variable_name <- "jhu-csse-deaths_incidence_num"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
+  df1$variable_name <- "jhu-csse-confirmed_incidence_num"
   df <- bind_rows(df1, df2)
   match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
+  df <- df %>% mutate(location = evalcast:::abbr_2_fips(df$geo_value)) %>%
+    select(location, geo_value, variable_name, value, time_value, issue)
   df$value <- as.double(df$value)
   return(df)
 }
