@@ -1,9 +1,5 @@
 make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_period = "epiweek"){
-  # Closure, so that alignment functions can take standard input.
-  # Inputs:
-  #   alignment_variable: what variable to use for alignment?
-  #   threshold: how large a value of the variable to treat as the threshold for start of the pandemic?
-  #   ahead, incidence_period: canonical parameters used by the evaluator.
+
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
 
     stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
