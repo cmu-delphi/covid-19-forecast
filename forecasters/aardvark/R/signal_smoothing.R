@@ -6,16 +6,17 @@ make_kernel_smoother <- function(h, kern = c("tophat"), first_date = NULL, last_
   # -- last_date: Date object, the last time_value on which we should see variables.
   
   kern <- match.arg(kern)
-  
-  if (is.null(first_date)){
-    first_date <- min(dat %>% pull(time_value))
-  }
-  if (is.null(last_date)){
-    last_date <- max(dat %>% pull(time_value))
-  }
 
   if ( kern == "tophat" ){
+    
     kernel_smoother <- function(dat){
+      
+      if (is.null(first_date)){
+        first_date <- min(dat %>% pull(time_value))
+      }
+      if (is.null(last_date)){
+        last_date <- max(dat %>% pull(time_value))
+      }
       
       date_df <- data.frame(time_value = seq(first_date, last_date, by = "days"))
       full_df <- left_join(date_df, dat, by = c("time_value"))
