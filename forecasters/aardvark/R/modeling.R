@@ -1,5 +1,5 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
-                                     bandwidth = 7, degree = 0, imputer = NULL, stratifier = NULL, 
+                                     bandwidth = 7, degree = 0, smoother = NULL, stratifier = NULL, 
                                      modeler = NULL, aligner = NULL, bootstrapper, B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
@@ -51,7 +51,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
                           probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
-                                           imputer, stratifier, aligner, modeler,
+                                           smoother, stratifier, aligner, modeler,
                                            bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
@@ -68,7 +68,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
 #' @importFrom magrittr %$%
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
-                                       imputer, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
+                                       smoother, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
                                        alignment_variable){
 
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth

@@ -1,11 +1,11 @@
-make_mean_smoother <- function(k, first_date = NULL, last_date = NULL, ave = rollmean){
+make_kernel_smoother <- function(k, first_date = NULL, last_date = NULL, ave = rollmean){
   # Closure to make a smoother.
   # Inputs:
   # -- k: number of days to take an average over
   # -- first_date: Date object, the first time_value on which we should see variables.
   # -- last_date: Date object, the last time_value on which we should see variables.
 
-  mean_smoother <- function(dat){
+  kernel_smoother <- function(dat){
 
     if (is.null(first_date)){
       first_date <- min(dat %>% pull(time_value))

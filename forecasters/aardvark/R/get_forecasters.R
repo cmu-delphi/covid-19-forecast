@@ -32,7 +32,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
-  imputer <- make_mean_imputer(k = 7)
+  kernel_smoother <- make_kernel_smoother(k = 7)
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
@@ -50,7 +50,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
-                                                  imputer = imputer,
+                                                  smoother = kernel_smoother,
                                                   aligner = aligner,
                                                   stratifier = stratifier,
                                                   modeler = modeler,
