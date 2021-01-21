@@ -7,18 +7,18 @@
 #'     function is not available for a given set of parameters, an 
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
-#' @param signals Tibble with columns \code{data_source} and signal that specifies
-#'     which variables from the COVIDcast API will be used by forecaster. Each row 
-#'     of signals represents a separate signal, and first row is taken to be the 
-#'     response.
+#' @param signals Tibble with columns \code{data_source}, \code{signal}, 
+#'     \code{start_day} that specify which variables from the COVIDcast API will 
+#'     be used by forecaster. Each row of signals represents a separate signal, 
+#'     and first row is taken to be the response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
 #' @param strata_alpha Stratification proportion parameter
 #' @param bandwidth Kernel bandwidth (in days) for the local weighting kernel
 #' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
-#'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
-#'     deprecated. Unavailable forecasters are marked as 
+#'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} 
+#'     now deprecated. Unavailable forecasters are marked as 
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
 #' @examples 
@@ -32,7 +32,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
-  kernel_smoother <- make_kernel_smoother(k = 7)
+  kernel_smoother <- make_kernel_smoother(k = 7, kernel = "tophat")
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
