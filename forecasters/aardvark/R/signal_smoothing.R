@@ -1,11 +1,11 @@
-make_kernel_smoother <- function(h, kernel = c("tophat"), first_date = NULL, last_date = NULL){
+make_kernel_smoother <- function(h, kern = c("tophat"), first_date = NULL, last_date = NULL){
   # Inputs:
   # -- h: bandwidth (number of trailing days to smooth over)
   # -- kernel: name of smoothing kernel to use
   # -- first_date: Date object, the first time_value on which we should see variables.
   # -- last_date: Date object, the last time_value on which we should see variables.
   
-  kernel <- match.arg(kernel)
+  kern <- match.arg(kern)
   
   if (is.null(first_date)){
     first_date <- min(dat %>% pull(time_value))
@@ -14,7 +14,7 @@ make_kernel_smoother <- function(h, kernel = c("tophat"), first_date = NULL, las
     last_date <- max(dat %>% pull(time_value))
   }
 
-  if ( kernel == "tophat" ){
+  if ( kern == "tophat" ){
     kernel_smoother <- function(dat){
       
       date_df <- data.frame(time_value = seq(first_date, last_date, by = "days"))
@@ -28,4 +28,6 @@ make_kernel_smoother <- function(h, kernel = c("tophat"), first_date = NULL, las
       return(smoothed_dat)
     }
   }
+  
+  return(kernel_smoother)
 }
