@@ -1,4 +1,4 @@
-make_kernel_smoother <- function(k, first_date = NULL, last_date = NULL, ave = rollmean){
+make_kernel_smoother <- function(k, first_date = NULL, last_date = NULL){
   # Closure to make a smoother.
   # Inputs:
   # -- k: number of days to take an average over
@@ -19,7 +19,7 @@ make_kernel_smoother <- function(k, first_date = NULL, last_date = NULL, ave = r
     smoothed_dat <- full_df %>%
       group_by(location) %>%
       arrange(time_value) %>%
-      mutate(smoothed_value = ave(value, k, align = "right", fill = "extend")) %>%
+      mutate(smoothed_value = rollmean(value, k, align = "right", fill = "extend")) %>%
       ungroup
     return(smoothed_dat)
   }

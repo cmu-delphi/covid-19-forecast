@@ -1,19 +1,3 @@
-#-----------------------------------------------------------------------------#
-# This script contains aligners: functions used to compute aligned time.
-# Each aligner should take as input:
-#   df_use: a data frame, of the same form as the upstream df
-#   forecast_date: a canonical parameter used by the evaluator.
-# and output a data frame
-#   df_align: a data frame with columns location, time_value, and align_date.
-# 
-# Each aligner should satisfy the "aligner guarantee". 
-# This guarantees that an aligned date is computed for
-# 
-# --every location at which data has been observed
-# --every date at which data has been observed
-# --every date in the target period, defined by the forecast_date.
-#-----------------------------------------------------------------------------#
-
 make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_period = "epiweek"){
   # Closure, so that alignment functions can take standard input.
   # Inputs:
@@ -21,21 +5,15 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
   #   threshold: how large a value of the variable to treat as the threshold for start of the pandemic?
   #   ahead, incidence_period: canonical parameters used by the evaluator.
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
-    # Compute aligned time as the number of days since a given variable attained a given threshold
-    # for the first time.
+
     stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
     df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
     
-    # (1) Compute day 0 --- the first date the threshold was attained for each location
     day0 <- df_alignment_variable %>% 
       filter(value >= threshold) %>%
       select(-value) %>%
       group_by(location) %>%
       summarise(value = min(time_value), .groups = "drop")
-    
-    # (2) Compute days since variable crossed threshold
-    #     If the threshold has not yet been reached for a given (location, time_value), 
-    #     we assign a value of NA.
 
     locations <- df_use %>% pull(location) %>% unique
     train_dates <- df_use %>% pull(time_value) %>% unique
