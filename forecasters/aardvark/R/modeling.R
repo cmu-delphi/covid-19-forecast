@@ -35,14 +35,13 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     
     df_train_smoothed <- df_train_all_no_na %>%
       group_by(variable_name) %>%
-      rename(date = time_value) %>%
       group_modify(~ smoother(.x) ) %>% 
-      rename(original_value = value, value = smoothed_value, time_value = date) %>%
+      rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
 
-    df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), 
+    df_all <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)), 
                           probs = covidhub_probs)
-    df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, 
+    df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
                                            smoother, stratifier, aligner, modeler,
                                            bootstrapper, B, covidhub_probs, 
@@ -260,7 +259,7 @@ long_to_wide <- function(df){
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
   df1$variable_name <- "jhu-csse-deaths_incidence_num"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
-  df1$variable_name <- "jhu-csse-confirmed_incidence_num"
+  df2$variable_name <- "jhu-csse-confirmed_incidence_num"
   df <- bind_rows(df1, df2)
   match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
