@@ -1,5 +1,4 @@
 make_kernel_smoother <- function(h, kernel = c("tophat"), first_date = NULL, last_date = NULL){
-  # Closure to make a smoother.
   # Inputs:
   # -- h: bandwidth (number of trailing days to smooth over)
   # -- kernel: name of smoothing kernel to use

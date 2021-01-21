@@ -21,32 +21,25 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
-    # (II) Make sure all variables are present in the data frame.
     location_df <- distinct(select(df_train, c(location)))
-    df_empty <- expand_grid(location_df,
-                            time_value = unique(df_train$time_value),
-                            variable_name = unique(df_train$variable_name))
-    df_impute_all <- left_join(df_empty, df_train, by = c("location", 
-                                                           "time_value", 
-                                                           "variable_name"))
+    df_train_empty <- expand_grid(location_df,
+                                  time_value = unique(df_train$time_value),
+                                  variable_name = unique(df_train$variable_name))
+    df_train_all <- left_join(df_train_empty, df_train, by = c("location", 
+                                                               "time_value", 
+                                                               "variable_name"))
     
-    # (III) Impute NA by 0 
-    df_impute_all_no_na <- df_impute_all %>%
-      mutate(value = if_else(variable_name %in% impute_variables & is.na(value),
-                             replace_na(value,0),
-                             value))
-    
-    # (IV) Smooth out our data.
-    df_imputed <- df_impute_all_no_na %>%
-      group_by(variable_name) %>%
-      group_modify(~ if(.y$variable_name %in% impute_variables) smoother(.x) else .x) %>% 
-      rename(original_value = value, value = imputed_value) %>%
-      ungroup() 
-    
-    # (V) Add back in variables which were not supposed to be imputed
-    df_train_use <- bind_rows(df_imputed, df_no_impute)
 
+    df_train_all_no_na <- df_train_all %>%
+      mutate(value = if_else(is.na(value), replace_na(value,0), value))
     
+    df_train_smoothed <- df_train_all_no_na %>%
+      group_by(variable_name) %>%
+      rename(date = time_value) %>%
+      group_modify(~ smoother(.x) ) %>% 
+      rename(original_value = value, value = smoothed_value, time_value = date) %>%
+      ungroup() 
+
     df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), 
                           probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, 

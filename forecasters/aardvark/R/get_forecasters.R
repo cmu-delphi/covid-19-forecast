@@ -32,7 +32,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
-  kernel_smoother <- make_kernel_smoother(k = 7, kernel = "tophat")
+  kernel_smoother <- make_kernel_smoother(h = 7, kernel = "tophat")
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
