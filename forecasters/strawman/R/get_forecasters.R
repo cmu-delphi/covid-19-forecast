@@ -24,7 +24,10 @@
 #'     "ensemble")`). Unavailable forecasters are marked as
 #'     `list(forecaster = NA, type = "standalone")`.
 #' @export get_forecasters
-get_forecasters  <- function(response, incidence_period = c("epiweek"), ahead, forecast_date,
+get_forecasters  <- function(response, 
+                             incidence_period = c("epiweek"), 
+                             ahead, 
+                             forecast_date,
                              geo_type = c("county", "state", "hrr", "msa"),
                              n_locations = 200) {
     incidence_period <- match.arg(incidence_period)
@@ -36,15 +39,15 @@ get_forecasters  <- function(response, incidence_period = c("epiweek"), ahead, f
     ##
     if (geo_type %in% c("county", "state")) {
         list(
-            strawman =
-                list(forecaster = strawman_forecaster(response = response, incidence_period = incidence_period,
-                                                      ahead = ahead, version = 2),
-                     type = "standalone"),
-            strawman1 =
-                list(forecaster = strawman_forecaster(response = response, incidence_period = incidence_period,
-                                                      ahead = ahead, version = 1),
-                     type = "standalone")
-            )
+            strawman = list(forecaster = strawman_forecaster(
+                response = response, incidence_period = incidence_period,
+                ahead = ahead, version = 2),
+                type = "standalone"),
+            strawman1 = list(forecaster = strawman_forecaster(
+                response = response, incidence_period = incidence_period,
+                ahead = ahead, version = 1),
+                type = "standalone")
+        )
     } else {
         list(strawman = list(forecaster = NA, type = "standalone"),
              strawman1 = list(forecaster = NA, type = "standalone"))
