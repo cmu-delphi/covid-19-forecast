@@ -1,5 +1,5 @@
 ---
-title: "County usa-facts confirmed case corrections with backfilling"
+title: "All-signal correction"
 author: "Delphi Group - Last run:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -24,7 +24,7 @@ params:
   chunk_output_type: inline
 ---
 
-```{r, message=FALSE, warning=FALSE}
+```{r package and helper funtion, message=FALSE, warning=FALSE}
 library(covidcast)
 library(dplyr)
 library(tidyr)
@@ -34,15 +34,14 @@ library(cowplot)
 library(ggplot2)
 library(DT)
 library(ggforce)
-knitr::opts_chunk$set(warning = FALSE, message=FALSE, dev="CairoSVG")
+knitr::opts_chunk$set(warning = FALSE, message=FALSE)
 source("process-funs.R")
 source("corrections.R")
 attach(params)
 ```
 
 Data retrieval
-```{r, cache=params$cache_data}
-
+```{r Data retrieval, cache=params$cache_data}
 county_data <- function(data.source) {
   county_data <- list()
   for (i in 1:length(data.source)) {
@@ -63,10 +62,19 @@ county_data <- function(data.source) {
   return(county_all)
 }
 
-counties_all <- county_data(covidcast_data_source)
+#counties_all <- county_data(covidcast_data_source)
+# To save time, I will directly load pre-downloaded data here
+counties_all <- read.csv("~/Desktop/corrected_data/counties_all.csv")
 
 #round double with decimals to integers
 counties_all$value <- as.integer(round(counties_all$value,digits = 0))
+
+# Convert time_value to Date
+counties_all$time_value <- as.Date(counties_all$time_value)
+
+# Convert geo_value to character
+counties_all$geo_value <- as.character(counties_all$geo_value)
+
 ```
 
 
@@ -76,7 +84,7 @@ Data Wrangling notes:
 * Counties whose maximum confirmed_incidence_num <10 are filtered out in either data source.
 * Top 300 of counties sorted by total cases will be corrected
 
-```{r}
+```{r data wrangling}
 todump <- counties_all %>% 
   filter(signal == "confirmed_incidence_num")%>% 
   group_by(data_source,geo_value) %>% 
@@ -90,15 +98,16 @@ todump <- counties_all %>%
          as.numeric(geo_value) %% 1000 > 0) %>% 
   arrange(desc(case_sum)) %>% top_n(300, wt=case_sum) 
 county_filtered <- subset(counties_all,counties_all$geo_value %in% todump$geo_value)
+
 ```
 
 
 Since we would only implement `corrections_multinom_roll` on confirmed_incidence_num, therefore only rows with a signal "confirmed_incidence_num" will be flagged here.
 
 ```{r calculate-roll-stats}
-df <- county_filtered %>% 
-  filter(signal == "confirmed_incidence_num") %>%
-  group_by(data_source,geo_value)  %>% mutate(
+county_filtered <- county_filtered %>% 
+  group_by(data_source,signal,geo_value)  %>% mutate(
+  geo_value = ifelse(nchar(geo_value) < 5, paste0("0",geo_value),geo_value),
   fmean = roll_meanr(value, window_size),
   # smean = roll_mean(value, window_size, fill = NA),
   fmedian = roll_medianr(value, window_size),
@@ -109,17 +118,17 @@ df <- county_filtered %>%
   smad = roll_median(abs(value-smedian), na.rm=TRUE),
   ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
   ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
-  flag = 
-    (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut ) | # best case
+  flag = (signal == "confirmed_incidence_num") &
+    ((abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut ) | # best case
     (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
       # use filter if smoother is missing
-    (value < -size_cut & !is.na(ststat) & !is.na(ftstat)), # big negative
+    (value < -size_cut & !is.na(ststat) & !is.na(ftstat))), # big negative
     #(fmean > 10 & fmean< 20 & value > 2*sig_cut*fmean)
-  flag = flag | # these allow smaller values to also be outliers if they are consecutive
+  flag = (signal == "confirmed_incidence_num") & (flag | # these allow smaller values to also be outliers if they are consecutive
     (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
     (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
     (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
-    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec)),
   # RI_daily_flag = (geo_value=="44007" & value!=0 & 
   #                    lead(value,n=1L)!=0 & lead(value,n=2L)!=0 
   #                  & lead(value,n=3L)!=0)
@@ -127,12 +136,12 @@ df <- county_filtered %>%
   flag = flag & 
     (time_value < ymd(time_value_flag_date) | value < -size_cut),
   flag = flag | 
-    (time_value == "2020-11-20" & as.numeric(geo_value) %/% 1000 == 22)
+    (time_value == "2020-11-20" & as.numeric(geo_value) %/% 1000 == 22 & signal == "confirmed_incidence_num" )
   #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
   )
 
-county_filtered <- county_filtered %>% left_join(df,by = c("data_source","signal","geo_value","time_value","issue","lag","stderr","sample_size","dt","value"))
 
+# Map counties to State
 county_filtered <-  county_filtered %>% 
   mutate(FIP = substr(geo_value,1,2)) %>% 
   mutate(state = names(STATE_TO_FIPS)[match(FIP,STATE_TO_FIPS)]) %>% 
@@ -150,8 +159,8 @@ Now we use the "multinomial" smoother to backfill the excess of any flagged outl
 * Optionally allows for filling non-uniformly.
 
 
-```{r}
-# RI reports only weekly
+```{r Make corrections}
+
 corrected_counties <- county_filtered %>% 
   mutate(
     # FIPS = as.numeric(geo_value),
@@ -169,38 +178,92 @@ corrected_counties <- county_filtered %>%
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
     corrected = corrected + # imputes forward due to weekly releases
-      missing_future(TRUE, time_value, excess, fmean)
+      missing_future(data_source == "jhu-csse" & geo_value == "49053", time_value, excess, fmedian),
+                corrected = corrected + # imputes forward due to weekly releases
+      missing_future(data_source != "jhu-csse" & geo_value != "49053", time_value, excess, fmean)
     )
 ```
 
 
+
 ## Visualize corrected counties
 
-```{r show-corrections, fig.height = 120, fig.width = 30, dev="CairoSVG"}
-simple_labs = covidcast::fips_to_name(unique(corrected_counties$geo_value))
-simple_labs = gsub(" County| city| Parish", "", simple_labs)
-sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
-nn = names(simple_labs)
-simple_labs = paste(simple_labs, sta)
-names(simple_labs) = nn
-
-mtv <- max(corrected_counties$time_value)
-corrected_counties %>% group_by(geo_value) %>% 
-  filter(any(flag == 'TRUE')) %>% 
-  dplyr::select(geo_value, time_value, value, corrected, flag) %>%
-  pivot_longer(value:corrected) %>%
-  ggplot(aes(time_value))+geom_line(aes(y=value, color=name))+
-  geom_point(
-    data = filter(corrected_counties, flag), 
-    aes(y=value), color="red")+ 
-  facet_wrap(~data_source + signal + geo_value, scales = "free", ncol = 5,
-             labeller = labeller(geo_value = simple_labs))+
-  theme_cowplot()+xlab("date")+
-  ylab(attributes(county_filtered)$metadata$signal)+
-  coord_cartesian(xlim = mtv + c(-90,0)) +
-  scale_color_viridis_d() + 
-  scale_x_date(date_breaks = "months" , date_labels = "%b")
+```{r function to show corrections for each signal}
+show_correction <- function(corrected_df,target_signal,target_data_source){
+  simple_labs = covidcast::fips_to_name(unique(corrected_df$geo_value))
+  simple_labs = gsub(" County| city| Parish", "", simple_labs)
+  sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
+  nn = names(simple_labs)
+  simple_labs = paste(simple_labs, sta)
+  names(simple_labs) = nn
+  mtv <- max(corrected_df$time_value)
+  
+  if (target_signal == "confirmed_incidence_num") {
+    p <- corrected_counties %>% 
+        ungroup() %>% 
+        group_by(geo_value) %>% 
+        filter(data_source == target_data_source & signal == target_signal)%>% 
+        filter(any(flag == 'TRUE')) %>% 
+        dplyr::select(geo_value, time_value, value, corrected, flag) %>%
+        pivot_longer(value:corrected) %>%
+        ggplot(aes(time_value,group = 1)) + 
+          geom_line(aes(y=value, color=name)) + 
+          geom_point(
+              data = filter(corrected_counties %>% filter(data_source == target_data_source & signal == target_signal),flag),
+              aes(y=value), color="red",size = 3) + 
+          facet_wrap(~geo_value, scales = "free", ncol = 5,
+             labeller = labeller(geo_value = simple_labs)) + 
+          theme_cowplot()+xlab("date")+
+          coord_cartesian(xlim = as.Date(mtv) + c(-90,0)) +
+          scale_color_viridis_d() + 
+          scale_x_date(date_breaks = "months" , date_labels = "%b") +
+          ggtitle(paste0(target_signal," from ",target_data_source)) + 
+          theme(plot.title = element_text(size = 30, face = "bold"))
+  }else{
+    p <- corrected_counties %>% 
+        ungroup() %>% 
+        group_by(geo_value) %>% 
+        filter(data_source == target_data_source & signal == target_signal)%>% 
+        filter(any(value != corrected)) %>% 
+        dplyr::select(geo_value, time_value, value, corrected) %>%
+        pivot_longer(value:corrected) %>%
+        ggplot(aes(time_value,group = 1)) + 
+          geom_line(aes(y=value, color=name)) + 
+          facet_wrap(~geo_value, scales = "free", ncol = 5,
+             labeller = labeller(geo_value = simple_labs)) + 
+          theme_cowplot()+xlab("date")+
+          coord_cartesian(xlim = as.Date(mtv) + c(-90,0)) +
+          scale_color_viridis_d() + 
+          scale_x_date(date_breaks = "months" , date_labels = "%b") +
+          ggtitle(paste0(target_signal," from ",target_data_source)) + 
+          theme(plot.title = element_text(size = 30, face = "bold"))
+  }
+  return(p)
+}
 ```
+
+```{r usa-facts:case, fig.height = 150, fig.width = 20}
+show_correction(corrected_counties,"confirmed_incidence_num","usa-facts")
+```
+
+
+
+
+```{r usa-facts: death,fig.height = 150, fig.width = 20}
+show_correction(corrected_counties,"deaths_incidence_num","usa-facts")
+```
+
+
+```{r jhu-csse: case,fig.height = 150, fig.width = 20}
+show_correction(corrected_counties,"confirmed_incidence_num","jhu-csse")
+```
+
+
+```{r jhu-csse: death,fig.height = 150, fig.width = 20}
+show_correction(corrected_counties,"deaths_incidence_num","jhu-csse")
+```
+
+
 
 ## Show all corrected time points
 
