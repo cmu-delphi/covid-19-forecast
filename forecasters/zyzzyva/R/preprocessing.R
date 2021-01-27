@@ -500,6 +500,12 @@ pp.make_train_test <- function(base_df,
   ## At this point, assume each reference date only appears once per date,
   ## location, variable_name
   lagged_df <- pp.add_lagged_columns(filtered_df, modeling_options)
+
+  # filter out state level FIPS codes
+  if (modeling_options$geo_type == "county") {
+    lagged_df <- lagged_df %>% filter(substr(.data$geo_value, 3, 5) != "000")
+  }
+
   location_info_df <- pp.add_pc(location_info_df, modeling_options)
   test_dfs <- pp.get_training_set(lagged_df,
                                   location_info_df,
