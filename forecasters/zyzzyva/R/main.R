@@ -4,13 +4,13 @@ NULL
 #' Wrapper function to create a forecasting function
 #'
 #' @param forecast_date the date of the forecast
-#' @param n_locations the number of locations (for now we will use 200
-#'     for this)
+#' @param n_locations the maximum number of locations to forecast, ordered by response value
+#'   descending.  Forecasts all locations when NULL.
 #' @param modeling_options a named list, additional elements of which
 #'     overrides learner-dependent options set within the code
 #' @return function that performs forecasting with proper options set
 stacked_forecaster <- function(forecast_date,
-                               n_locations=200,
+                               n_locations=NULL,
                                modeling_options = list(
                                   learner='stratified_linear',
                                   weeks_back=4)) {
@@ -35,6 +35,7 @@ stacked_forecaster <- function(forecast_date,
     raw_forecaster(
       full_df,
       forecast_date,
+      n_locations,
       modeling_options=modeling_options
     )
   }
@@ -49,7 +50,12 @@ stacked_forecaster <- function(forecast_date,
 #' @return function that performs forecasting with proper options set
 raw_forecaster <- function(base_df,
                            forecast_date,
+                           n_locations,
                            modeling_options) {
+  if (!is.null(n_locations)) {
+    top_locs <- tn.get_top_n_locations(base_df, modeling_options$response, n_locations)
+    base_df <- base_df %>% filter(geo_value %in% top_locs)
+  }
   set.seed(modeling_options$seed)
   modeling_options$earliest_data_date <- min(base_df[['time_value']])
   modeling_options <- ds.set_modeling_defaults(modeling_options)

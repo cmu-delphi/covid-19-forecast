@@ -20,8 +20,8 @@ NULL
 #' @param forecast_date the date of the forecast
 #' @param geo_type the geographic type (e.g "county" or "state" or
 #'     "hrr" or "msa"... but for now only the first two),
-#' @param n_locations the number of locations (for now we will use 200
-#'     for this)
+#' @param n_locations the maximum number of locations to forecast, ordered by response value
+#'   descending.  Forecasts all locations when NULL.
 #' @return a named list, with each element of the list consisting of a
 #'     forecaster function and type (one of `c("standalone",
 #'     "ensemble")`). Unavailable forecasters are marked as
@@ -29,7 +29,7 @@ NULL
 #' @export get_forecasters
 get_forecasters  <- function(response,
                              geo_type,
-                             n_locations=200) {
+                             n_locations=NULL) {
 
     covidcast_cluster_covariates = list(
         ds.covariate("usa-facts_confirmed_incidence_num",
@@ -73,8 +73,8 @@ get_forecasters  <- function(response,
         list(
             zyzzyva_covidcast =
                 list(forecaster=stacked_forecaster(
-                         n_locations=nlocations,
-                         modeling_options=modeling_options),
+                        n_locations=n_locations,
+                        modeling_options=modeling_options),
                      type="standalone")
         )
     } else {
