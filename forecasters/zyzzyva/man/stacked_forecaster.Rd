@@ -6,15 +6,15 @@
 \usage{
 stacked_forecaster(
   forecast_date,
-  n_locations = 200,
+  n_locations = NULL,
   modeling_options = list(learner = "stratified_linear", weeks_back = 4)
 )
 }
 \arguments{
 \item{forecast_date}{the date of the forecast}
 
-\item{n_locations}{the number of locations (for now we will use 200
-for this)}
+\item{n_locations}{the maximum number of locations to forecast, ordered by response value
+descending.  Forecasts all locations when NULL.}
 
 \item{modeling_options}{a named list, additional elements of which
 overrides learner-dependent options set within the code}
