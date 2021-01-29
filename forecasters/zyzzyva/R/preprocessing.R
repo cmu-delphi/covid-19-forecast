@@ -479,6 +479,8 @@ pp.transform_and_scale <- function(train_test,
 #' @param base_df the data frame
 #' @param location_info_df formerly health_rankings_df
 #' @param forecast_date date on which we start producing forecasts
+#' @param n_locations the maximum number of locations to forecast, ordered by response value
+#'   descending.  Forecasts all locations when NULL.
 #' @param modeling_options the modeling options list
 #'
 #' @return list with names train_X, train_y, test_X
@@ -486,6 +488,7 @@ pp.transform_and_scale <- function(train_test,
 pp.make_train_test <- function(base_df,
                                location_info_df,
                                forecast_date,
+                               n_locations,
                                modeling_options) {
   # filter to available data as of forecast_date
   filtered_df <- base_df %>% filter(time_value <= forecast_date)
@@ -504,6 +507,11 @@ pp.make_train_test <- function(base_df,
   # filter out state level FIPS codes
   if (modeling_options$geo_type == "county") {
     lagged_df <- lagged_df %>% filter(substr(.data$geo_value, 3, 5) != "000")
+  }
+
+  if (!is.null(n_locations)) {
+    top_locs <- tn.get_top_n_locations(lagged_df, modeling_options$response, n_locations)
+    lagged_df <- lagged_df %>% filter(geo_value %in% top_locs)
   }
 
   location_info_df <- pp.add_pc(location_info_df, modeling_options)

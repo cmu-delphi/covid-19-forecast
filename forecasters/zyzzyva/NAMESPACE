@@ -2,6 +2,7 @@
 
 export(ds.covariate)
 export(get_forecasters)
+export(tn.get_top_n_locations)
 export(tr.column_impute)
 export(tr.cube_root)
 export(tr.identity)

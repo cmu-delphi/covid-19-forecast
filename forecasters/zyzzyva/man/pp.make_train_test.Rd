@@ -4,7 +4,13 @@
 \alias{pp.make_train_test}
 \title{Make train predictors, targets and test predictors}
 \usage{
-pp.make_train_test(base_df, location_info_df, forecast_date, modeling_options)
+pp.make_train_test(
+  base_df,
+  location_info_df,
+  forecast_date,
+  n_locations,
+  modeling_options
+)
 }
 \arguments{
 \item{base_df}{the data frame}
@@ -12,6 +18,9 @@ pp.make_train_test(base_df, location_info_df, forecast_date, modeling_options)
 \item{location_info_df}{formerly health_rankings_df}
 
 \item{forecast_date}{date on which we start producing forecasts}
+
+\item{n_locations}{the maximum number of locations to forecast, ordered by response value
+descending.  Forecasts all locations when NULL.}
 
 \item{modeling_options}{the modeling options list}
 }

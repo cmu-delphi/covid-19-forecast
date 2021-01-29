@@ -45,6 +45,8 @@ stacked_forecaster <- function(forecast_date,
 #'
 #' @param base_df dataframe containing some covariate and response information
 #' @param forecast_date date on which we start producing forecasts
+#' @param n_locations the maximum number of locations to forecast, ordered by response value
+#'   descending.  Forecasts all locations when NULL.
 #' @param modeling_options a named list, additional elements of which
 #'     overrides learner-dependent options set within the code
 #' @return function that performs forecasting with proper options set
@@ -63,6 +65,7 @@ raw_forecaster <- function(base_df,
   train_test <- pp.make_train_test(base_df,
                                    location_info_df,
                                    forecast_date,
+                                   n_locations,
                                    modeling_options)
   predicted_quantiles <- ml.fit_model(train_test, modeling_options)
   return(predicted_quantiles)
