@@ -51,6 +51,7 @@ RoxygenNote: 7.1.1
 Collate: 
     'calibration.R'
     'transformation.R'
+    'top_n.R'
     'data_structures.R'
     'modeling.R'
     'preprocessing.R'
