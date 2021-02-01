@@ -1,6 +1,6 @@
-make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
-                                     bandwidth = 7, degree = 0, smoother = NULL, stratifier = NULL, 
-                                     modeler = NULL, aligner = NULL, bootstrapper, B = 1000){
+make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, degree = 0, 
+                                     smoother = NULL, stratifier = NULL, modeler = NULL, 
+                                     aligner = NULL, bootstrapper, B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   

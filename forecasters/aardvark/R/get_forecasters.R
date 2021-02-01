@@ -27,12 +27,12 @@
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
-get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
+get_forecasters <- function(signals, ahead, kern = "tophat", strata_alpha = 0.5, bandwidth = 7){
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
-  kernel_smoother <- make_kernel_smoother(h = 7, kern = "tophat")
+  smoother <- make_kernel_smoother(h = 7, kern = kern)
   stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
@@ -50,7 +50,7 @@ get_forecasters <- function(signals, ahead, strata_alpha = 0.5, bandwidth = 7){
 
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
-                                                  smoother = kernel_smoother,
+                                                  smoother = smoother,
                                                   aligner = aligner,
                                                   stratifier = stratifier,
                                                   modeler = modeler,
