@@ -54,7 +54,6 @@ VALID_MODELING_OPTIONS <- c(
   "response",
   "roll_lags",
   "seed",
-  "lp_solver",
   "weeks_back",
   c()
 )
@@ -100,8 +99,7 @@ COUNTY_DEFAULTS <- list(
 
 STRATIFIED_LINEAR_DEFAULTS <- list(
   learner = "stratified_linear",
-  n_clusters = 1,
-  lp_solver = "glpk"
+  n_clusters = 1
 )
 
 #' Sets a default value if not already set
