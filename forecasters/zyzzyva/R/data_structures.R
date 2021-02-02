@@ -57,7 +57,6 @@ VALID_MODELING_OPTIONS <- c(
   "roll_lags",
   "seed",
   "use_median_point",
-  "use_cv_lasso",
   "lp_solver",
   "weeks_back",
   c()
@@ -104,11 +103,9 @@ COUNTY_DEFAULTS <- list(
 )
 
 STRATIFIED_LINEAR_DEFAULTS <- list(
-  add_interactions = TRUE,
   learner = "stratified_linear",
   fitting_tau = c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975),
   n_clusters = 1,
-  use_cv_lasso = TRUE,
   lp_solver = "glpk"
 )
 

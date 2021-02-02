@@ -189,43 +189,12 @@ ml.stratified_linear <- function(train_test,
     test_idx <- which(test_row_locations %in% locs_in_cluster)
     
     # get quantiles
-    if (modeling_options$use_cv_lasso) {
-      n_train_cluster <- nrow(new_train_X[train_idx,]) 
-      n_cv <- floor(0.5 * n_train_cluster) + 1
-      cv_inds <- c(n_cv:n_train_cluster)
-      cv_list <- list(train = list(cv_inds), 
-                      test = list(setdiff(1:n_train_cluster, cv_inds)))
-
-      cluster_cv_fit_quantiles <- quantgen::cv_quantile_lasso(new_train_X[train_idx,],
-                                                             train_y[train_idx,],
-                                                             tau = modeling_options$fitting_tau,
-                                                             standardize = TRUE,
-                                                             nfolds = 1,
-                                                             train_test_inds = cv_list,
-                                                             verbose = TRUE,
-                                                             lp_solver = modeling_options$lp_solver)
-      
-      cluster_fit_quantiles <- quantgen::refit_quantile_lasso(
-        cluster_cv_fit_quantiles,
-        new_train_X[train_idx,],
-        train_y[train_idx,],
-        tau = modeling_options$fitting_tau,
-        standardize = TRUE)
-      preds <-
-        quantgen::quantile_extrapolate(modeling_options$fitting_tau,
-                                       predict(cluster_fit_quantiles, 
-                                               new_test_X[test_idx, ],
-                                               sort = TRUE),
-                                       tau_out = modeling_options$cdc_probs)
-      
-    } else {
-      cluster_fit_quantiles <- quantgen::quantile_lasso(new_train_X[train_idx,],
-                                                        train_y[train_idx,],
-                                                        tau = modeling_options$cdc_probs,
-                                                        standardize = FALSE,
-                                                        lambda = 0)
-      preds <-  predict(cluster_fit_quantiles, new_test_X[test_idx, ], sort = TRUE)
-    }
+    cluster_fit_quantiles <- quantgen::quantile_lasso(new_train_X[train_idx,],
+                                                      train_y[train_idx,],
+                                                      tau = modeling_options$cdc_probs,
+                                                      standardize = FALSE,
+                                                      lambda = 0)
+    preds <-  predict(cluster_fit_quantiles, new_test_X[test_idx, ], sort = TRUE)
     colnames(preds) <- modeling_options$cdc_probs
     
     # maybe replace center point estimate with LS fit
