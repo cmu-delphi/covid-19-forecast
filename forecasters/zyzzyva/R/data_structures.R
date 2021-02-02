@@ -36,10 +36,8 @@ LAG_SUFFIX <- "lag"
 VALID_MODELING_OPTIONS <- c(
   "ahead",
   "backfill_buffer",
-  "cluster_covariates",
   "cdc_probs",
   "debug_folder",
-  "debug_clusters_folder",
   "earliest_data_date",
   "forecast_date",
   "geo_type",
@@ -49,7 +47,6 @@ VALID_MODELING_OPTIONS <- c(
   "location_covariates",
   "log_response",
   "model_covariates",
-  "n_clusters",
   "response",
   "roll_lags",
   "seed",
@@ -62,8 +59,6 @@ MUTUAL_DEFAULTS <- list(
   backfill_buffer = 5,
   cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
   debug_folder = NULL,
-  debug_clusters_folder = NULL,
-  debug_cluster_coefs = NULL,
   incidence_period = "epiweek",
   location_covariates = list(
     ds.covariate("population", tr = tr.log_pad)
@@ -77,9 +72,6 @@ MUTUAL_DEFAULTS <- list(
 
 STATE_DEFAULTS <- list(
   response = "jhu-csse_deaths_incidence_num",
-  cluster_covariates = list(
-    ds.covariate("jhu-csse_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  ),
   model_covariates = list(
     ds.covariate("jhu-csse_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
   )
@@ -87,17 +79,13 @@ STATE_DEFAULTS <- list(
 
 COUNTY_DEFAULTS <- list(
   response = "usa-facts_deaths_incidence_num",
-  cluster_covariates = list(
-    ds.covariate("usa-facts_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  ),
   model_covariates = list(
     ds.covariate("usa-facts_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
   )
 )
 
 STRATIFIED_LINEAR_DEFAULTS <- list(
-  learner = "stratified_linear",
-  n_clusters = 1
+  learner = "stratified_linear"
 )
 
 #' Sets a default value if not already set
@@ -175,8 +163,7 @@ ds.set_modeling_defaults <- function(modeling_options) {
     modeling_options$weeks_back <- max_possible_weeks_back
   }
 
-  modeling_options$base_covariates <- c(modeling_options$model_covariates,
-                                       modeling_options$cluster_covariates)
+  modeling_options$base_covariates <- modeling_options$model_covariates
 
   modeling_options
 }
