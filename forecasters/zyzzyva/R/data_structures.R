@@ -41,7 +41,6 @@ VALID_MODELING_OPTIONS <- c(
   "debug_folder",
   "debug_clusters_folder",
   "earliest_data_date",
-  "fitting_tau",
   "forecast_date",
   "geo_type",
   "impute_last_3_response_covariate",
@@ -101,7 +100,6 @@ COUNTY_DEFAULTS <- list(
 
 STRATIFIED_LINEAR_DEFAULTS <- list(
   learner = "stratified_linear",
-  fitting_tau = c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975),
   n_clusters = 1,
   lp_solver = "glpk"
 )
