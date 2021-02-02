@@ -42,7 +42,6 @@ VALID_MODELING_OPTIONS <- c(
   "debug_folder",
   "debug_clusters_folder",
   "earliest_data_date",
-  "estimate_tail_sd",
   "fitting_tau",
   "forecast_date",
   "geo_type",
@@ -54,8 +53,6 @@ VALID_MODELING_OPTIONS <- c(
   "log_response",
   "model_covariates",
   "n_clusters",
-  "n_tau_left",
-  "n_tau_right",
   "response",
   "roll_lags",
   "seed",
@@ -108,12 +105,9 @@ COUNTY_DEFAULTS <- list(
 
 STRATIFIED_LINEAR_DEFAULTS <- list(
   add_interactions = TRUE,
-  estimate_tail_sd = FALSE,
   learner = "stratified_linear",
   fitting_tau = c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975),
   n_clusters = 1,
-  n_tau_left = 1,
-  n_tau_right = 1,
   use_cv_lasso = TRUE,
   lp_solver = "glpk"
 )
