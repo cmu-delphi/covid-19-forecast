@@ -55,7 +55,6 @@ VALID_MODELING_OPTIONS <- c(
   "response",
   "roll_lags",
   "seed",
-  "use_median_point",
   "lp_solver",
   "weeks_back",
   c()
@@ -77,7 +76,6 @@ MUTUAL_DEFAULTS <- list(
   roll_lags = 7,
   seed = 2020,
   impute_last_3_response_covariate = T,
-  use_median_point = F,
   weeks_back = Inf
 )
 

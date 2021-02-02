@@ -144,8 +144,6 @@ ml.stratified_linear <- function(train_test,
   
   # finally, get predictions
   out <- matrix(NA, nrow=nrow(test_X), ncol=length(modeling_options$cdc_probs))
-  quantile_fits <- list()
-  ls_fits <- list()
   for (i in 1:modeling_options$n_clusters) {
     logger::log_debug(paste("Fitting cluster", i))
     locs_in_cluster <- cluster_locs %>% 
@@ -162,24 +160,6 @@ ml.stratified_linear <- function(train_test,
                                                       lambda = 0)
     preds <-  predict(cluster_fit_quantiles, new_test_X[test_idx, ], sort = TRUE)
     colnames(preds) <- modeling_options$cdc_probs
-    
-    # maybe replace center point estimate with LS fit
-    cluster_fit_ls <- NULL
-    if (!modeling_options$use_median_point) {
-      logger::log_debug("Replacing median estimate with LS point estimate")
-      cluster_fit_ls <- glmnet::glmnet(new_train_X[train_idx,],
-                                    train_y[train_idx,],
-                                    standardize=FALSE,
-                                    alpha=0, # 0=ridge, 1=lasso
-                                    lambda=0)
-      
-      preds[, colnames(preds) == "0.5"] <- predict(cluster_fit_ls, new_test_X[test_idx,])
-    }
-    
-    # save fits for debug
-    quantile_fits[[i]] <- cluster_fit_quantiles
-    ls_fits[[i]] <- cluster_fit_ls
-    
     out[test_idx, ] <- preds
   }
 
@@ -195,8 +175,6 @@ ml.stratified_linear <- function(train_test,
         modeling_options = modeling_options,
         train_test = train_test,
         cluster_locs = cluster_locs,
-        ls_fits = ls_fits,
-        quantile_fits = quantile_fits,
         train_X = new_train_X,
         train_y = train_y,
         test_X = new_test_X
