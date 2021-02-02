@@ -80,45 +80,6 @@ pp.add_lagged_columns <- function(base_df,
 }
 
 
-#' Add principal components to location_info_df
-#'
-#' @param location_info_df the data frame
-#' @param modeling_options the modeling options list
-#'
-#' @return tibble with columns location, population, PC01, ..., PC0n
-#'
-#' @importFrom stringr str_pad
-pp.add_pc <- function(location_info_df,
-                      modeling_options) {
-  if (modeling_options$location_pcs > 0) {
-    matx <- location_info_df %>% select(-geo_value) %>% as.matrix
-    matx <- tr.column_impute(matx)
-    matx <- scale(matx, TRUE, TRUE)
-    n_pcs <- modeling_options$location_pcs
-    if (n_pcs > ncol(matx)) {
-      warning('Requested PCs (', n_pcs, ') exceeds number of columns (',
-              ncol(matx), ').  Using fully reconstructed matrix.')
-      n_pcs <- ncol(matx)
-    }
-    if (modeling_options$geo_type == "county") {
-      decomp <- stats::princomp(matx)$loadings[, 1:n_pcs]
-    } else {
-      decomp <- svd(matx)$v[, 1:n_pcs]
-    }
-    top_pcs <- matx %*% decomp
-    colnames(top_pcs) <-
-      paste0('PC', stringr::str_pad(1:n_pcs, 2, pad = '0'))
-    location_with_pcs <- bind_cols(location_info_df %>%
-                                     select(geo_value, population),
-                                   data.frame(top_pcs))
-    return(location_with_pcs)
-  } else {
-    return(location_info_df %>%
-             select(geo_value, population))
-  }
-}
-
-
 #' Make predictors X and target y for a single forecast_date,
 #' intermediate fitting function that returns all lagged covariates
 #'
@@ -272,7 +233,6 @@ pp.impute_and_select <- function(train_test,
       }
     }
   }
-  keep_vars <- c(keep_vars, paste0('PC', stringr::str_pad(1:modeling_options$location_pcs, 2, pad='0')))
   train_test$X <- X[, which(colnames(X) %in% keep_vars)]
 
   train_test
@@ -514,7 +474,6 @@ pp.make_train_test <- function(base_df,
     lagged_df <- lagged_df %>% filter(geo_value %in% top_locs)
   }
 
-  location_info_df <- pp.add_pc(location_info_df, modeling_options)
   test_dfs <- pp.get_training_set(lagged_df,
                                   location_info_df,
                                   modeling_options,

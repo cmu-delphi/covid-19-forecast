@@ -47,7 +47,6 @@ VALID_MODELING_OPTIONS <- c(
   "incidence_period",
   "learner",
   "location_covariates",
-  "location_pcs",
   "log_response",
   "model_covariates",
   "n_clusters",
@@ -69,7 +68,6 @@ MUTUAL_DEFAULTS <- list(
   location_covariates = list(
     ds.covariate("population", tr = tr.log_pad)
   ),
-  location_pcs = 0,
   log_response = TRUE,
   roll_lags = 7,
   seed = 2020,
