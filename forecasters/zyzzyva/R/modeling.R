@@ -71,8 +71,7 @@ ml.get_clusters <- function(test_X,
 #'    cases ~ cases_lag1 + fb_lag1 + combined_ind_lag1 + log(pop) +
 #'            slope(cases) + slope(fb) + slope(combined_ind).
 #' The slope is computed using least squares over past lags of each signal,
-#' for each location individually. If in modeling_options, interactions 
-#' are specified, all cases_lag1 interactions will be added.
+#' for each location individually.
 #' Calibration is not currently performed.
 #' 
 #' @param train_test list of training and testing data
@@ -140,39 +139,6 @@ ml.stratified_linear <- function(train_test,
   
   colnames(new_train_X) <- covariate_names
   colnames(new_test_X) <- covariate_names
-
-  # add interaction terms
-  if (modeling_options$add_interactions) {
-    X_names <- colnames(train_X)
-    new_X_names <- colnames(new_train_X)
-    
-    fb_slope_var <- lubridate::intersect(
-      which(grepl("fb-survey_smoothed_hh_cmnty_cli_lag", new_X_names)),
-      which(grepl("slope", new_X_names)))
-    ind_slope_var <- lubridate::intersect(
-      which(grepl("indicator-combination_nmf_day_doc_fbc_fbs_ght_lag", new_X_names)),
-      which(grepl("slope", new_X_names)))
-    
-    new_train_X <- cbind(new_train_X,
-                         train_X[, first_case_var]*train_X[, first_fb_var],
-                         train_X[, first_case_var]*train_X[, first_ind_var],
-                         train_X[, first_case_var]*new_train_X[, fb_slope_var],
-                         train_X[, first_case_var]*new_train_X[, ind_slope_var])
-    new_test_X <- cbind(new_test_X,
-                        test_X[, first_case_var]*test_X[, first_fb_var],
-                        test_X[, first_case_var]*test_X[, first_ind_var],
-                        test_X[, first_case_var]*new_test_X[, fb_slope_var],
-                        test_X[, first_case_var]*new_test_X[, ind_slope_var])
-    
-    covariate_names <- c(new_X_names, 
-                         paste(X_names[first_case_var],
-                               X_names[c(first_fb_var, first_ind_var)], sep="*"),
-                         paste(X_names[first_case_var],
-                               new_X_names[c(fb_slope_var, ind_slope_var)], sep="*"))
-    colnames(new_train_X) <- covariate_names
-    colnames(new_test_X) <- covariate_names
-  }
-  
   logger::log_debug("Input colnames:\n",
                     paste(colnames(new_train_X), collapse='\n'))
   

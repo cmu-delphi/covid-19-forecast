@@ -34,7 +34,6 @@ ROLLAVG_SUFFIX <- "rollavg"
 LAG_SUFFIX <- "lag"
 
 VALID_MODELING_OPTIONS <- c(
-  "add_interactions",
   "ahead",
   "backfill_buffer",
   "cluster_covariates",
