@@ -61,3 +61,23 @@ make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
 tricube <- function(u){
   pmax(70/81 * (1 - u^3)^3, 0)
 }
+
+#wild.sampler <- function(data){
+#  wild.boot.resids <- data$tf.residuals * sample(x = c((1+sqrt(5))/2, 1-sqrt(5)/2), 
+#                                                 size = nrow(data), 
+#                                                 replace = TRUE, 
+#                                                 prob = c((1+sqrt(5))/(2*sqrt(5)),
+#                                                          (sqrt(5)-1)/(2*sqrt(5))))
+#  wild.boot.sample <- data$tf.estimate + wild.boot.resids
+#  return(data.frame(x=data$x,y=wild.boot.sample,wts=data$wts))
+#}
+
+#data$tf.estimate <- tf.estimator(data, lambda.opt, k, x.eval.grid)
+#data$tf.residuals <- data$y - data$tf.estimate
+
+#tf.boot.ensemble <- matrix(unlist(replicate(B,tf.estimator(wild.sampler(data), lambda.opt, k,
+#                                                           x.eval.grid, max_iter = max_iter, obj_tol = obj_tol))),
+#                           ncol = B)
+
+#bootstrap.lower.perc.intervals <- apply(tf.boot.ensemble,1,quantile,probs = alpha/2)
+#bootstrap.upper.perc.intervals <- apply(tf.boot.ensemble,1,quantile,probs = 1-alpha/2)

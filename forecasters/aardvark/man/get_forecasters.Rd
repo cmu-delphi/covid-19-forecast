@@ -4,16 +4,25 @@
 \alias{get_forecasters}
 \title{Return the aardvark forecaster}
 \usage{
-get_forecasters(signals, ahead, strata_alpha = 0.5, bandwidth = 7)
+get_forecasters(
+  signals,
+  ahead,
+  kern = "tophat",
+  strata_alpha = 0.5,
+  bandwidth = 7
+)
 }
 \arguments{
-\item{signals}{Tibble with columns \code{data_source} and signal that specifies
-which variables from the COVIDcast API will be used by forecaster. Each row 
-of signals represents a separate signal, and first row is taken to be the 
-response.}
+\item{signals}{Tibble with columns \code{data_source}, \code{signal}, 
+\code{start_day} that specify which variables from the COVIDcast API will 
+be used by forecaster. Each row of signals represents a separate signal, 
+and first row is taken to be the response.}
 
 \item{ahead}{The number of incidence periods ahead to forecast the response.
 For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
+
+\item{kern}{The type of kernel to use for smoothing the signals. Right now, 
+just "tophat", i.e. boxcar}
 
 \item{strata_alpha}{Stratification proportion parameter}
 
@@ -22,23 +31,22 @@ For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
 \value{
 A list with an element named \code{aardvark_forecaster}, 
     which is itself a list consisting of the forecaster function and a \code{type} 
-    string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} now 
-    deprecated. Unavailable forecasters are marked as 
+    string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} 
+    now deprecated. Unavailable forecasters are marked as 
     \code{list(forecaster = NA, type = "standalone")}.
 }
 \description{
 The \link[evalcast]{evalcast-package} production 
     evaluator will first call this function to determine all the forecasters
     available for the given parameter specifications. It expects to get back 
-    a named list of lists of forecasting functions and types. If a forecasting 
+    a named list of lists of forecaster functions and types. If a forecaster 
     function is not available for a given set of parameters, an 
     \code{NA} should returned instead of a function. This tells the 
     evaluator to ignore that forecaster in that run.
 }
 \examples{
-signals <- tibble::tibble(data_source = "jhu-csse",
-signal = c("deaths_7dav_incidence_num", "confirmed_7dav_incidence_num", "confirmed_cumulative_num"),
-start_day = "2020-03-07")
-ahead <- 1
-aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+    signals <- dplyr::tibble(data_source = "jhu-csse",
+    signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
+    ahead <- 1
+    aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 }

@@ -1,11 +1,11 @@
-make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_buffer = 5, 
-                                     bandwidth = 7, degree = 0, stratifier = NULL, modeler = NULL, 
+make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, degree = 0, 
+                                     smoother = NULL, stratifier = NULL, modeler = NULL, 
                                      aligner = NULL, bootstrapper, B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
-                                              ahead, geo_type){
+                                              ahead){
     
     incidence_period <- match.arg(incidence_period)
     forecast_date <- ymd(forecast_date)
@@ -13,17 +13,38 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
     alignment_variable <- environment(aligner)$alignment_variable
 
     df_train <- df %>% 
-      bind_rows %>% 
+      bind_rows %>%
       long_to_wide %>%
-      filter(variable_name %in% c(response, features$variable_name, alignment_variable)) %>% 
+      filter(variable_name %in% c(response, features$variable_name)) %>% 
       distinct %>% 
       #filter((variable_name != response) | (issue >= time_value + backfill_buffer) ) %>%
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
-    df_all <- expand_grid(unique(df_train %>% select(location, geo_value)), probs = covidhub_probs)
-    df_preds <- local_lasso_daily_forecast(df_train, response, degree, bandwidth, forecast_date, incidence_period,
-                                           ahead, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, 
+    location_df <- distinct(select(df_train, c(location)))
+    df_train_empty <- expand_grid(location_df,
+                                  time_value = unique(df_train$time_value),
+                                  variable_name = unique(df_train$variable_name))
+    df_train_all <- left_join(df_train_empty, df_train, by = c("location", 
+                                                               "time_value", 
+                                                               "variable_name"))
+    
+
+    df_train_all_no_na <- df_train_all %>%
+      mutate(value = if_else(is.na(value), replace_na(value,0), value))
+    
+    df_train_smoothed <- df_train_all_no_na %>%
+      group_by(variable_name) %>%
+      group_modify(~ smoother(.x) ) %>% 
+      rename(original_value = value, value = smoothed_value) %>%
+      ungroup() 
+
+    df_all <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)), 
+                          probs = covidhub_probs)
+    df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
+                                           forecast_date, incidence_period, ahead, 
+                                           smoother, stratifier, aligner, modeler,
+                                           bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
     predictions <- df_all %>% 
@@ -39,7 +60,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, backfill_
 
 #' @importFrom magrittr %$%
 local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
-                                       stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
+                                       smoother, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
                                        alignment_variable){
 
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -227,24 +248,23 @@ long_to_wide <- function(df){
   }
   match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, geo_value, time_value))
   df <- df %>% 
-    mutate(variable_name = paste(data_source, signal, sep = "-"),
-           location = evalcast:::abbr_2_fips(df$geo_value))
+    mutate(variable_name = paste(data_source, signal, sep = "-"))
   # Need to open GitHub issue here
   # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
   # --- Maybe because the value column names are different character lengths?
-  df1 <- df %>% filter(variable_name == "jhu-csse-deaths_7dav_incidence_num") %>% 
+  df1 <- df %>% filter(variable_name == "jhu-csse-deaths_incidence_num") %>% 
     aggregate_signals(format = "wide")
-  df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_7dav_incidence_num") %>% 
-    aggregate_signals(format = "wide")
-  df3 <- df %>% filter(variable_name == "jhu-csse-confirmed_cumulative_num") %>% 
+  df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_incidence_num") %>% 
     aggregate_signals(format = "wide")
   names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
+  df1$variable_name <- "jhu-csse-deaths_incidence_num"
   names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
-  names(df3)[which(substr(names(df3),1,5) == "value")] <- "value"
-  df <- bind_rows(df1, df2, df3)
+  df2$variable_name <- "jhu-csse-confirmed_incidence_num"
+  df <- bind_rows(df1, df2)
   match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
   df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% select(location, geo_value, variable_name, value, time_value, issue)
+  df <- df %>% mutate(location = evalcast:::abbr_2_fips(df$geo_value)) %>%
+    select(location, geo_value, variable_name, value, time_value, issue)
   df$value <- as.double(df$value)
   return(df)
 }
@@ -321,7 +341,6 @@ make_predict_glmnet <- function(lambda_choice){
   # Inputs:
   #   lambda_choice: either "lambda.1se" or "lambda.min"
   predict_glmnet <- function(fit, X, offset, ...){
-    stopifnot(is.character(lambda_choice))
     preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
     return(preds)
   }
