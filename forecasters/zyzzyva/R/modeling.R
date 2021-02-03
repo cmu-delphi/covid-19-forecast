@@ -65,21 +65,12 @@ ml.stratified_linear <- function(train_test,
                          "indicator-combination_nmf_day_doc_fbc_fbs_ght_lag"))[1]
   pop_var <- which(startsWith(colnames(train_X), "population"))[1]
   new_train_X <- cbind(new_train_X,
-                       train_X[, first_case_var],
-                       train_X[, first_fb_var],
-                       train_X[, first_ind_var],
-                       train_X[, pop_var])
+                       train_X[, c(first_case_var, first_fb_var, first_ind_var, pop_var)])
   new_test_X <- cbind(new_test_X,
-                      test_X[, first_case_var],
-                      test_X[, first_fb_var],
-                      test_X[, first_ind_var],
-                      test_X[, pop_var])
+                      test_X[, c(first_case_var, first_fb_var, first_ind_var, pop_var)])
   
   covariate_names <- c(paste(slope_base_vars, "slope", sep="_"),
-                       colnames(train_X)[first_case_var],
-                       colnames(train_X)[first_fb_var],
-                       colnames(train_X)[first_ind_var],
-                       colnames(train_X)[pop_var])
+                       colnames(train_X)[c(first_case_var, first_fb_var, first_ind_var, pop_var)])
   
   colnames(new_train_X) <- covariate_names
   colnames(new_test_X) <- covariate_names
