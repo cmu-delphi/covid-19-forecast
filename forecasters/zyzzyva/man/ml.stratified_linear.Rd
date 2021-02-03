@@ -2,7 +2,7 @@
 % Please edit documentation in R/modeling.R
 \name{ml.stratified_linear}
 \alias{ml.stratified_linear}
-\title{Fit a simple linear model within stratified clusters.}
+\title{Fit a simple linear model.}
 \usage{
 ml.stratified_linear(train_test, modeling_options)
 }
@@ -13,13 +13,10 @@ ml.stratified_linear(train_test, modeling_options)
 overrides learner-dependent options set within the code}
 }
 \description{
-Clusters are determined using a simple scheme: order the locations
-by the number of cases. Sort, then divide into k equal sized groups. 
-Within each cluster, the following model is fit:
+The following model is fit:
    cases ~ cases_lag1 + fb_lag1 + combined_ind_lag1 + log(pop) +
            slope(cases) + slope(fb) + slope(combined_ind).
 The slope is computed using least squares over past lags of each signal,
-for each location individually. If in modeling_options, interactions 
-are specified, all cases_lag1 interactions will be added.
+for each location individually.
 Calibration is not currently performed.
 }

@@ -31,11 +31,6 @@ get_forecasters  <- function(response,
                              geo_type,
                              n_locations=NULL) {
 
-    covidcast_cluster_covariates = list(
-        ds.covariate("usa-facts_confirmed_incidence_num",
-                     tr = tr.log_pad, lags = c(1, 2, seq(3,21,3)), do_rollsum = T)
-    )
-
     covidcast_model_covariates = list(
         ds.covariate("usa-facts_confirmed_incidence_num", tr = tr.log_pad,
                      lags = c(1, 2, seq(3,21,3)), do_rollsum = T),
@@ -46,16 +41,10 @@ get_forecasters  <- function(response,
     )
 
     modeling_options <- list(
-        cluster_covariates = covidcast_cluster_covariates,
         cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
         model_covariates = covidcast_model_covariates,
         log_response = TRUE,
-        location_pcs = 0,
-        n_clusters = 1,
         learner = "stratified_linear",
-        use_cv_lasso = FALSE,
-        use_median_point = TRUE,
-        add_interactions = FALSE,
         impute_last_3_response_covariate = TRUE,
         seed = 2020,
         weeks_back = 4,

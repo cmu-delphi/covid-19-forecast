@@ -17,7 +17,7 @@ pp.add_lagged_columns <- function(base_df,
   
   # determine largest lag to create
   max_lag <-
-    max(unlist(sapply(modeling_options$base_covariates, function(x)
+    max(unlist(sapply(modeling_options$model_covariates, function(x)
       x$lags))) + (modeling_options$roll_lags - 1)
   all_lags <- 1:max_lag
 
@@ -77,45 +77,6 @@ pp.add_lagged_columns <- function(base_df,
   }
 
   lagged_df
-}
-
-
-#' Add principal components to location_info_df
-#'
-#' @param location_info_df the data frame
-#' @param modeling_options the modeling options list
-#'
-#' @return tibble with columns location, population, PC01, ..., PC0n
-#'
-#' @importFrom stringr str_pad
-pp.add_pc <- function(location_info_df,
-                      modeling_options) {
-  if (modeling_options$location_pcs > 0) {
-    matx <- location_info_df %>% select(-geo_value) %>% as.matrix
-    matx <- tr.column_impute(matx)
-    matx <- scale(matx, TRUE, TRUE)
-    n_pcs <- modeling_options$location_pcs
-    if (n_pcs > ncol(matx)) {
-      warning('Requested PCs (', n_pcs, ') exceeds number of columns (',
-              ncol(matx), ').  Using fully reconstructed matrix.')
-      n_pcs <- ncol(matx)
-    }
-    if (modeling_options$geo_type == "county") {
-      decomp <- stats::princomp(matx)$loadings[, 1:n_pcs]
-    } else {
-      decomp <- svd(matx)$v[, 1:n_pcs]
-    }
-    top_pcs <- matx %*% decomp
-    colnames(top_pcs) <-
-      paste0('PC', stringr::str_pad(1:n_pcs, 2, pad = '0'))
-    location_with_pcs <- bind_cols(location_info_df %>%
-                                     select(geo_value, population),
-                                   data.frame(top_pcs))
-    return(location_with_pcs)
-  } else {
-    return(location_info_df %>%
-             select(geo_value, population))
-  }
 }
 
 
@@ -209,7 +170,7 @@ pp.impute_and_select <- function(train_test,
 
   # create rolling sums
   finished_vars <- c()
-  for (base_var in c(modeling_options$base_covariates,
+  for (base_var in c(modeling_options$model_covariates,
                      modeling_options$location_covariates)) {
     name <- base_var$name
     if (!(name %in% finished_vars) & (base_var$do_rollsum | base_var$do_rollavg)) {
@@ -243,7 +204,7 @@ pp.impute_and_select <- function(train_test,
 
   # select relevant variables to keep (could be shortened)
   keep_vars <- c()
-  for (base_var in c(modeling_options$base_covariates,
+  for (base_var in c(modeling_options$model_covariates,
                      modeling_options$location_covariates)) {
     name <- base_var$name
     for (lag_num in base_var$lags) {
@@ -272,7 +233,6 @@ pp.impute_and_select <- function(train_test,
       }
     }
   }
-  keep_vars <- c(keep_vars, paste0('PC', stringr::str_pad(1:modeling_options$location_pcs, 2, pad='0')))
   train_test$X <- X[, which(colnames(X) %in% keep_vars)]
 
   train_test
@@ -389,12 +349,12 @@ pp.transform_and_scale <- function(train_test,
   new_train_X <- train_test$train_X
   new_test_X <- train_test$test_X
   all_specified_base_vars <-
-    sapply(modeling_options$base_covariates, function(x)
+    sapply(modeling_options$model_covariates, function(x)
       x$name)
   for (i in 1:ncol(new_train_X)) {
     var_opt_idx <- which(stringr::str_detect(present_vars[i], all_specified_base_vars))
     if (length(var_opt_idx) > 0) {
-      var_opt <- modeling_options$base_covariates[[var_opt_idx[1]]]
+      var_opt <- modeling_options$model_covariates[[var_opt_idx[1]]]
       if (length(var_opt_idx) > 1) {
         logger::log_debug(paste(var_opt$name,
                                 "specified more than once, transforming",
@@ -495,7 +455,7 @@ pp.make_train_test <- function(base_df,
 
   # filter to variables of interest
   vars_to_keep <-
-    sapply(modeling_options$base_covariates, function(x)
+    sapply(modeling_options$model_covariates, function(x)
       x$name)
   filtered_df <- base_df %>%
     filter(variable_name %in% c(modeling_options$response, vars_to_keep))
@@ -514,7 +474,6 @@ pp.make_train_test <- function(base_df,
     lagged_df <- lagged_df %>% filter(geo_value %in% top_locs)
   }
 
-  location_info_df <- pp.add_pc(location_info_df, modeling_options)
   test_dfs <- pp.get_training_set(lagged_df,
                                   location_info_df,
                                   modeling_options,
