@@ -1,7 +1,7 @@
 Package: aardvark
 Title: The Delphi Lab aardvark forecaster
 Version: 20201016-125353
-Authors@R: 
+Author@R: 
     c(person(given = "Alden",
            family = "Green",
            role = c("aut", "cre"),
