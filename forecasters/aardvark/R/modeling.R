@@ -5,7 +5,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
-                                              ahead, geo_type){
+                                              ahead){
     
     incidence_period <- match.arg(incidence_period)
     forecast_date <- ymd(forecast_date)
