@@ -27,30 +27,8 @@ NULL
 #'     "ensemble")`). Unavailable forecasters are marked as
 #'     `list(forecaster = NA, type = "standalone")`.
 #' @export get_forecasters
-get_forecasters  <- function(response,
-                             geo_type,
+get_forecasters  <- function(geo_type,
                              n_locations=NULL) {
-
-    covidcast_model_covariates = list(
-        ds.covariate("usa-facts_confirmed_incidence_num", tr = tr.log_pad,
-                     lags = c(1, 2, seq(3,21,3)), do_rollsum = T),
-        ds.covariate("fb-survey_smoothed_hh_cmnty_cli",
-                     lags = seq(3,28,7), do_rollsum = T),
-        ds.covariate("indicator-combination_nmf_day_doc_fbc_fbs_ght",
-                     lags = seq(3,28,7), do_rollsum = T)
-    )
-
-    modeling_options <- list(
-        cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
-        model_covariates = covidcast_model_covariates,
-        log_response = TRUE,
-        learner = "stratified_linear",
-        impute_last_3_response_covariate = TRUE,
-        seed = 2020,
-        weeks_back = 4,
-        response = response
-    )
-
     ## Currently we only work with "county" or "state" level forecasts
 
     ## If your function has not been completed for geo_type == "state"
@@ -62,8 +40,7 @@ get_forecasters  <- function(response,
         list(
             zyzzyva_covidcast =
                 list(forecaster=stacked_forecaster(
-                        n_locations=n_locations,
-                        modeling_options=modeling_options),
+                        n_locations=n_locations),
                      type="standalone")
         )
     } else {

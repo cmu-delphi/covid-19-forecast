@@ -9,11 +9,7 @@ NULL
 #' @param modeling_options a named list, additional elements of which
 #'     overrides learner-dependent options set within the code
 #' @return function that performs forecasting with proper options set
-stacked_forecaster <- function(forecast_date,
-                               n_locations=NULL,
-                               modeling_options = list(
-                                  learner='stratified_linear',
-                                  weeks_back=4)) {
+stacked_forecaster <- function(n_locations=NULL) {
   function(df,
            forecast_date,
            signals,
@@ -23,10 +19,29 @@ stacked_forecaster <- function(forecast_date,
     incidence_period <- match.arg(incidence_period)
     geo_type <- match.arg(geo_type)
 
-    modeling_options$ahead <- ahead
-    modeling_options$incidence_period <- incidence_period
-    modeling_options$forecast_date <- forecast_date
-    modeling_options$geo_type <- geo_type
+    covidcast_model_covariates = list(
+        ds.covariate("usa-facts_confirmed_incidence_num", tr = tr.log_pad,
+                     lags = c(1, 2, seq(3,21,3)), do_rollsum = T),
+        ds.covariate("fb-survey_smoothed_hh_cmnty_cli",
+                     lags = seq(3,28,7), do_rollsum = T),
+        ds.covariate("indicator-combination_nmf_day_doc_fbc_fbs_ght",
+                     lags = seq(3,28,7), do_rollsum = T)
+    )
+
+    modeling_options <- list(
+        ahead = ahead,
+        cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+        forecast_date = forecast_date,
+        geo_type = geo_type,
+        impute_last_3_response_covariate = TRUE,
+        incidence_period = incidence_period,
+        log_response = TRUE,
+        learner = "stratified_linear",
+        model_covariates = covidcast_model_covariates,
+        seed = 2020,
+        weeks_back = 4,
+        response = "usa-facts_confirmed_incidence_num"
+    )
 
     full_df <- bind_rows(df) %>%
       mutate(variable_name = paste(data_source, signal, sep="_")) %>%
