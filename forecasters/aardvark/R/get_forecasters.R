@@ -24,7 +24,7 @@
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
 #' @examples 
-#'     signals <- tibble(data_source = "jhu-csse",
+#'     signals <- dplyr::tibble(data_source = "jhu-csse",
 #'     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
