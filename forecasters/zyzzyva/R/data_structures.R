@@ -47,6 +47,7 @@ VALID_MODELING_OPTIONS <- c(
   "location_covariates",
   "log_response",
   "model_covariates",
+  "n_locations",
   "response",
   "roll_lags",
   "seed",
