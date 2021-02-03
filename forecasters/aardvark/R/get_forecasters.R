@@ -13,6 +13,8 @@
 #'     and first row is taken to be the response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
+#' @param kern The type of kernel to use for smoothing the signals. Right now, 
+#'     just "tophat", i.e. boxcar
 #' @param strata_alpha Stratification proportion parameter
 #' @param bandwidth Kernel bandwidth (in days) for the local weighting kernel
 #' @return A list with an element named \code{aardvark_forecaster}, 
