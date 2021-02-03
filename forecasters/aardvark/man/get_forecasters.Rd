@@ -45,7 +45,7 @@ The \link[evalcast]{evalcast-package} production
     evaluator to ignore that forecaster in that run.
 }
 \examples{
-    signals <- tibble::tibble(data_source = "jhu-csse",
+    signals <- tibble(data_source = "jhu-csse",
     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
     ahead <- 1
     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
