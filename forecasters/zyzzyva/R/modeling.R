@@ -43,9 +43,8 @@ ml.stratified_linear <- function(train_test,
   n <- nrow(train_X)
 
   # create new_train_X, new_test_X with slope variables
-  slope_base_vars <- c("usa-facts_confirmed_incidence_num_lag",
-                       "fb-survey_smoothed_hh_cmnty_cli_lag",
-                       "indicator-combination_nmf_day_doc_fbc_fbs_ght_lag")
+  slope_base_vars <- paste(sapply(modeling_options$model_covariates, function(x)x$name),
+                           "lag", sep = "_")
   new_train_X <- matrix(NA, nrow=nrow(train_X), ncol=length(slope_base_vars))
   new_test_X <-  matrix(NA, nrow=nrow(test_X), ncol=length(slope_base_vars))
   for (i in 1:length(slope_base_vars)) {
@@ -59,18 +58,14 @@ ml.stratified_linear <- function(train_test,
     new_test_X[,i] <- stats::lsfit(-(1:n_var_cols), t(test_X[, var_cols]))$coef[2,]
   }
   # add first lags of handpicked variables
-  first_case_var <- which(startsWith(colnames(train_X), "usa-facts_confirmed_incidence_num_lag"))[1]
-  first_fb_var <- which(startsWith(colnames(train_X), "fb-survey_smoothed_hh_cmnty_cli_lag"))[1]
-  first_ind_var <- which(startsWith(colnames(train_X),
-                         "indicator-combination_nmf_day_doc_fbc_fbs_ght_lag"))[1]
-  pop_var <- which(startsWith(colnames(train_X), "population"))[1]
-  new_train_X <- cbind(new_train_X,
-                       train_X[, c(first_case_var, first_fb_var, first_ind_var, pop_var)])
-  new_test_X <- cbind(new_test_X,
-                      test_X[, c(first_case_var, first_fb_var, first_ind_var, pop_var)])
+  first_cases <- sapply(c(slope_base_vars, "population"),
+                        function(var) which(startsWith(colnames(train_X), var))[1],
+                        USE.NAMES = F)
+  new_train_X <- cbind(new_train_X, train_X[, first_cases])
+  new_test_X <- cbind(new_test_X, test_X[, first_cases])
   
   covariate_names <- c(paste(slope_base_vars, "slope", sep="_"),
-                       colnames(train_X)[c(first_case_var, first_fb_var, first_ind_var, pop_var)])
+                       colnames(train_X)[first_cases])
   
   colnames(new_train_X) <- covariate_names
   colnames(new_test_X) <- covariate_names
