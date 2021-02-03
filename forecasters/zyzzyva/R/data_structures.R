@@ -163,7 +163,5 @@ ds.set_modeling_defaults <- function(modeling_options) {
     modeling_options$weeks_back <- max_possible_weeks_back
   }
 
-  modeling_options$base_covariates <- modeling_options$model_covariates
-
   modeling_options
 }

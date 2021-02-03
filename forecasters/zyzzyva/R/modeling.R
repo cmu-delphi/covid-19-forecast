@@ -32,7 +32,6 @@ ml.fit_model <- function(train_test,
 #' @importFrom Iso pava
 #' @importFrom stats lsfit
 #' @importFrom quantgen quantile_lasso
-#' @importFrom glmnet glmnet
 ml.stratified_linear <- function(train_test,
                                  modeling_options) {
   # extract items from train_test
