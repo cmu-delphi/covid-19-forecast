@@ -50,8 +50,7 @@ ml.stratified_linear <- function(train_test,
   new_test_X <-  matrix(NA, nrow=nrow(test_X), ncol=length(slope_base_vars))
   for (i in 1:length(slope_base_vars)) {
     var <- slope_base_vars[i]
-    n_chars <- nchar(var)
-    var_cols <- which(substring(colnames(train_X), 1, n_chars)==var)
+    var_cols <- which(startsWith(colnames(train_X), var))
     n_var_cols <- length(var_cols)
     if (n_var_cols <= 1) {
       stop("Could not create slope vars in training X, not enough columns for ", var)
@@ -59,12 +58,12 @@ ml.stratified_linear <- function(train_test,
     new_train_X[,i] <- stats::lsfit(-(1:n_var_cols), t(train_X[, var_cols]))$coef[2,]
     new_test_X[,i] <- stats::lsfit(-(1:n_var_cols), t(test_X[, var_cols]))$coef[2,]
   }
-  
   # add first lags of handpicked variables
-  first_case_var <- which(grepl("usa-facts_confirmed_incidence_num_lag", colnames(train_X)))[1]
-  first_fb_var <- which(grepl("fb-survey_smoothed_hh_cmnty_cli_lag", colnames(train_X)))[1]
-  first_ind_var <- which(grepl("indicator-combination_nmf_day_doc_fbc_fbs_ght_lag", colnames(train_X)))[1]
-  pop_var <- which(grepl("population", colnames(train_X)))[1]
+  first_case_var <- which(startsWith(colnames(train_X), "usa-facts_confirmed_incidence_num_lag"))[1]
+  first_fb_var <- which(startsWith(colnames(train_X), "fb-survey_smoothed_hh_cmnty_cli_lag"))[1]
+  first_ind_var <- which(startsWith(colnames(train_X),
+                         "indicator-combination_nmf_day_doc_fbc_fbs_ght_lag"))[1]
+  pop_var <- which(startsWith(colnames(train_X), "population"))[1]
   new_train_X <- cbind(new_train_X,
                        train_X[, first_case_var],
                        train_X[, first_fb_var],
