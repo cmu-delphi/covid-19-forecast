@@ -19,14 +19,19 @@ stacked_forecaster <- function(n_locations=NULL) {
     incidence_period <- match.arg(incidence_period)
     geo_type <- match.arg(geo_type)
 
-    covidcast_model_covariates = list(
-        ds.covariate("usa-facts_confirmed_incidence_num", tr = tr.log_pad,
-                     lags = c(1, 2, seq(3,21,3)), do_rollsum = T),
-        ds.covariate("fb-survey_smoothed_hh_cmnty_cli",
-                     lags = seq(3,28,7), do_rollsum = T),
-        ds.covariate("indicator-combination_nmf_day_doc_fbc_fbs_ght",
-                     lags = seq(3,28,7), do_rollsum = T)
-    )
+    signal_names <- paste(signals$data_source, signals$signal, sep="_")
+    response <- signal_names[1]
+    other_covariates <- signal_names[2:length(signal_names)]
+
+    covidcast_model_covariates <- c(list(ds.covariate(response,
+                                                      tr = tr.log_pad,
+                                                      lags = c(1, 2, seq(3,21,3)),
+                                                      do_rollsum = T)),
+                                    lapply(other_covariates,
+                                           function(cov) ds.covariate(cov,
+                                                                      lags = seq(3,28,7),
+                                                                      do_rollsum = T))
+                                   )
 
     modeling_options <- list(
         ahead = ahead,
@@ -38,9 +43,9 @@ stacked_forecaster <- function(n_locations=NULL) {
         log_response = TRUE,
         learner = "stratified_linear",
         model_covariates = covidcast_model_covariates,
+        response = response,
         seed = 2020,
-        weeks_back = 4,
-        response = "usa-facts_confirmed_incidence_num"
+        weeks_back = 4
     )
 
     full_df <- bind_rows(df) %>%
