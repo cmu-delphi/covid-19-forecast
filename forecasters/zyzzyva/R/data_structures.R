@@ -50,8 +50,7 @@ VALID_MODELING_OPTIONS <- c(
   "response",
   "roll_lags",
   "seed",
-  "weeks_back",
-  c()
+  "weeks_back"
 )
 
 MUTUAL_DEFAULTS <- list(
