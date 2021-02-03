@@ -40,16 +40,14 @@ ml.stratified_linear <- function(train_test,
   test_X <- train_test$test_X
   train_row_locations <- train_test$train_row_locations[[1]]
   test_row_locations <- train_test$test_row_locations[[1]]
-  n <- nrow(train_X)
 
   # create new_train_X, new_test_X with slope variables
-  slope_base_vars <- paste(sapply(modeling_options$model_covariates, function(x)x$name),
+  slope_base_vars <- paste(sapply(modeling_options$model_covariates, function(x) x$name),
                            "lag", sep = "_")
   new_train_X <- matrix(NA, nrow=nrow(train_X), ncol=length(slope_base_vars))
   new_test_X <-  matrix(NA, nrow=nrow(test_X), ncol=length(slope_base_vars))
   for (i in 1:length(slope_base_vars)) {
-    var <- slope_base_vars[i]
-    var_cols <- which(startsWith(colnames(train_X), var))
+    var_cols <- which(startsWith(colnames(train_X), slope_base_vars[i]))
     n_var_cols <- length(var_cols)
     if (n_var_cols <= 1) {
       stop("Could not create slope vars in training X, not enough columns for ", var)
