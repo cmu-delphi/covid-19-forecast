@@ -13,39 +13,61 @@ NULL
 #'     ignore that forecaster in a run: it ignores anything that is
 #'     not a function. See examples in code below.
 #'
-#' @param response the response (e.g. "usa-facts_deaths_incidence_num")
-#' @param incidence_period the incidence period (e.g. "epiweek" for
-#'     now, for all forecasters)
-#' @param ahead the ahead parameter (e.g. 1, 2, 3, 4)
-#' @param forecast_date the date of the forecast
-#' @param geo_type the geographic type (e.g "county" or "state" or
-#'     "hrr" or "msa"... but for now only the first two),
 #' @param n_locations the maximum number of locations to forecast, ordered by response value
 #'   descending.  Forecasts all locations when NULL.
 #' @return a named list, with each element of the list consisting of a
 #'     forecaster function and type (one of `c("standalone",
-#'     "ensemble")`). Unavailable forecasters are marked as
-#'     `list(forecaster = NA, type = "standalone")`.
+#'     "ensemble")`).
 #' @export get_forecasters
-get_forecasters  <- function(geo_type,
-                             n_locations=NULL) {
-    ## Currently we only work with "county" or "state" level forecasts
+get_forecasters  <- function(n_locations = NULL,
+                             weeks_back = 4) {
+   forecaster_fn <- function(df,
+                                  forecast_date,
+                                  signals,
+                                  incidence_period=c("epiweek"),
+                                  ahead=1,
+                                  geo_type=c("county", "state")) {
+        incidence_period <- match.arg(incidence_period)
+        geo_type <- match.arg(geo_type)
 
-    ## If your function has not been completed for geo_type == "state"
-    ## say, you can return NA as the "else" part shows below.  Note
-    ## also, how you can pass along additional parameters besides the
-    ## six mandatory ones.
+        signal_names <- paste(signals$data_source, signals$signal, sep="_")
+        response <- signal_names[1]
+        other_covariates <- signal_names[2:length(signal_names)]
 
-    if (geo_type %in% c("county", "state")) {
-        list(
-            zyzzyva_covidcast =
-                list(forecaster=stacked_forecaster(
-                        n_locations=n_locations),
-                     type="standalone")
+        covidcast_model_covariates <- c(list(ds.covariate(response,
+                                                        tr = tr.log_pad,
+                                                        lags = c(1, 2, seq(3,21,3)),
+                                                        do_rollsum = T)),
+                                        lapply(other_covariates,
+                                            function(cov) ds.covariate(cov,
+                                                                        lags = seq(3,28,7),
+                                                                        do_rollsum = T))
+                                    )
+
+        modeling_options <- list(
+            ahead = ahead,
+            cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+            forecast_date = forecast_date,
+            geo_type = geo_type,
+            impute_last_3_response_covariate = TRUE,
+            incidence_period = incidence_period,
+            log_response = TRUE,
+            learner = "stratified_linear",
+            model_covariates = covidcast_model_covariates,
+            n_locations = n_locations,
+            response = response,
+            seed = 2020,
+            weeks_back = weeks_back
         )
-    } else {
-        list(zyzzyva =
-                 list(forecaster=NA, type="standalone")
-             )
+
+        full_df <- bind_rows(df) %>%
+        mutate(variable_name = paste(data_source, signal, sep="_")) %>%
+        select(-c(lag, data_source, signal, stderr, sample_size, issue))
+
+        raw_forecaster(
+            full_df,
+            modeling_options=modeling_options
+        )
     }
+    return(list(zyzzyva_covidcast = list(forecaster = forecaster_fn, type="standalone")))
 }

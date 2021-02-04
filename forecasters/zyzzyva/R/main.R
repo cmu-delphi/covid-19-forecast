@@ -1,62 +1,6 @@
 #' @include data_structures.R io.R modeling.R preprocessing.R
 NULL
 
-#' Wrapper function to create a forecasting function
-#'
-#' @param n_locations the maximum number of locations to forecast, ordered by response value
-#'   descending.  Forecasts all locations when NULL.
-#' @return function that performs forecasting with proper options set
-stacked_forecaster <- function(n_locations=NULL) {
-  function(df,
-           forecast_date,
-           signals,
-           incidence_period=c("epiweek"),
-           ahead=1,
-           geo_type=c("county", "state")) {
-    incidence_period <- match.arg(incidence_period)
-    geo_type <- match.arg(geo_type)
-
-    signal_names <- paste(signals$data_source, signals$signal, sep="_")
-    response <- signal_names[1]
-    other_covariates <- signal_names[2:length(signal_names)]
-
-    covidcast_model_covariates <- c(list(ds.covariate(response,
-                                                      tr = tr.log_pad,
-                                                      lags = c(1, 2, seq(3,21,3)),
-                                                      do_rollsum = T)),
-                                    lapply(other_covariates,
-                                           function(cov) ds.covariate(cov,
-                                                                      lags = seq(3,28,7),
-                                                                      do_rollsum = T))
-                                   )
-
-    modeling_options <- list(
-        ahead = ahead,
-        cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
-        forecast_date = forecast_date,
-        geo_type = geo_type,
-        impute_last_3_response_covariate = TRUE,
-        incidence_period = incidence_period,
-        log_response = TRUE,
-        learner = "stratified_linear",
-        model_covariates = covidcast_model_covariates,
-        n_locations = n_locations,
-        response = response,
-        seed = 2020,
-        weeks_back = 4
-    )
-
-    full_df <- bind_rows(df) %>%
-      mutate(variable_name = paste(data_source, signal, sep="_")) %>%
-      select(-c(lag, data_source, signal, stderr, sample_size, issue))
-
-    raw_forecaster(
-      full_df,
-      modeling_options=modeling_options
-    )
-  }
-}
-
 #' Perform stacked forecasting
 #'
 #' @param base_df dataframe containing some covariate and response information
