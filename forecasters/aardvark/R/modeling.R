@@ -22,32 +22,25 @@ make_aardvark_forecaster <- function(geo_type = NULL, response = NULL, features 
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
-    location_df <- distinct(select(df_train, c(location)))
-    df_train_empty <- expand_grid(location_df,
-                                  time_value = unique(df_train$time_value),
-                                  variable_name = unique(df_train$variable_name))
-    df_train_all <- left_join(df_train_empty, df_train, by = c("location", 
-                                                               "time_value", 
-                                                               "variable_name"))
-
-    df_train_all_no_na <- df_train_all %>%
-      mutate(value = if_else(is.na(value), replace_na(value,0), value))
-    
-    df_train_smoothed <- df_train_all_no_na %>%
+    df_train_smoothed <- expand_grid(distinct(select(df_train, c(location))),
+                                     time_value = unique(df_train$time_value),
+                                     variable_name = unique(df_train$variable_name)) %>%
+      left_join(df_train, by = c("location", "time_value","variable_name")) %>%
+      mutate(value = if_else(is.na(value), replace_na(value,0), value)) %>%
       group_by(variable_name) %>%
       group_modify(~ smoother(.x) ) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
 
-    df_all <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)), 
-                          probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
                                            smoother, stratifier, aligner, modeler,
                                            bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
-    predictions <- df_all %>% 
+    predictions <- expand_grid(unique(df_train_smoothed %>% 
+                                        select(location, geo_value)),
+                               probs = covidhub_probs) %>% 
       left_join(df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
