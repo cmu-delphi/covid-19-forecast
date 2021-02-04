@@ -9,7 +9,16 @@ NULL
 #'     forecaster function and type (one of `c("standalone",
 #'     "ensemble")`).
 #' @export get_forecasters
-get_forecasters  <- function(n_locations = NULL) {
+get_forecasters  <- function(backfill_buffer = 5,
+                             debug_folder = NULL,
+                             impute_last_3_responses = TRUE,
+                             learner = "stratified_linear",
+                             log_response = TRUE,
+                             n_locations = NULL,
+                             quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+                             roll_lags = 7,
+                             seed = 2020,
+                             weeks_back = Inf) {
     forecaster_fn <- function(df,
                               forecast_date,
                               signals,
@@ -22,6 +31,7 @@ get_forecasters  <- function(n_locations = NULL) {
         base_df <- bind_rows(df) %>%
             mutate(variable_name = paste(data_source, signal, sep="_")) %>%
             select(-c(lag, data_source, signal, stderr, sample_size, issue))
+        print(names(base_df))
 
         signal_names <- paste(signals$data_source, signals$signal, sep="_")
         response <- signal_names[1]
@@ -41,23 +51,23 @@ get_forecasters  <- function(n_locations = NULL) {
 
         modeling_options <- list(
             ahead = ahead,
-            backfill_buffer = 5,
-            debug_folder = NULL,
+            backfill_buffer = backfill_buffer,
+            debug_folder = debug_folder,
             earliest_data_date = min(base_df[['time_value']]),
             forecast_date = forecast_date,
             geo_type = geo_type,
-            impute_last_3_responses = TRUE,
+            impute_last_3_responses = impute_last_3_responses,
             incidence_period = incidence_period,
-            learner = "stratified_linear",
+            learner = learner,
             location_covariates = location_covariates,
-            log_response = TRUE,
+            log_response = log_response,
             model_covariates = covidcast_model_covariates,
             n_locations = n_locations,
-            quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+            quantiles = quantiles,
             response = response,
-            roll_lags = 7,
-            seed = 2020,
-            weeks_back = 4
+            roll_lags = roll_lags,
+            seed = seed,
+            weeks_back = weeks_back
         )
 
         raw_forecaster(
