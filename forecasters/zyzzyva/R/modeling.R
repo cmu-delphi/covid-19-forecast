@@ -8,10 +8,10 @@ NULL
 #'     overrides learner-dependent options set within the code
 ml.fit_model <- function(train_test,
                          modeling_options) {
-  if (modeling_options$learner == "stratified_linear") {
-    ml.stratified_linear(train_test, modeling_options)
+  if (modeling_options$learner == "linear") {
+    ml.linear(train_test, modeling_options)
   } else {
-    stop("available learners are ('stratified_linear')")
+    stop("available learners are ('linear')")
   }
 }
 
@@ -32,8 +32,8 @@ ml.fit_model <- function(train_test,
 #' @importFrom Iso pava
 #' @importFrom stats lsfit
 #' @importFrom quantgen quantile_lasso
-ml.stratified_linear <- function(train_test,
-                                 modeling_options) {
+ml.linear <- function(train_test,
+                      modeling_options) {
   # extract items from train_test
   train_X <- train_test$train_X
   train_y <- train_test$train_y

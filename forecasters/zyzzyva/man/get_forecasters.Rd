@@ -7,7 +7,7 @@
 get_forecasters(
   debug_folder = NULL,
   impute_last_3_responses = TRUE,
-  learner = "stratified_linear",
+  learner = "linear",
   location_covariates = c("population"),
   log_response = TRUE,
   n_locations = NULL,

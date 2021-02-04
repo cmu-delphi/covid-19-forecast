@@ -55,7 +55,7 @@ VALID_MODELING_OPTIONS <- c(
 # List of valid values for options.  Option names not listed here have no value restrictions.
 # When invalid options are specified, the first valid option will be used in its place.
 VALID_MODELING_OPTIONS_VALUES <- list(
-  learner = c("stratified_linear")
+  learner = c("linear")
 )
 
 #' Validate the modeling options, fixing invalid values where possible.
