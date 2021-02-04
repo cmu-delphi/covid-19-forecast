@@ -14,8 +14,8 @@ overrides learner-dependent options set within the code}
 }
 \description{
 The following model is fit:
-   cases ~ cases_lag1 + fb_lag1 + combined_ind_lag1 + log(pop) +
-           slope(cases) + slope(fb) + slope(combined_ind).
+   response ~ sum(lag(c) for c in covariates) + log(pop) +
+           sum(slope(c) for c in covariates).
 The slope is computed using least squares over past lags of each signal,
 for each location individually.
 Calibration is not currently performed.
