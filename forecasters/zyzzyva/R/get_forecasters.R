@@ -13,6 +13,7 @@ get_forecasters  <- function(backfill_buffer = 5,
                              debug_folder = NULL,
                              impute_last_3_responses = TRUE,
                              learner = "stratified_linear",
+                             location_covariates = c("population"),
                              log_response = TRUE,
                              n_locations = NULL,
                              quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
@@ -45,9 +46,8 @@ get_forecasters  <- function(backfill_buffer = 5,
                                                function(cov) ds.covariate(cov,
                                                                           lags = seq(3,28,7),
                                                                           do_rollsum = T)))
-        location_covariates = list(
-            ds.covariate("population", tr = tr.log_pad)
-        )
+        location_covariates = lapply(location_covariates,
+                                     function(x) ds.covariate(x, tr = tr.log_pad))
 
         modeling_options <- list(
             ahead = ahead,
