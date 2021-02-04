@@ -10,6 +10,7 @@
 #' umbrella, hence the renaming in this package.
 #'
 #' @param geo_type the geo type
+#' @param location_covariates list of location-based covariates to be loaded from file 
 #' @return tibble containing the location information
 #'
 #' @importFrom stringr str_to_upper

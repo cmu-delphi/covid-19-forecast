@@ -4,9 +4,6 @@ NULL
 #' Perform stacked forecasting
 #'
 #' @param base_df dataframe containing some covariate and response information
-#' @param forecast_date date on which we start producing forecasts
-#' @param n_locations the maximum number of locations to forecast, ordered by response value
-#'   descending.  Forecasts all locations when NULL.
 #' @param modeling_options a named list, additional elements of which
 #'     overrides learner-dependent options set within the code
 #' @return function that performs forecasting with proper options set

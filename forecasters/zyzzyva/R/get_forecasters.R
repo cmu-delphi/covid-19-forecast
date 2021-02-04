@@ -1,17 +1,7 @@
 #' @include main.R
 NULL
 
-#' Get the list of forecasters and associated forecaster types
-#' provided by this package.
-#'
-#' @description The evaluator will first call this function with the
-#'     parameters shown below to determine all the forecasters
-#'     available. It expects to get back a named list of lists of
-#'     forecasting functions and types. If a forecasting function is
-#'     not available for a given set of parameters, an `NA` should
-#'     returned _instead of_ a function. This tells the evaluator to
-#'     ignore that forecaster in a run: it ignores anything that is
-#'     not a function. See examples in code below.
+#' Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.
 #'
 #' @param n_locations the maximum number of locations to forecast, ordered by response value
 #'   descending.  Forecasts all locations when NULL.
