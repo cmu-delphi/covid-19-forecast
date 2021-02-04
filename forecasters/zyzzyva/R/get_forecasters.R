@@ -3,8 +3,20 @@ NULL
 
 #' Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.
 #'
+#' @param debug_folder file path to which to write debug information.  When NULL, no debug
+#'     information is written.
+#' @param impute_last_3_responses whether to use an ets model to impute the most recent 3 days of
+#'     the response variable.
+#' @param learner name of learner to use
+#' @param location_covariates list of names location covariates to use in model
+#' @param log_response whether to log-pad the response
 #' @param n_locations the maximum number of locations to forecast, ordered by response value
-#'   descending.  Forecasts all locations when NULL.
+#'     descending.  Forecasts all locations when NULL.
+#' @param quantiles list of quantile values at which to forecast
+#' @param roll_lags lag time in days for applying rolling sums of covariates
+#' @param seed seed for randomness
+#' @param weeks_back number of weeks back of data to use in training.  Automatically adjusted to
+#'     prevent avoid days not present in the data.
 #' @return a named list, with each element of the list consisting of a
 #'     forecaster function and type (one of `c("standalone",
 #'     "ensemble")`).
