@@ -31,8 +31,7 @@ get_forecasters  <- function(backfill_buffer = 5,
 
         base_df <- bind_rows(df) %>%
             mutate(variable_name = paste(data_source, signal, sep="_")) %>%
-            select(-c(lag, data_source, signal, stderr, sample_size, issue))
-        print(names(base_df))
+            select(geo_value, time_value, value, variable_name)
 
         signal_names <- paste(signals$data_source, signals$signal, sep="_")
         response <- signal_names[1]
