@@ -4,10 +4,12 @@
 \alias{io.load_location_info}
 \title{Load location information}
 \usage{
-io.load_location_info(geo_type)
+io.load_location_info(geo_type, location_covariates)
 }
 \arguments{
 \item{geo_type}{the geo type}
+
+\item{location_covariates}{list of location-based covariates to be loaded from file}
 }
 \value{
 tibble containing the location information

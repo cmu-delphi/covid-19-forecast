@@ -2,40 +2,51 @@
 % Please edit documentation in R/get_forecasters.R
 \name{get_forecasters}
 \alias{get_forecasters}
-\title{Get the list of forecasters and associated forecaster types
-provided by this package.}
+\title{Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.}
 \usage{
-get_forecasters(response, geo_type, n_locations = NULL)
+get_forecasters(
+  debug_folder = NULL,
+  impute_last_3_responses = TRUE,
+  learner = "linear",
+  location_covariates = c("population"),
+  log_response = TRUE,
+  n_locations = NULL,
+  quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+  roll_lags = 7,
+  seed = 2020,
+  weeks_back = Inf
+)
 }
 \arguments{
-\item{response}{the response (e.g. "usa-facts_deaths_incidence_num")}
+\item{debug_folder}{file path to which to write debug information.  When NULL, no debug
+information is written.}
 
-\item{geo_type}{the geographic type (e.g "county" or "state" or
-"hrr" or "msa"... but for now only the first two),}
+\item{impute_last_3_responses}{whether to use an ets model to impute the most recent 3 days of
+the response variable.}
+
+\item{learner}{name of learner to use}
+
+\item{location_covariates}{list of names location covariates to use in model}
+
+\item{log_response}{whether to log-pad the response}
 
 \item{n_locations}{the maximum number of locations to forecast, ordered by response value
 descending.  Forecasts all locations when NULL.}
 
-\item{incidence_period}{the incidence period (e.g. "epiweek" for
-now, for all forecasters)}
+\item{quantiles}{list of quantile values at which to forecast}
 
-\item{ahead}{the ahead parameter (e.g. 1, 2, 3, 4)}
+\item{roll_lags}{lag time in days for applying rolling sums of covariates}
 
-\item{forecast_date}{the date of the forecast}
+\item{seed}{seed for randomness}
+
+\item{weeks_back}{number of weeks back of data to use in training.  Automatically adjusted to
+prevent avoid days not present in the data.}
 }
 \value{
 a named list, with each element of the list consisting of a
     forecaster function and type (one of `c("standalone",
-    "ensemble")`). Unavailable forecasters are marked as
-    `list(forecaster = NA, type = "standalone")`.
+    "ensemble")`).
 }
 \description{
-The evaluator will first call this function with the
-    parameters shown below to determine all the forecasters
-    available. It expects to get back a named list of lists of
-    forecasting functions and types. If a forecasting function is
-    not available for a given set of parameters, an `NA` should
-    returned _instead of_ a function. This tells the evaluator to
-    ignore that forecaster in a run: it ignores anything that is
-    not a function. See examples in code below.
+Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.
 }

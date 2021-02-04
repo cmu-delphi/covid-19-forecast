@@ -29,7 +29,7 @@ pp.add_lagged_columns <- function(base_df,
   # the latest reference date is the forecast date 
   max_ref_date <- modeling_options$forecast_date
   
-  if (modeling_options$impute_last_3_response_covariate) {
+  if (modeling_options$impute_last_3_responses) {
     # impute the last 3 reference dates, as on a typical forecast date,
     # the data is only available with a 3 day lag.
     # imputation is done using an ets model
@@ -155,7 +155,8 @@ pp._get_training_set <- function(lagged_df,
 #' @param train_test list of training and testing data
 #' @param modeling_options list of modeling options
 #'
-#' @return list with names X, y, row_locations. y is NA if forecast_date is in the future
+#' @return list with names X, y, row_locations. y is NA if modeling_options$forecast_date is in the 
+#'   future
 pp.impute_and_select <- function(train_test,
                                  modeling_options) {
 
@@ -243,20 +244,19 @@ pp.impute_and_select <- function(train_test,
 #' @param lagged_df original base_df (tall_df) with lagged columns
 #' @param location_info_df formerly health_rankings_df
 #' @param modeling_options the modeling options list
-#' @param forecast_date the forecast date
 #'
-#' @return list with names X, y, row_locations.  y is NA if forecast_date is in the future
+#' @return list with names X, y, row_locations.  y is NA if modeling_options$forecast_date is in 
+#'   the future
 #' @importFrom evalcast get_target_period
 #' @importFrom lubridate ymd
 pp.get_training_set <- function(lagged_df,
                                 location_info_df,
-                                modeling_options,
-                                forecast_date) {
+                                modeling_options) {
 
   intermediate_train_test <- pp._get_training_set(lagged_df,
                                                   location_info_df,
                                                   modeling_options,
-                                                  forecast_date)
+                                                  modeling_options$forecast_date)
 
   pp.impute_and_select(intermediate_train_test,
                        modeling_options)
@@ -267,22 +267,21 @@ pp.get_training_set <- function(lagged_df,
 #' @param lagged_df original base_df (tall_df) with lagged columns
 #' @param location_info_df formerly health_rankings_df
 #' @param modeling_options todo
-#' @param forecast_date date on which we start producing forecasts
 #'
-#' @return list with names X, y, row_location.  y is NA if forecast_date is in the future
+#' @return list with names X, y, row_locations.  y is NA if modeling_options$forecast_date is in
+#'    the future
 #'
 #' @importFrom logger log_debug log_info
 pp.get_stacked_training_set <-
   function(lagged_df,
            location_info_df,
-           modeling_options,
-           forecast_date) {
+           modeling_options) {
     X <- vector("list", modeling_options$weeks_back)
     y <- vector("list", modeling_options$weeks_back)
     row_locations <- vector("list", modeling_options$weeks_back)
     for (idx in 1:(modeling_options$weeks_back)) {
       forecast_date_k_back <-
-        forecast_date - 7 * (modeling_options$ahead + idx - 1)
+        modeling_options$forecast_date - 7 * (modeling_options$ahead + idx - 1)
       logger::log_info(paste0("Getting training set for ", forecast_date_k_back))
       training_set <- pp._get_training_set(lagged_df,
                                            location_info_df,
@@ -358,7 +357,7 @@ pp.transform_and_scale <- function(train_test,
       if (length(var_opt_idx) > 1) {
         logger::log_debug(paste(var_opt$name,
                                 "specified more than once, transforming",
-                     "with function specified in model_covariates"))
+                     "with function specified in base_covariates"))
       }
       new_train_X[,i] <- var_opt$tr(train_test$train_X[,i])
       new_test_X[,i] <- var_opt$tr(train_test$test_X[,i])
@@ -438,20 +437,15 @@ pp.transform_and_scale <- function(train_test,
 #'
 #' @param base_df the data frame
 #' @param location_info_df formerly health_rankings_df
-#' @param forecast_date date on which we start producing forecasts
-#' @param n_locations the maximum number of locations to forecast, ordered by response value
-#'   descending.  Forecasts all locations when NULL.
 #' @param modeling_options the modeling options list
 #'
 #' @return list with names train_X, train_y, test_X
 #' @importFrom logger log_debug log_info
 pp.make_train_test <- function(base_df,
                                location_info_df,
-                               forecast_date,
-                               n_locations,
                                modeling_options) {
   # filter to available data as of forecast_date
-  filtered_df <- base_df %>% filter(time_value <= forecast_date)
+  filtered_df <- base_df %>% filter(time_value <= modeling_options$forecast_date)
 
   # filter to variables of interest
   vars_to_keep <-
@@ -469,19 +463,19 @@ pp.make_train_test <- function(base_df,
     lagged_df <- lagged_df %>% filter(substr(.data$geo_value, 3, 5) != "000")
   }
 
-  if (!is.null(n_locations)) {
-    top_locs <- tn.get_top_n_locations(lagged_df, modeling_options$response, n_locations)
+  if (!is.null(modeling_options$n_locations)) {
+    top_locs <- tn.get_top_n_locations(lagged_df,
+                                       modeling_options$response,
+                                       modeling_options$n_locations)
     lagged_df <- lagged_df %>% filter(geo_value %in% top_locs)
   }
 
   test_dfs <- pp.get_training_set(lagged_df,
                                   location_info_df,
-                                  modeling_options,
-                                  forecast_date)
+                                  modeling_options)
   train_dfs <- pp.get_stacked_training_set(lagged_df,
                                            location_info_df,
-                                           modeling_options,
-                                           forecast_date)
+                                           modeling_options)
 
   ## take intersection of covariates in test/train
   ## (some are not available at earlier/later dates)

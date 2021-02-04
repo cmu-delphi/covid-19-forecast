@@ -4,12 +4,7 @@
 \alias{pp.get_stacked_training_set}
 \title{Make predictors X and target y for stacked forecast dates.}
 \usage{
-pp.get_stacked_training_set(
-  lagged_df,
-  location_info_df,
-  modeling_options,
-  forecast_date
-)
+pp.get_stacked_training_set(lagged_df, location_info_df, modeling_options)
 }
 \arguments{
 \item{lagged_df}{original base_df (tall_df) with lagged columns}
@@ -17,11 +12,10 @@ pp.get_stacked_training_set(
 \item{location_info_df}{formerly health_rankings_df}
 
 \item{modeling_options}{todo}
-
-\item{forecast_date}{date on which we start producing forecasts}
 }
 \value{
-list with names X, y, row_location.  y is NA if forecast_date is in the future
+list with names X, y, row_locations.  y is NA if modeling_options$forecast_date is in
+   the future
 }
 \description{
 Make predictors X and target y for stacked forecast dates.

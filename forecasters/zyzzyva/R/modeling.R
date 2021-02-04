@@ -8,10 +8,10 @@ NULL
 #'     overrides learner-dependent options set within the code
 ml.fit_model <- function(train_test,
                          modeling_options) {
-  if (modeling_options$learner == "stratified_linear") {
-    ml.stratified_linear(train_test, modeling_options)
+  if (modeling_options$learner == "linear") {
+    ml.linear(train_test, modeling_options)
   } else {
-    stop("available learners are ('stratified_linear')")
+    stop("available learners are ('linear')")
   }
 }
 
@@ -19,8 +19,8 @@ ml.fit_model <- function(train_test,
 #' Fit a simple linear model.
 #'
 #' The following model is fit:
-#'    cases ~ cases_lag1 + fb_lag1 + combined_ind_lag1 + log(pop) +
-#'            slope(cases) + slope(fb) + slope(combined_ind).
+#'    response ~ sum(lag(c) for c in covariates) + log(pop) +
+#'            sum(slope(c) for c in covariates).
 #' The slope is computed using least squares over past lags of each signal,
 #' for each location individually.
 #' Calibration is not currently performed.
@@ -32,26 +32,22 @@ ml.fit_model <- function(train_test,
 #' @importFrom Iso pava
 #' @importFrom stats lsfit
 #' @importFrom quantgen quantile_lasso
-ml.stratified_linear <- function(train_test,
-                                 modeling_options) {
+ml.linear <- function(train_test,
+                      modeling_options) {
   # extract items from train_test
   train_X <- train_test$train_X
   train_y <- train_test$train_y
   test_X <- train_test$test_X
   train_row_locations <- train_test$train_row_locations[[1]]
   test_row_locations <- train_test$test_row_locations[[1]]
-  n <- nrow(train_X)
 
   # create new_train_X, new_test_X with slope variables
-  slope_base_vars <- c("usa-facts_confirmed_incidence_num_lag",
-                       "fb-survey_smoothed_hh_cmnty_cli_lag",
-                       "indicator-combination_nmf_day_doc_fbc_fbs_ght_lag")
+  slope_base_vars <- paste(sapply(modeling_options$base_covariates, function(x) x$name),
+                           "lag", sep = "_")
   new_train_X <- matrix(NA, nrow=nrow(train_X), ncol=length(slope_base_vars))
   new_test_X <-  matrix(NA, nrow=nrow(test_X), ncol=length(slope_base_vars))
   for (i in 1:length(slope_base_vars)) {
-    var <- slope_base_vars[i]
-    n_chars <- nchar(var)
-    var_cols <- which(substring(colnames(train_X), 1, n_chars)==var)
+    var_cols <- which(startsWith(colnames(train_X), slope_base_vars[i]))
     n_var_cols <- length(var_cols)
     if (n_var_cols <= 1) {
       stop("Could not create slope vars in training X, not enough columns for ", var)
@@ -59,28 +55,16 @@ ml.stratified_linear <- function(train_test,
     new_train_X[,i] <- stats::lsfit(-(1:n_var_cols), t(train_X[, var_cols]))$coef[2,]
     new_test_X[,i] <- stats::lsfit(-(1:n_var_cols), t(test_X[, var_cols]))$coef[2,]
   }
-  
   # add first lags of handpicked variables
-  first_case_var <- which(grepl("usa-facts_confirmed_incidence_num_lag", colnames(train_X)))[1]
-  first_fb_var <- which(grepl("fb-survey_smoothed_hh_cmnty_cli_lag", colnames(train_X)))[1]
-  first_ind_var <- which(grepl("indicator-combination_nmf_day_doc_fbc_fbs_ght_lag", colnames(train_X)))[1]
-  pop_var <- which(grepl("population", colnames(train_X)))[1]
-  new_train_X <- cbind(new_train_X,
-                       train_X[, first_case_var],
-                       train_X[, first_fb_var],
-                       train_X[, first_ind_var],
-                       train_X[, pop_var])
-  new_test_X <- cbind(new_test_X,
-                      test_X[, first_case_var],
-                      test_X[, first_fb_var],
-                      test_X[, first_ind_var],
-                      test_X[, pop_var])
+  location_covariate_names <- sapply(modeling_options$location_covariates, function(x) x$name)
+  first_cases <- sapply(c(slope_base_vars, location_covariate_names),
+                        function(var) which(startsWith(colnames(train_X), var))[1],
+                        USE.NAMES = F)
+  new_train_X <- cbind(new_train_X, train_X[, first_cases])
+  new_test_X <- cbind(new_test_X, test_X[, first_cases])
   
   covariate_names <- c(paste(slope_base_vars, "slope", sep="_"),
-                       colnames(train_X)[first_case_var],
-                       colnames(train_X)[first_fb_var],
-                       colnames(train_X)[first_ind_var],
-                       colnames(train_X)[pop_var])
+                       colnames(train_X)[first_cases])
   
   colnames(new_train_X) <- covariate_names
   colnames(new_test_X) <- covariate_names
@@ -88,15 +72,15 @@ ml.stratified_linear <- function(train_test,
                     paste(colnames(new_train_X), collapse='\n'))
   
   # finally, get predictions
-  out <- matrix(NA, nrow=nrow(test_X), ncol=length(modeling_options$cdc_probs))
+  out <- matrix(NA, nrow=nrow(test_X), ncol=length(modeling_options$quantiles))
   # get quantiles
   fit_quantiles <- quantgen::quantile_lasso(new_train_X,
                                             train_y,
-                                            tau = modeling_options$cdc_probs,
+                                            tau = modeling_options$quantiles,
                                             standardize = FALSE,
                                             lambda = 0)
   preds <-  predict(fit_quantiles, new_test_X, sort = TRUE)
-  colnames(preds) <- modeling_options$cdc_probs
+  colnames(preds) <- modeling_options$quantiles
   out <- preds
   
   # isotonic regression to ensure quantiles ordering
@@ -114,14 +98,13 @@ ml.stratified_linear <- function(train_test,
   
   # format for output
   final_out <- NULL
-  for (i in 1:length(modeling_options$cdc_probs)) {
+  for (i in 1:length(modeling_options$quantiles)) {
     final_out <- rbind(final_out, cbind(modeling_options$ahead,
                                         train_test$test_row_locations, 
-                                        modeling_options$cdc_probs[i],
+                                        modeling_options$quantiles[i],
                                         out[, i]))
   }
   names(final_out) <- c("ahead", "geo_value", "quantile", "value")
   
   final_out
 }
-
