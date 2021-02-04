@@ -34,10 +34,6 @@ io.load_location_info <- function(geo_type,
       mutate(geo_value = stringr::str_to_lower(state)) %>%
       rename(population = chr_population)
   }
-<<<<<<< HEAD
   covariate_names <- sapply(location_covariates, function(x) x$name)
   location_df[c("geo_value", covariate_names)]
-=======
-  location_df %>% rename(geo_value = location) %>% select(geo_value, population)
->>>>>>> 7bc5aa3caa970056d6b0dc7dd2323697184ca20e
 }
