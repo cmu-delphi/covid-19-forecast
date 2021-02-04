@@ -42,7 +42,7 @@ ml.stratified_linear <- function(train_test,
   test_row_locations <- train_test$test_row_locations[[1]]
 
   # create new_train_X, new_test_X with slope variables
-  slope_base_vars <- paste(sapply(modeling_options$model_covariates, function(x) x$name),
+  slope_base_vars <- paste(sapply(modeling_options$base_covariates, function(x) x$name),
                            "lag", sep = "_")
   new_train_X <- matrix(NA, nrow=nrow(train_X), ncol=length(slope_base_vars))
   new_test_X <-  matrix(NA, nrow=nrow(test_X), ncol=length(slope_base_vars))

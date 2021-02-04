@@ -48,14 +48,14 @@ get_forecasters  <- function(debug_folder = NULL,
         response <- signal_names[1]
         other_covariates <- signal_names[2:length(signal_names)]
 
-        covidcast_model_covariates <- c(list(ds.covariate(response,
-                                                          tr = tr.log_pad,
-                                                          lags = c(1, 2, seq(3,21,3)),
-                                                          do_rollsum = T)),
-                                        lapply(other_covariates,
-                                               function(cov) ds.covariate(cov,
-                                                                          lags = seq(3,28,7),
-                                                                          do_rollsum = T)))
+        base_covariates <- c(list(ds.covariate(response,
+                                               tr = tr.log_pad,
+                                               lags = c(1, 2, seq(3,21,3)),
+                                               do_rollsum = T)),
+                             lapply(other_covariates,
+                                    function(cov) ds.covariate(cov,
+                                                               lags = seq(3,28,7),
+                                                               do_rollsum = T)))
         location_covariates = lapply(location_covariates,
                                      function(x) ds.covariate(x, tr = tr.log_pad))
 
@@ -69,7 +69,7 @@ get_forecasters  <- function(debug_folder = NULL,
             learner = learner,
             location_covariates = location_covariates,
             log_response = log_response,
-            model_covariates = covidcast_model_covariates,
+            base_covariates = base_covariates,
             n_locations = n_locations,
             quantiles = quantiles,
             response = response,

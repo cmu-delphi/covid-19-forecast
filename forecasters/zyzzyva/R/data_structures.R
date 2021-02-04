@@ -43,7 +43,7 @@ VALID_MODELING_OPTIONS <- c(
   "learner",
   "location_covariates",
   "log_response",
-  "model_covariates",
+  "base_covariates",
   "n_locations",
   "quantiles",
   "response",
