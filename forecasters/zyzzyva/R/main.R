@@ -10,7 +10,8 @@ NULL
 raw_forecaster <- function(base_df,
                            modeling_options) {
   set.seed(modeling_options$seed)
-  modeling_options <- ds.set_modeling_defaults(modeling_options)
+  modeling_options <- ds.validate_options(modeling_options,
+                                          base_df)
   location_info_df <- io.load_location_info(modeling_options$geo_type,
                                             modeling_options$location_covariates)
   train_test <- pp.make_train_test(base_df,
