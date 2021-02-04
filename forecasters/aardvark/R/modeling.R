@@ -28,7 +28,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
     df_train_all <- left_join(df_train_empty, df_train, by = c("location", 
                                                                "time_value", 
                                                                "variable_name"))
-    
 
     df_train_all_no_na <- df_train_all %>%
       mutate(value = if_else(is.na(value), replace_na(value,0), value))
@@ -300,7 +299,6 @@ model_formula <- function(features){
 }
 
 make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
-  # Closure, allowing us to pass tuning parameters to cv.glmnet
   # Inputs:
   #   alpha: numeric between 0 and 1
   #   build_penalty_factor: function, taking as input the names of X and producing output which
@@ -313,22 +311,20 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
     
     variable_names <- colnames(X)
     penalty_factor <- case_when(
-      grepl("location", variable_names) ~ 1, # Penalize location-specific effects
-      grepl(":", variable_names)        ~ 0, # Don't penalize interactions
-      TRUE                             ~ 0 # Don't penalize intercept
+      grepl("location", variable_names) ~ 1,
+      grepl(":", variable_names)        ~ 0,
+      TRUE                             ~ 0 
     )
     if ( all(penalty_factor == 0) ){
       penalty_factor <- rep(1, length(penalty_factor))
     }
-    
-    # (2) Determine folds for cross validation.
+
     unique_locs <- unique(locs)
     stopifnot(length(unique_locs) >= n_folds) # Need something to hold out.
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
     names(fold_for_each_loc) <- unique_locs
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
-    
-    # (3) Fit our model.
+
     glmnet.control(fdev = fdev, mnlam = mnlam)
     cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
               penalty.factor = penalty_factor, intercept = FALSE,
@@ -337,7 +333,6 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
 }
 
 make_predict_glmnet <- function(lambda_choice){
-  # Closure, allowing us to pass parameters to predict.glmnet.
   # Inputs:
   #   lambda_choice: either "lambda.1se" or "lambda.min"
   predict_glmnet <- function(fit, X, offset, ...){
