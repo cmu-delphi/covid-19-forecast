@@ -9,8 +9,7 @@ NULL
 #'     forecaster function and type (one of `c("standalone",
 #'     "ensemble")`).
 #' @export get_forecasters
-get_forecasters  <- function(backfill_buffer = 5,
-                             debug_folder = NULL,
+get_forecasters  <- function(debug_folder = NULL,
                              impute_last_3_responses = TRUE,
                              learner = "stratified_linear",
                              location_covariates = c("population"),
@@ -50,7 +49,6 @@ get_forecasters  <- function(backfill_buffer = 5,
 
         modeling_options <- list(
             ahead = ahead,
-            backfill_buffer = backfill_buffer,
             debug_folder = debug_folder,
             forecast_date = forecast_date,
             geo_type = geo_type,

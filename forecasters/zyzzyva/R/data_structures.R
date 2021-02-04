@@ -35,7 +35,6 @@ LAG_SUFFIX <- "lag"
 
 VALID_MODELING_OPTIONS <- c(
   "ahead",
-  "backfill_buffer",
   "debug_folder",
   "forecast_date",
   "geo_type",
