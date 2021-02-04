@@ -46,13 +46,11 @@ io.load_location_info <- function(geo_type) {
       )
   } else if ("state" %in% names(raw_location_df)) {
     location_df <- raw_location_df %>%  mutate(
-        location_name = stringr::str_to_upper(state),
-        location = sapply(location_name, function(x) STATE_TO_FIPS[[x]])
+        location = stringr::str_to_lower(state)
       ) %>% rename (
         population = chr_population,
       ) %>% select (
-        -state,
-        -location_name,
+        -state
       )
   }
   location_df %>% rename(geo_value = location) %>% select(geo_value, population)
