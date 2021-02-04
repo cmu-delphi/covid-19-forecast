@@ -13,7 +13,6 @@ NULL
 raw_forecaster <- function(base_df,
                            modeling_options) {
   set.seed(modeling_options$seed)
-  modeling_options$earliest_data_date <- min(base_df[['time_value']])
   modeling_options <- ds.set_modeling_defaults(modeling_options)
   location_info_df <- io.load_location_info(modeling_options$geo_type)
   train_test <- pp.make_train_test(base_df,
