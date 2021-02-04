@@ -46,15 +46,15 @@ get_forecasters  <- function(n_locations = NULL,
 
         modeling_options <- list(
             ahead = ahead,
-            cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
             forecast_date = forecast_date,
             geo_type = geo_type,
-            impute_last_3_response_covariate = TRUE,
+            impute_last_3_responses = TRUE,
             incidence_period = incidence_period,
             log_response = TRUE,
             learner = "stratified_linear",
             model_covariates = covidcast_model_covariates,
             n_locations = n_locations,
+            quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
             response = response,
             seed = 2020,
             weeks_back = weeks_back

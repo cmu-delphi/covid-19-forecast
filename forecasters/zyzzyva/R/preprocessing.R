@@ -29,7 +29,7 @@ pp.add_lagged_columns <- function(base_df,
   # the latest reference date is the forecast date 
   max_ref_date <- modeling_options$forecast_date
   
-  if (modeling_options$impute_last_3_response_covariate) {
+  if (modeling_options$impute_last_3_responses) {
     # impute the last 3 reference dates, as on a typical forecast date,
     # the data is only available with a 3 day lag.
     # imputation is done using an ets model

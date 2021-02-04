@@ -36,18 +36,18 @@ LAG_SUFFIX <- "lag"
 VALID_MODELING_OPTIONS <- c(
   "ahead",
   "backfill_buffer",
-  "cdc_probs",
   "debug_folder",
   "earliest_data_date",
   "forecast_date",
   "geo_type",
-  "impute_last_3_response_covariate",
+  "impute_last_3_responses",
   "incidence_period",
   "learner",
   "location_covariates",
   "log_response",
   "model_covariates",
   "n_locations",
+  "quantiles",
   "response",
   "roll_lags",
   "seed",
@@ -57,16 +57,16 @@ VALID_MODELING_OPTIONS <- c(
 MUTUAL_DEFAULTS <- list(
   ahead = 1,
   backfill_buffer = 5,
-  cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
   debug_folder = NULL,
+  impute_last_3_responses = T,
   incidence_period = "epiweek",
   location_covariates = list(
     ds.covariate("population", tr = tr.log_pad)
   ),
   log_response = TRUE,
   roll_lags = 7,
+  quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
   seed = 2020,
-  impute_last_3_response_covariate = T,
   weeks_back = Inf
 )
 

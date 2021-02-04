@@ -71,15 +71,15 @@ ml.stratified_linear <- function(train_test,
                     paste(colnames(new_train_X), collapse='\n'))
   
   # finally, get predictions
-  out <- matrix(NA, nrow=nrow(test_X), ncol=length(modeling_options$cdc_probs))
+  out <- matrix(NA, nrow=nrow(test_X), ncol=length(modeling_options$quantiles))
   # get quantiles
   fit_quantiles <- quantgen::quantile_lasso(new_train_X,
                                             train_y,
-                                            tau = modeling_options$cdc_probs,
+                                            tau = modeling_options$quantiles,
                                             standardize = FALSE,
                                             lambda = 0)
   preds <-  predict(fit_quantiles, new_test_X, sort = TRUE)
-  colnames(preds) <- modeling_options$cdc_probs
+  colnames(preds) <- modeling_options$quantiles
   out <- preds
   
   # isotonic regression to ensure quantiles ordering
@@ -97,14 +97,13 @@ ml.stratified_linear <- function(train_test,
   
   # format for output
   final_out <- NULL
-  for (i in 1:length(modeling_options$cdc_probs)) {
+  for (i in 1:length(modeling_options$quantiles)) {
     final_out <- rbind(final_out, cbind(modeling_options$ahead,
                                         train_test$test_row_locations, 
-                                        modeling_options$cdc_probs[i],
+                                        modeling_options$quantiles[i],
                                         out[, i]))
   }
   names(final_out) <- c("ahead", "geo_value", "quantile", "value")
   
   final_out
 }
-
