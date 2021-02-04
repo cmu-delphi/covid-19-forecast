@@ -13,7 +13,8 @@
 #' @return tibble containing the location information
 #'
 #' @importFrom stringr str_to_upper
-io.load_location_info <- function(geo_type) {
+io.load_location_info <- function(geo_type,
+                                  location_covariates) {
   raw_location_df <- readRDS(system.file(
                              "extdata",
                              paste0(geo_type, "-health-rankings.RDS"),
@@ -32,5 +33,6 @@ io.load_location_info <- function(geo_type) {
       mutate(geo_value = stringr::str_to_lower(state)) %>%
       rename(population = chr_population)
   }
-  location_df %>% select(geo_value, population)
+  covariate_names <- sapply(location_covariates, function(x) x$name)
+  location_df[c("geo_value", covariate_names)]
 }

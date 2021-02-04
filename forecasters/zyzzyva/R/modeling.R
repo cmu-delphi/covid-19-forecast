@@ -56,7 +56,8 @@ ml.stratified_linear <- function(train_test,
     new_test_X[,i] <- stats::lsfit(-(1:n_var_cols), t(test_X[, var_cols]))$coef[2,]
   }
   # add first lags of handpicked variables
-  first_cases <- sapply(c(slope_base_vars, "population"),
+  location_covariate_names <- sapply(modeling_options$location_covariates, function(x) x$name)
+  first_cases <- sapply(c(slope_base_vars, location_covariate_names),
                         function(var) which(startsWith(colnames(train_X), var))[1],
                         USE.NAMES = F)
   new_train_X <- cbind(new_train_X, train_X[, first_cases])
