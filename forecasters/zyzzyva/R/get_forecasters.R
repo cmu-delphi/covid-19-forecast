@@ -19,14 +19,13 @@ NULL
 #'     forecaster function and type (one of `c("standalone",
 #'     "ensemble")`).
 #' @export get_forecasters
-get_forecasters  <- function(n_locations = NULL,
-                             weeks_back = 4) {
-   forecaster_fn <- function(df,
-                             forecast_date,
-                             signals,
-                             incidence_period=c("epiweek"),
-                             ahead=1,
-                             geo_type=c("county", "state")) {
+get_forecasters  <- function(n_locations = NULL) {
+    forecaster_fn <- function(df,
+                              forecast_date,
+                              signals,
+                              incidence_period=c("epiweek"),
+                              ahead=1,
+                              geo_type=c("county", "state")) {
         incidence_period <- match.arg(incidence_period)
         geo_type <- match.arg(geo_type)
 
@@ -68,7 +67,7 @@ get_forecasters  <- function(n_locations = NULL,
             response = response,
             roll_lags = 7,
             seed = 2020,
-            weeks_back = weeks_back
+            weeks_back = 4
         )
 
         raw_forecaster(
