@@ -10,8 +10,8 @@ NULL
 #' @param do_rollavg bool to roll avg the covariate
 #' @param do_penalize bool to penalize the covariate in the lasso
 #' @return a named list
-#' @export ds.covariate
-ds.covariate <-
+#' @export ms.covariate
+ms.covariate <-
   function(name,
            tr = tr.identity,
            lags = c(0),
@@ -63,7 +63,7 @@ VALID_MODELING_OPTIONS_VALUES <- list(
 #' @param modeling_options named list of modeling options
 #' @param base_df signal data with column `time_value`
 #' @return a named list
-ds.validate_options <- function(modeling_options,
+ms.validate_options <- function(modeling_options,
                                 base_df) {
   if (is.na(modeling_options) || is.null(modeling_options)) {
     stop("Modeling options must be non-empty")
