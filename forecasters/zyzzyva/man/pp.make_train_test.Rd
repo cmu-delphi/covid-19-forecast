@@ -4,14 +4,12 @@
 \alias{pp.make_train_test}
 \title{Make train predictors, targets and test predictors}
 \usage{
-pp.make_train_test(base_df, location_info_df, forecast_date, modeling_options)
+pp.make_train_test(base_df, location_info_df, modeling_options)
 }
 \arguments{
 \item{base_df}{the data frame}
 
 \item{location_info_df}{formerly health_rankings_df}
-
-\item{forecast_date}{date on which we start producing forecasts}
 
 \item{modeling_options}{the modeling options list}
 }

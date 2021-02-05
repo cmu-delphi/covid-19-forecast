@@ -34,167 +34,68 @@ ROLLAVG_SUFFIX <- "rollavg"
 LAG_SUFFIX <- "lag"
 
 VALID_MODELING_OPTIONS <- c(
-  "add_interactions",
   "ahead",
-  "backfill_buffer",
-  "cluster_covariates",
-  "cdc_probs",
+  "base_covariates",
   "debug_folder",
-  "debug_clusters_folder",
-  "earliest_data_date",
-  "estimate_tail_sd",
-  "fitting_tau",
   "forecast_date",
   "geo_type",
-  "impute_last_3_response_covariate",
+  "impute_last_3_responses",
   "incidence_period",
   "learner",
   "location_covariates",
-  "location_pcs",
   "log_response",
-  "model_covariates",
-  "n_clusters",
-  "n_tau_left",
-  "n_tau_right",
+  "n_locations",
+  "quantiles",
   "response",
   "roll_lags",
   "seed",
-  "use_median_point",
-  "use_cv_lasso",
-  "lp_solver",
-  "weeks_back",
-  c()
+  "weeks_back"
 )
 
-MUTUAL_DEFAULTS <- list(
-  ahead = 1,
-  backfill_buffer = 5,
-  cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
-  debug_folder = NULL,
-  debug_clusters_folder = NULL,
-  debug_cluster_coefs = NULL,
-  incidence_period = "epiweek",
-  location_covariates = list(
-    ds.covariate("population", tr = tr.log_pad)
-  ),
-  location_pcs = 0,
-  log_response = TRUE,
-  roll_lags = 7,
-  seed = 2020,
-  impute_last_3_response_covariate = T,
-  use_median_point = F,
-  weeks_back = Inf
+# List of valid values for options.  Option names not listed here have no value restrictions.
+# When invalid options are specified, the first valid option will be used in its place.
+VALID_MODELING_OPTIONS_VALUES <- list(
+  learner = c("linear")
 )
 
-STATE_DEFAULTS <- list(
-  response = "jhu-csse_deaths_incidence_num",
-  cluster_covariates = list(
-    ds.covariate("jhu-csse_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  ),
-  model_covariates = list(
-    ds.covariate("jhu-csse_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  )
-)
-
-COUNTY_DEFAULTS <- list(
-  response = "usa-facts_deaths_incidence_num",
-  cluster_covariates = list(
-    ds.covariate("usa-facts_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  ),
-  model_covariates = list(
-    ds.covariate("usa-facts_deaths_incidence_num", tr = tr.log_pad, lags = c(1:3), do_rollsum = T)
-  )
-)
-
-STRATIFIED_LINEAR_DEFAULTS <- list(
-  add_interactions = TRUE,
-  estimate_tail_sd = FALSE,
-  learner = "stratified_linear",
-  fitting_tau = c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975),
-  n_clusters = 1,
-  n_tau_left = 1,
-  n_tau_right = 1,
-  use_cv_lasso = TRUE,
-  lp_solver = "glpk"
-)
-
-#' Sets a default value if not already set
+#' Validate the modeling options, fixing invalid values where possible.
 #'
-#' @param modeling_options named list
-#' @param key option to be set
-#' @param value option setting
+#' @param modeling_options named list of modeling options
+#' @param base_df signal data with column `time_value`
 #' @return a named list
-ds.set_default <- function(modeling_options, key, value) {
-  if (!(key %in% names(modeling_options))) {
-    modeling_options[[key]] <- value
-  }
-  return(modeling_options)
-}
-
-#' Sets default values from a named list
-#'
-#' @param modeling_options named list
-#' @param options_list named list of defaults
-#' @return a named list
-ds.set_default_list <- function(modeling_options, options_list) {
-  for (k in names(options_list)) {
-    modeling_options <- ds.set_default(modeling_options, k, options_list[[k]])
-  }
-  return(modeling_options)
-}
-
-#' Sets modeling defaults
-#' 
-#' This function takes a named list, containing user-specified modeling
-#' options, and returns a named list, where specific modeling options that
-#' were not explicitly set by the user are set to package defaults, as
-#' defined in this file.  This function also verifies that only valid modeling
-#' options (both keys and values) are passed in by the user, and if an invalid
-#' modeling option is specified, an error will be raised.
-#'
-#' @param modeling_options named list
-#' @return a named list
-ds.set_modeling_defaults <- function(modeling_options) {
+ds.validate_options <- function(modeling_options,
+                                base_df) {
   if (is.na(modeling_options) || is.null(modeling_options)) {
-    modeling_options = list()
+    stop("Modeling options must be non-empty")
   }
-  # Verify that there are no illegal arguments
-  if ((length(extra_opts <- lubridate::setdiff(
-    names(modeling_options),
-    VALID_MODELING_OPTIONS
-  ))) > 0) {
-    stop("Illegal arguments specified: ", extra_opts)
+  # Verify that the set of options exactly matches the expected set.
+  unknown_options <- setdiff(names(modeling_options), VALID_MODELING_OPTIONS)
+  if (length(unknown_options) > 0) {
+    stop("Unknown options specified: ", unknown_options)
   }
-  modeling_options <- ds.set_default(modeling_options,
-                                     "learner", "stratified_linear")
-  if (modeling_options$learner == "stratified_linear") {
-    modeling_options <- ds.set_default_list(modeling_options,
-                                            STRATIFIED_LINEAR_DEFAULTS)
-  } else {
-    stop("Illegal learner specified: ", modeling_options$learner)
+  missing_options <- setdiff(VALID_MODELING_OPTIONS, names(modeling_options))
+  if (length(missing_options) > 0) {
+    stop("Missing options: ", missing_options)
   }
-  if (modeling_options$geo_type == 'county') {
-    modeling_options <- ds.set_default_list(modeling_options,
-                                            COUNTY_DEFAULTS)
-  } else if (modeling_options$geo_type == 'state') {
-    modeling_options <- ds.set_default_list(modeling_options,
-                                            STATE_DEFAULTS)
+
+  # Fix invalid option values.
+  for (option in names(VALID_MODELING_OPTIONS_VALUES)) {
+    if (!(modeling_options[option] %in% VALID_MODELING_OPTIONS_VALUES[option])) {
+      message("Invalid ", option, "=", modeling_options[option], ", defaulting to ",
+              VALID_MODELING_OPTIONS_VALUES[option][1])
+      modeling_options[option] <- VALID_MODELING_OPTIONS_VALUES[option][1]
+    } 
   }
-  modeling_options <- ds.set_default_list(modeling_options,
-                                          MUTUAL_DEFAULTS)
+
+  # Don't allow `weeks_back` to extend beyond the earliest available data. 
   max_possible_weeks_back <- floor(
-    (as.numeric(modeling_options$forecast_date
-      - modeling_options$earliest_data_date)
-    / 7) - modeling_options$ahead + 1)
+    (as.numeric(modeling_options$forecast_date - min(base_df[['time_value']])) / 7) - modeling_options$ahead + 1)
   if (modeling_options$weeks_back > max_possible_weeks_back) {
     message('User requested weeks_back=', modeling_options$weeks_back,
             ', but there is not enough data.  Setting instead to maximum ',
             'possible weeks_back=', max_possible_weeks_back)
     modeling_options$weeks_back <- max_possible_weeks_back
   }
-
-  modeling_options$base_covariates <- c(modeling_options$model_covariates,
-                                       modeling_options$cluster_covariates)
 
   modeling_options
 }

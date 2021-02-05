@@ -1,85 +1,87 @@
 #' @include main.R
 NULL
 
-#' Get the list of forecasters and associated forecaster types
-#' provided by this package.
+#' Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.
 #'
-#' @description The evaluator will first call this function with the
-#'     parameters shown below to determine all the forecasters
-#'     available. It expects to get back a named list of lists of
-#'     forecasting functions and types. If a forecasting function is
-#'     not available for a given set of parameters, an `NA` should
-#'     returned _instead of_ a function. This tells the evaluator to
-#'     ignore that forecaster in a run: it ignores anything that is
-#'     not a function. See examples in code below.
-#'
-#' @param response the response (e.g. "usa-facts_deaths_incidence_num")
-#' @param incidence_period the incidence period (e.g. "epiweek" for
-#'     now, for all forecasters)
-#' @param ahead the ahead parameter (e.g. 1, 2, 3, 4)
-#' @param forecast_date the date of the forecast
-#' @param geo_type the geographic type (e.g "county" or "state" or
-#'     "hrr" or "msa"... but for now only the first two),
-#' @param n_locations the number of locations (for now we will use 200
-#'     for this)
+#' @param debug_folder file path to which to write debug information.  When NULL, no debug
+#'     information is written.
+#' @param impute_last_3_responses whether to use an ets model to impute the most recent 3 days of
+#'     the response variable.
+#' @param learner name of learner to use
+#' @param location_covariates list of names location covariates to use in model
+#' @param log_response whether to log-pad the response
+#' @param n_locations the maximum number of locations to forecast, ordered by response value
+#'     descending.  Forecasts all locations when NULL.
+#' @param quantiles list of quantile values at which to forecast
+#' @param roll_lags lag time in days for applying rolling sums of covariates
+#' @param seed seed for randomness
+#' @param weeks_back number of weeks back of data to use in training.  Automatically adjusted to
+#'     prevent avoid days not present in the data.
 #' @return a named list, with each element of the list consisting of a
 #'     forecaster function and type (one of `c("standalone",
-#'     "ensemble")`). Unavailable forecasters are marked as
-#'     `list(forecaster = NA, type = "standalone")`.
+#'     "ensemble")`).
 #' @export get_forecasters
-get_forecasters  <- function(response,
-                             geo_type,
-                             n_locations=200) {
+get_forecasters  <- function(debug_folder = NULL,
+                             impute_last_3_responses = TRUE,
+                             learner = "linear",
+                             location_covariates = c("population"),
+                             log_response = TRUE,
+                             n_locations = NULL,
+                             quantiles = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
+                             roll_lags = 7,
+                             seed = 2020,
+                             weeks_back = Inf) {
+    forecaster_fn <- function(df,
+                              forecast_date,
+                              signals,
+                              incidence_period=c("epiweek"),
+                              ahead=1,
+                              geo_type=c("county", "state")) {
+        incidence_period <- match.arg(incidence_period)
+        geo_type <- match.arg(geo_type)
 
-    covidcast_cluster_covariates = list(
-        ds.covariate("usa-facts_confirmed_incidence_num",
-                     tr = tr.log_pad, lags = c(1, 2, seq(3,21,3)), do_rollsum = T)
-    )
+        base_df <- bind_rows(df) %>%
+            mutate(variable_name = paste(data_source, signal, sep="_")) %>%
+            select(geo_value, time_value, value, variable_name)
 
-    covidcast_model_covariates = list(
-        ds.covariate("usa-facts_confirmed_incidence_num", tr = tr.log_pad,
-                     lags = c(1, 2, seq(3,21,3)), do_rollsum = T),
-        ds.covariate("fb-survey_smoothed_hh_cmnty_cli",
-                     lags = seq(3,28,7), do_rollsum = T),
-        ds.covariate("indicator-combination_nmf_day_doc_fbc_fbs_ght",
-                     lags = seq(3,28,7), do_rollsum = T)
-    )
+        signal_names <- paste(signals$data_source, signals$signal, sep="_")
+        response <- signal_names[1]
+        other_covariates <- signal_names[2:length(signal_names)]
 
-    modeling_options <- list(
-        cluster_covariates = covidcast_cluster_covariates,
-        cdc_probs = c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99),
-        model_covariates = covidcast_model_covariates,
-        log_response = TRUE,
-        location_pcs = 0,
-        n_clusters = 1,
-        learner = "stratified_linear",
-        use_cv_lasso = FALSE,
-        use_median_point = TRUE,
-        add_interactions = FALSE,
-        impute_last_3_response_covariate = TRUE,
-        seed = 2020,
-        weeks_back = 4,
-        response = response
-    )
+        base_covariates <- c(list(ds.covariate(response,
+                                               tr = tr.log_pad,
+                                               lags = c(1, 2, seq(3,21,3)),
+                                               do_rollsum = T)),
+                             lapply(other_covariates,
+                                    function(cov) ds.covariate(cov,
+                                                               lags = seq(3,28,7),
+                                                               do_rollsum = T)))
+        location_covariates = lapply(location_covariates,
+                                     function(x) ds.covariate(x, tr = tr.log_pad))
 
-    ## Currently we only work with "county" or "state" level forecasts
-
-    ## If your function has not been completed for geo_type == "state"
-    ## say, you can return NA as the "else" part shows below.  Note
-    ## also, how you can pass along additional parameters besides the
-    ## six mandatory ones.
-
-    if (geo_type %in% c("county", "state")) {
-        list(
-            zyzzyva_covidcast =
-                list(forecaster=stacked_forecaster(
-                         n_locations=nlocations,
-                         modeling_options=modeling_options),
-                     type="standalone")
+        modeling_options <- list(
+            ahead = ahead,
+            base_covariates = base_covariates,
+            debug_folder = debug_folder,
+            forecast_date = forecast_date,
+            geo_type = geo_type,
+            impute_last_3_responses = impute_last_3_responses,
+            incidence_period = incidence_period,
+            learner = learner,
+            location_covariates = location_covariates,
+            log_response = log_response,
+            n_locations = n_locations,
+            quantiles = quantiles,
+            response = response,
+            roll_lags = roll_lags,
+            seed = seed,
+            weeks_back = weeks_back
         )
-    } else {
-        list(zyzzyva =
-                 list(forecaster=NA, type="standalone")
-             )
+
+        raw_forecaster(
+            base_df,
+            modeling_options=modeling_options
+        )
     }
+    return(list(zyzzyva_covidcast = list(forecaster = forecaster_fn, type="standalone")))
 }

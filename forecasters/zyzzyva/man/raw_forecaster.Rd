@@ -4,12 +4,10 @@
 \alias{raw_forecaster}
 \title{Perform stacked forecasting}
 \usage{
-raw_forecaster(base_df, forecast_date, modeling_options)
+raw_forecaster(base_df, modeling_options)
 }
 \arguments{
 \item{base_df}{dataframe containing some covariate and response information}
-
-\item{forecast_date}{date on which we start producing forecasts}
 
 \item{modeling_options}{a named list, additional elements of which
 overrides learner-dependent options set within the code}

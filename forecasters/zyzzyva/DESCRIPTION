@@ -57,4 +57,5 @@ Collate:
     'io.R'
     'main.R'
     'get_forecasters.R'
+    'top_n.R'
     'zyzzyva-package.R'

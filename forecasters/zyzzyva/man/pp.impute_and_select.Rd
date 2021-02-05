@@ -12,7 +12,8 @@ pp.impute_and_select(train_test, modeling_options)
 \item{modeling_options}{list of modeling options}
 }
 \value{
-list with names X, y, row_locations. y is NA if forecast_date is in the future
+list with names X, y, row_locations. y is NA if modeling_options$forecast_date is in the 
+  future
 }
 \description{
 Mean impute and select relevant variables
