@@ -35,6 +35,7 @@ LAG_SUFFIX <- "lag"
 
 VALID_MODELING_OPTIONS <- c(
   "ahead",
+  "base_covariates",
   "debug_folder",
   "forecast_date",
   "geo_type",
@@ -43,7 +44,6 @@ VALID_MODELING_OPTIONS <- c(
   "learner",
   "location_covariates",
   "log_response",
-  "base_covariates",
   "n_locations",
   "quantiles",
   "response",
