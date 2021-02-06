@@ -51,11 +51,11 @@ RoxygenNote: 7.1.1
 Collate: 
     'calibration.R'
     'transformation.R'
-    'data_structures.R'
     'modeling.R'
     'preprocessing.R'
     'io.R'
-    'main.R'
+    'modeling_structure.R'
+    'raw_forecaster.R'
     'get_forecasters.R'
     'top_n.R'
     'zyzzyva-package.R'

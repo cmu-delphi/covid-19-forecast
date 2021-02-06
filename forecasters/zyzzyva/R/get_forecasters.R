@@ -1,4 +1,4 @@
-#' @include main.R
+#' @include raw_forecaster.R
 NULL
 
 #' Get an evalcast-compliant zyzzyva forecaster based on the provided arguments.
@@ -48,16 +48,16 @@ get_forecasters  <- function(debug_folder = NULL,
         response <- signal_names[1]
         other_covariates <- signal_names[2:length(signal_names)]
 
-        base_covariates <- c(list(ds.covariate(response,
+        base_covariates <- c(list(ms.covariate(response,
                                                tr = tr.log_pad,
                                                lags = c(1, 2, seq(3,21,3)),
                                                do_rollsum = T)),
                              lapply(other_covariates,
-                                    function(cov) ds.covariate(cov,
+                                    function(cov) ms.covariate(cov,
                                                                lags = seq(3,28,7),
                                                                do_rollsum = T)))
         location_covariates = lapply(location_covariates,
-                                     function(x) ds.covariate(x, tr = tr.log_pad))
+                                     function(x) ms.covariate(x, tr = tr.log_pad))
 
         modeling_options <- list(
             ahead = ahead,
