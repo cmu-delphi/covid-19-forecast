@@ -12,7 +12,7 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-15"
-  time_value_flag_date: "2020-11-09"
+  time_value_flag_date: !r Sys.Date()
   cache_data: FALSE
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
@@ -76,7 +76,7 @@ states <- states %>% group_by(geo_value) %>% mutate(
     (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
   FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
   #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
-  flag = flag & (time_value < ymd(time_value_flag_date) | value < -size_cut)
+  flag = flag & (time_value <= ymd(time_value_flag_date) | value < -size_cut)
   #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
 )
 ```
@@ -130,8 +130,8 @@ corrected_states = states %>%
 
 ```{r show-corrections, fig.height = 30, fig.width = 10, dev="CairoSVG"}
 mtv <- max(corrected_states$time_value)
-corrected_states %>% group_by(geo_value) %>% 
-  dplyr::select(geo_value, time_value, value, corrected, flag) %>%
+corrected_states %>% 
+  select(geo_value, time_value, value, corrected, flag) %>%
   pivot_longer(value:corrected) %>%
   ggplot(aes(time_value)) + geom_line(aes(y=value,color=name)) +
   geom_point(data = filter(corrected_states, flag), aes(y=value), color="red") +
