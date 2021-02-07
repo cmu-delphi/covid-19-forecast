@@ -17,7 +17,7 @@ params:
   backfill_lag: 30
   covidcast_data_source: "jhu-csse"
   covidcast_signal: !r c("deaths_incidence_num", "confirmed_incidence_num")
-  corrections_db_path: "./data_corrections-all-signals.sqlite"
+  corrections_db_path: "./data_corrections-hack.sqlite"
   excess_cut: 0
   write_RDS: TRUE
 ---
@@ -50,36 +50,90 @@ states <-  suppressMessages(
 
 # Aggregating signals, long format
 states_all <- aggregate_signals(states, format = "long") 
+check_recent <- states_all %>%
+  group_by(data_source, signal) %>%
+  summarise(mr = max(time_value))
+```
+
+```{r grab-external, eval=all(check_recent$mr<="2021-02-01"), cache=params$cache_data}
+# shouldn't run if we have data after February 1
+library(readr)
+library(stringr)
+process_jhu <- function(raw) {
+  raw %>%
+    mutate(
+      state_fips = paste0(
+        FIPS %>% 
+          str_pad(width = 7, "left", pad = "0") %>% 
+          str_sub(start = 1, end = 2),
+        "000")) %>% 
+    group_by(state_fips) %>% 
+    select(-(1:11)) %>% 
+    summarize_all(sum) %>% 
+    pivot_longer(cols = contains("/"), names_to = "date") %>% 
+    mutate(date = lubridate::mdy(date)) %>% 
+    group_by(state_fips) %>% 
+    mutate(incidence = value - lag(value, order_by = date)) %>% 
+    ungroup() %>% 
+    select(state_fips, date, incidence) %>% 
+    rename(fips = state_fips,
+           time_value = date,
+           value = incidence) %>%
+    mutate(geo_value = tolower(fips_to_abbr(fips)),
+           fips = NULL,
+           data_source = "jhu-csse",
+           issue = max(time_value),
+           lag = 0L,
+           stderr = NA,
+           sample_size = NA) %>%
+    filter(!is.na(geo_value), time_value > "2021-02-01")
+}
+state_deaths <- read_csv(
+  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
+  col_types = cols(FIPS = col_character()))
+state_cases <- read_csv(
+  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
+  col_types = cols(FIPS = col_character()))
+state_cases <- process_jhu(state_cases) %>% 
+  mutate(signal = "confirmed_incidence_num")
+state_deaths <- process_jhu(state_deaths) %>%
+  mutate(signal = "deaths_incidence_num")
+filler <- bind_rows(state_cases, state_deaths)
+attributes(filler$geo_value) <- NULL
+states_all <- bind_rows(states_all, filler) %>%
+  arrange(signal, geo_value, time_value)
 ```
 
 
 ```{r calculate-roll-stats}
-states_all <- states_all %>% group_by(signal,geo_value) %>% mutate(
-  fmean = roll_meanr(value, window_size),
-  smean = roll_mean(value, window_size, fill = NA),
-  fmedian = roll_medianr(value, window_size),
-  smedian = roll_median(value, window_size, fill = NA),
-  fsd = roll_sdr(value, window_size),
-  ssd = roll_sd(value, window_size,fill = NA),
-  fmad = roll_medianr(abs(value-fmedian), window_size),
-  smad = roll_median(abs(value-smedian), window_size, fill=NA),
-  ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
-  ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
-  flag = 
-    (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut) | # best case
-    (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
-    # use filter if smoother is missing
-    (value < -size_cut & (!is.na(ststat) | !is.na(ftstat))), # big negative
-  flag = flag | # these allow smaller values to also be outliers if they are consecutive
-    (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
-    (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
-    (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
-    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
-  FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
-  #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
-  flag = flag & (time_value <= ymd(time_value_flag_date) | value < -size_cut)
-  #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
-)
+states_all <- states_all %>% 
+  group_by(signal,geo_value) %>% 
+  mutate(
+    fmean = roll_meanr(value, window_size),
+    smean = roll_mean(value, window_size, fill = NA),
+    fmedian = roll_medianr(value, window_size),
+    smedian = roll_median(value, window_size, fill = NA),
+    fsd = roll_sdr(value, window_size),
+    ssd = roll_sd(value, window_size,fill = NA),
+    fmad = roll_medianr(abs(value-fmedian), window_size),
+    smad = roll_median(abs(value-smedian), window_size, fill=NA),
+    ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
+    ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
+    flag = 
+      (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut) | # best case
+      (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
+      # use filter if smoother is missing
+      (value < -size_cut & (!is.na(ststat) | !is.na(ftstat))), # big negative
+    flag = flag | # these allow smaller values to also be outliers if they are consecutive
+      (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
+      (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
+      (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
+      (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+    FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
+    #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
+    flag = flag & (time_value <= ymd(time_value_flag_date) | value < -size_cut)
+    #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
+  )
 ```
 
 
@@ -145,7 +199,7 @@ corrected_states %>%
   theme_cowplot() + xlab("date") + 
   coord_cartesian(xlim = mtv + c(-90,0)) +
   ylab(attributes(states)$metadata$signal) +
-  scale_color_viridis_d() + 
+  scale_color_viridis_d(end = .5) + 
   scale_x_date(date_breaks = "months" , date_labels = "%b")
 ```
 
