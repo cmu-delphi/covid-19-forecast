@@ -55,7 +55,7 @@ check_recent <- states_all %>%
   summarise(mr = max(time_value))
 ```
 
-```{r grab-external, eval=min(check_recent$mr)=="2021-02-01", cache=params$cache_data}
+```{r grab-external, eval=all(check_recent$mr<="2021-02-01"), cache=params$cache_data}
 # shouldn't run if we have data after February 1
 library(readr)
 library(stringr)
@@ -100,7 +100,8 @@ state_deaths <- process_jhu(state_deaths) %>%
   mutate(signal = "deaths_incidence_num")
 filler <- bind_rows(state_cases, state_deaths)
 attributes(filler$geo_value) <- NULL
-states_all <- bind_rows(states_all, filler)
+states_all <- bind_rows(states_all, filler) %>%
+  arrange(signal, geo_value, time_value)
 ```
 
 

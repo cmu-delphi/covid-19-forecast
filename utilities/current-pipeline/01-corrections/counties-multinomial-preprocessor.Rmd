@@ -12,8 +12,8 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
-  time_value_flag_date: "2020-11-22"
-  cache_data: FALSE
+  time_value_flag_date: !r Sys.Date()
+  cache_data: TRUE
   backfill_lag: 30
   excess_cut: 0
   write_RDS: TRUE
@@ -67,8 +67,11 @@ todump <- counties %>% group_by(geo_value) %>%
   filter(max_case>=10, 
          ava_value_count>=30, 
          as.numeric(geo_value) %% 1000 > 0) %>% 
-  arrange(desc(case_sum)) %>% top_n(300, wt=case_sum) 
-county_filtered <- subset(counties,counties$geo_value %in% todump$geo_value)
+  arrange(desc(case_sum)) %>%
+  top_n(300, wt=case_sum) %>%
+  select(geo_value) %>%
+  pull()
+county_filtered <- filter(counties_all, geo_value %in% !!todump)
 ```
 
 
@@ -162,7 +165,7 @@ corrected_counties <- county_filtered %>%
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
     corrected = corrected + # imputes forward due to weekly releases
-      missing_future(state=="RI", time_value, excess, fmean)
+      missing_future(TRUE, time_value, value, fmean)
     )
 ```
 
@@ -191,8 +194,8 @@ corrected_counties %>% group_by(geo_value) %>%
              labeller = labeller(geo_value = simple_labs))+
   theme_cowplot() + xlab("date") +
   coord_cartesian(xlim = mtv + c(-90,0)) +
-  ylab(attributes(county_filtered)$metadata$signal)+
-  scale_color_viridis_d()
+  scale_color_viridis_d(end=.5) + 
+  scale_x_date(date_breaks = "months" , date_labels = "%b")
 ```
 
 
@@ -223,7 +226,9 @@ tosave <- corrected_counties %>%
     correction_date = Sys.Date(),
     description = as.character("")
     ) %>%
-  filter(reference_date >= params$outlier_start_date) 
+  filter(reference_date >= params$outlier_start_date) %>%
+  arrange(reference_date)
+
 
 corrected_counties %>% 
   mutate(output = abs(corrected - value) > 0) %>%
