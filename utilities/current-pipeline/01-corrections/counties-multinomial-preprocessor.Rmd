@@ -13,7 +13,7 @@ params:
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
   time_value_flag_date: !r Sys.Date()
-  cache_data: TRUE
+  cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
   write_RDS: TRUE
@@ -71,7 +71,7 @@ todump <- counties %>% group_by(geo_value) %>%
   top_n(300, wt=case_sum) %>%
   select(geo_value) %>%
   pull()
-county_filtered <- filter(counties_all, geo_value %in% !!todump)
+county_filtered <- filter(counties, geo_value %in% !!todump)
 ```
 
 

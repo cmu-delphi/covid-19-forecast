@@ -13,7 +13,7 @@ params:
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
   time_value_flag_date: !r Sys.Date()
-  cache_data: TRUE
+  cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
   write_RDS: TRUE
@@ -221,7 +221,8 @@ tosave <- corrected_counties %>%
     description = as.character("")
     ) %>%
   filter(reference_date >= params$outlier_start_date) %>%
-  arrange(reference_date)
+  arrange(reference_date) %>%
+  as_tibble()
 
 
 corrected_counties %>% 

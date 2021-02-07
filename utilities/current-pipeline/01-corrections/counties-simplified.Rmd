@@ -71,7 +71,7 @@ todump <- counties %>% group_by(geo_value) %>%
   top_n(300, wt=case_sum) %>%
   select(geo_value) %>%
   pull()
-county_filtered <- filter(counties_all, geo_value %in% !!todump)
+county_filtered <- filter(counties, geo_value %in% !!todump)
 check_recent <- county_filtered %>%
   group_by(data_source, signal) %>%
   summarise(mr = max(time_value))
