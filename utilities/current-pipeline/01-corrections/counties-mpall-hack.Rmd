@@ -13,7 +13,7 @@ params:
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
   time_value_flag_date: !r Sys.Date()
-  cache_data: TRUE
+  cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
   write_RDS: TRUE
@@ -282,17 +282,18 @@ others <- suppressMessages(
     geo_type = "county", 
     start_day = "2021-01-15")) %>%
   aggregate_signals(format = "long") %>%
-  filter(geo_value %in% !!todump)
+  filter(geo_value %in% !!todump, !is.na(data_source), !is.na(signal))
 others <- others %>% 
   group_by(data_source, signal, geo_value) %>%
   filter(time_value > max(time_value) - 7) # most recent week
 made_up <- others %>%
-  mutate(time_value + 7) %>%
-  bind_rows(others) %>%
+  mutate(time_value = time_value + 7) %>%
+  # bind_rows(others) %>%
   ungroup() %>%
   arrange(time_value) %>%
   select(data_source, signal, geo_value, time_value, value) %>%
   mutate(corrected = value) %>%
+  filter(time_value < Sys.Date()) %>%
   transmute(
     location = as.character(geo_value),
     location_name = as.character(NA),
@@ -304,7 +305,9 @@ made_up <- others %>%
     correction_date = Sys.Date(),
     description = as.character("")
     )
-tosave <- bind_rows(tosave, made_up) %>% as_tibble() %>% arrange(reference_date)
+tosave <- bind_rows(tosave, made_up) %>% 
+  as_tibble() %>%
+  arrange(variable_name, location, reference_date)
 ```
 
 
