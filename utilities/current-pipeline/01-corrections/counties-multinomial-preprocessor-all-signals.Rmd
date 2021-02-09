@@ -12,13 +12,13 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
-  time_value_flag_date: "2020-11-22"
+  time_value_flag_date: !r Sys.Date()
   cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
   write_RDS: TRUE
-  covidcast_data_source: !r c("usa-facts", "jhu-csse")
-  covidcast_signal: !r c("deaths_incidence_num","confirmed_incidence_num")
+  covidcast_data_source: "usa-facts"
+  covidcast_signal: "confirmed_incidence_num"
   corrections_db_path: "./data_corrections-all-signals.sqlite"
   editor_options: 
   chunk_output_type: inline
@@ -42,28 +42,13 @@ attach(params)
 
 Data retrieval
 ```{r, cache=params$cache_data}
-
-county_data <- function(data.source) {
-  county_data <- list()
-  for (i in 1:length(data.source)) {
-    data <-  suppressMessages(
+counties_all <- suppressMessages(
         covidcast_signals(
-        data_source = data.source[i], 
-        covidcast_signal,
-        geo_type = "county", 
-        start_day = outlier_start_date))
-    county_data[[i]] <- aggregate_signals(data, format = "long") 
-  }
-  if (length(data.source) == 1) {
-    county_all = as.data.frame(county_data)
-  }
-  else{
-    county_all =  data.table::rbindlist(county_data)
-  }
-  return(county_all)
-}
-
-counties_all <- county_data(covidcast_data_source)
+          data_source = covidcast_data_source, 
+          covidcast_signal,
+          geo_type = "county", 
+          start_day = outlier_start_date)) %>%
+  aggregate_signals(format = "long")
 
 #round double with decimals to integers
 counties_all$value <- as.integer(round(counties_all$value,digits = 0))
@@ -78,7 +63,7 @@ Data Wrangling notes:
 
 ```{r}
 todump <- counties_all %>% 
-  filter(signal == "confirmed_incidence_num")%>% 
+  filter(signal == "confirmed_incidence_num") %>% 
   group_by(data_source,geo_value) %>% 
   summarise(
     ava_value_count = sum(!is.na(value)),
@@ -88,8 +73,11 @@ todump <- counties_all %>%
   filter(max_case>=10, 
          ava_value_count>=30, 
          as.numeric(geo_value) %% 1000 > 0) %>% 
-  arrange(desc(case_sum)) %>% top_n(300, wt=case_sum) 
-county_filtered <- subset(counties_all,counties_all$geo_value %in% todump$geo_value)
+  arrange(desc(case_sum)) %>%
+  top_n(300, wt=case_sum) %>%
+  select(geo_value) %>%
+  pull()
+county_filtered <- filter(counties_all, geo_value %in% !!todump)
 ```
 
 
@@ -131,7 +119,9 @@ df <- county_filtered %>%
   #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
   )
 
-county_filtered <- county_filtered %>% left_join(df,by = c("data_source","signal","geo_value","time_value","issue","lag","stderr","sample_size","dt","value"))
+county_filtered <- county_filtered %>% 
+  left_join(df,by = c("data_source","signal","geo_value","time_value",
+                      "issue","lag","stderr","sample_size","dt","value"))
 
 county_filtered <-  county_filtered %>% 
   mutate(FIP = substr(geo_value,1,2)) %>% 
@@ -169,7 +159,7 @@ corrected_counties <- county_filtered %>%
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
     corrected = corrected + # imputes forward due to weekly releases
-      missing_future(TRUE, time_value, excess, fmean)
+      missing_future(TRUE, time_value, value, fmean)
     )
 ```
 
@@ -187,18 +177,18 @@ names(simple_labs) = nn
 mtv <- max(corrected_counties$time_value)
 corrected_counties %>% group_by(geo_value) %>% 
   filter(any(flag == 'TRUE')) %>% 
-  dplyr::select(geo_value, time_value, value, corrected, flag) %>%
+  select(data_source, signal, geo_value, time_value, value, corrected, flag) %>%
   pivot_longer(value:corrected) %>%
   ggplot(aes(time_value))+geom_line(aes(y=value, color=name))+
   geom_point(
     data = filter(corrected_counties, flag), 
-    aes(y=value), color="red")+ 
+    aes(y=value), color="red") + 
   facet_wrap(~data_source + signal + geo_value, scales = "free", ncol = 5,
              labeller = labeller(geo_value = simple_labs))+
-  theme_cowplot()+xlab("date")+
+  theme_cowplot() + xlab("date")+
   ylab(attributes(county_filtered)$metadata$signal)+
   coord_cartesian(xlim = mtv + c(-90,0)) +
-  scale_color_viridis_d() + 
+  scale_color_viridis_d(end=.5) + 
   scale_x_date(date_breaks = "months" , date_labels = "%b")
 ```
 
@@ -231,7 +221,8 @@ tosave <- corrected_counties %>%
     description = as.character("")
     ) %>%
   filter(reference_date >= params$outlier_start_date) %>%
-  arrange(reference_date)
+  arrange(reference_date) %>%
+  as_tibble()
 
 
 corrected_counties %>% 

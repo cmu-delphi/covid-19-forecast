@@ -12,7 +12,7 @@ params:
   size_cut: 20
   sig_consec: 2.25
   outlier_start_date: "2020-03-01"
-  time_value_flag_date: "2020-11-22"
+  time_value_flag_date: !r Sys.Date()
   cache_data: FALSE
   backfill_lag: 30
   excess_cut: 0
@@ -67,8 +67,14 @@ todump <- counties %>% group_by(geo_value) %>%
   filter(max_case>=10, 
          ava_value_count>=30, 
          as.numeric(geo_value) %% 1000 > 0) %>% 
-  arrange(desc(case_sum)) %>% top_n(300, wt=case_sum) 
-county_filtered <- subset(counties,counties$geo_value %in% todump$geo_value)
+  arrange(desc(case_sum)) %>%
+  top_n(300, wt=case_sum) %>%
+  select(geo_value) %>%
+  pull()
+county_filtered <- filter(counties, geo_value %in% !!todump)
+check_recent <- county_filtered %>%
+  group_by(data_source, signal) %>%
+  summarise(mr = max(time_value))
 ```
 
 
