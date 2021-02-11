@@ -12,6 +12,10 @@ make_aardvark_forecaster <- function(geo_type = NULL, response = NULL, features 
     forecast_date <- ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
+    
+    if ( geo_type == "nation" ){
+      return(NULL)
+    }
 
     df_train <- df %>% 
       bind_rows %>%
