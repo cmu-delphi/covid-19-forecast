@@ -6,7 +6,7 @@ make_aardvark_forecaster <- function(geo_type = NULL, response = NULL, features 
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
-                                              ahead, geo_type){
+                                              ahead){
     
     incidence_period <- match.arg(incidence_period)
     forecast_date <- ymd(forecast_date)
@@ -225,6 +225,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 
   return(df_with_lags)
 }
+
 
 model_matrix <- function(dat, features = NULL){
   # A wrapper around model.matrix,

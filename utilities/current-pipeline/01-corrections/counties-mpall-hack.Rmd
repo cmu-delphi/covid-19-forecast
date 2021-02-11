@@ -1,0 +1,341 @@
+---
+title: "County usa-facts confirmed case corrections with backfilling"
+author: "Delphi Group - Last run:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+params:
+  window_size: 14
+  start_date: NULL
+  sig_cut: 3
+  size_cut: 20
+  sig_consec: 2.25
+  outlier_start_date: "2020-03-01"
+  time_value_flag_date: !r Sys.Date()
+  cache_data: FALSE
+  backfill_lag: 30
+  excess_cut: 0
+  write_RDS: TRUE
+  covidcast_data_source: "usa-facts"
+  covidcast_signal: "confirmed_incidence_num"
+  corrections_db_path: "./data_corrections-hack.sqlite"
+  editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(covidcast)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(RcppRoll)
+library(cowplot)
+library(ggplot2)
+library(DT)
+library(ggforce)
+knitr::opts_chunk$set(warning = FALSE, message=FALSE, dev="CairoSVG")
+source("process-funs.R")
+source("corrections.R")
+attach(params)
+```
+
+Data retrieval
+```{r, cache=params$cache_data}
+counties_all <- suppressMessages(
+        covidcast_signals(
+          data_source = covidcast_data_source, 
+          covidcast_signal,
+          geo_type = "county", 
+          start_day = outlier_start_date)) %>%
+  aggregate_signals(format = "long")
+
+#round double with decimals to integers
+counties_all$value <- as.integer(round(counties_all$value,digits = 0))
+```
+
+
+Data Wrangling notes:
+
+* Only counties with > 30 days' available data will be selected
+* Counties whose maximum confirmed_incidence_num <10 are filtered out in either data source.
+* Top 300 of counties sorted by total cases will be corrected
+
+```{r}
+todump <- counties_all %>% 
+  filter(signal == "confirmed_incidence_num") %>% 
+  group_by(data_source,geo_value) %>% 
+  summarise(
+    ava_value_count = sum(!is.na(value)),
+    case_sum = sum(value,na.rm = T),
+    max_case = max(value)
+    ) %>% 
+  filter(max_case>=10, 
+         ava_value_count>=30, 
+         as.numeric(geo_value) %% 1000 > 0) %>% 
+  arrange(desc(case_sum)) %>%
+  top_n(300, wt=case_sum) %>%
+  select(geo_value) %>%
+  pull()
+county_filtered <- filter(counties_all, geo_value %in% !!todump)
+check_recent <- county_filtered %>%
+  group_by(data_source, signal) %>%
+  summarise(mr = max(time_value))
+```
+
+```{r grab-external, eval=min(check_recent$mr) <= "2021-01-31", cache=params$cache_data}
+# shouldn't run if we have data after February 1
+library(readr)
+library(stringr)
+process_usafacts <- function(raw) {
+  raw %>%
+    mutate(geo_value = str_pad(countyFIPS, 5, "left", 0)) %>% 
+    filter(geo_value != "00000") %>%
+    pivot_longer(cols = contains("-"), names_to = "time_value") %>%
+    mutate(time_value = lubridate::ymd(time_value)) %>% 
+    select(geo_value, time_value, value) %>%
+    group_by(geo_value) %>% 
+    mutate(value = value - lag(value, order_by = time_value)) %>% 
+    ungroup() %>%
+    mutate(data_source = "usa-facts",
+           signal = "confirmed_incidence_num",
+           issue = max(time_value),
+           lag = 0L,
+           stderr = NA,
+           sample_size = NA) %>%
+    filter(geo_value %in% !!todump, time_value > "2021-01-31")
+}
+county_cases <- read_csv(
+  "https://static.usafacts.org/public/data/covid-19/covid_confirmed_usafacts.csv", 
+  col_types = cols(countyFIPS = col_character()))
+county_cases <- process_usafacts(county_cases)
+county_filtered <- bind_rows(county_filtered, county_cases) %>%
+  arrange(geo_value, time_value)
+```
+
+
+Since we would only implement `corrections_multinom_roll` on confirmed_incidence_num, therefore only rows with a signal "confirmed_incidence_num" will be flagged here.
+
+```{r calculate-roll-stats}
+df <- county_filtered %>% 
+  filter(signal == "confirmed_incidence_num") %>%
+  group_by(data_source,geo_value)  %>% mutate(
+  fmean = roll_meanr(value, window_size),
+  # smean = roll_mean(value, window_size, fill = NA),
+  fmedian = roll_medianr(value, window_size),
+  smedian = roll_median(value, window_size, fill = NA),
+  fsd = roll_sdr(value, window_size),
+  ssd = roll_sd(value, window_size,fill = NA),
+  fmad = roll_medianr(abs(value-fmedian), window_size,na.rm=TRUE),
+  smad = roll_median(abs(value-smedian), na.rm=TRUE),
+  ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
+  ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
+  flag = 
+    (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut ) | # best case
+    (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
+      # use filter if smoother is missing
+    (value < -size_cut & !is.na(ststat) & !is.na(ftstat)), # big negative
+    #(fmean > 10 & fmean< 20 & value > 2*sig_cut*fmean)
+  flag = flag | # these allow smaller values to also be outliers if they are consecutive
+    (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
+    (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
+    (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
+    (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+  # RI_daily_flag = (geo_value=="44007" & value!=0 & 
+  #                    lead(value,n=1L)!=0 & lead(value,n=2L)!=0 
+  #                  & lead(value,n=3L)!=0)
+  ##flag = flag & (time_value < ymd("2020-11-01") | value < -size_cut)
+  flag = flag & 
+    (time_value < ymd(time_value_flag_date) | value < -size_cut),
+  flag = flag | 
+    (time_value == "2020-11-20" & as.numeric(geo_value) %/% 1000 == 22)
+  #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
+  )
+
+county_filtered <- county_filtered %>% 
+  left_join(df,by = c("data_source","signal","geo_value","time_value",
+                      "issue","lag","stderr","sample_size","dt","value"))
+
+county_filtered <-  county_filtered %>% 
+  mutate(FIP = substr(geo_value,1,2)) %>% 
+  mutate(state = names(STATE_TO_FIPS)[match(FIP,STATE_TO_FIPS)]) %>% 
+  select(-FIP) %>% relocate(state,.after=geo_value)
+```
+
+
+## Make corrections
+
+Now we use the "multinomial" smoother to backfill the excess of any flagged outliers. Some notes:
+
+* We use a new function `corrections_multinom_roll()` to do the backfill.
+* It backfills deterministicly rather than randomly.
+* It rounds alternate days up or down to try to avoid too much integers such that the sum is the excess.
+* Optionally allows for filling non-uniformly.
+
+
+```{r}
+# RI reports only weekly
+corrected_counties <- county_filtered %>% 
+  mutate(
+    # FIPS = as.numeric(geo_value),
+    excess = value, #- na_replace(smedian, fmedian),
+    #excess = floor(excess - excess_cut*sign(excess)*na_replace(smad,fmad)),
+    flag_bad_RI = (state == "RI"  & value > 10 & lag(value) == 0),
+    corrected = corrections_multinom_roll(
+      value, value, flag_bad_RI, time_value, 7),
+    # flag_bad_VA =(geo_value == "51059"  && lag(value) > 0),
+    # corrected = corrections_multinom_roll(
+    #   value, value, flag_bad_VA, time_value, FIPS, 7),
+    corrected = corrections_multinom_roll(
+      corrected, excess, (flag & !flag_bad_RI), time_value, 
+      backfill_lag, 
+      reweight=function(x) exp_w(x, backfill_lag)),
+    corrected = evalforecast:::multinomial_roll_sum(corrected),
+    corrected = corrected + # imputes forward due to weekly releases
+      missing_future(TRUE, time_value, value, fmean)
+    )
+```
+
+
+## Visualize corrected counties
+
+```{r show-corrections, fig.height = 120, fig.width = 30, dev="CairoSVG"}
+simple_labs = covidcast::fips_to_name(unique(corrected_counties$geo_value))
+simple_labs = gsub(" County| city| Parish", "", simple_labs)
+sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
+nn = names(simple_labs)
+simple_labs = paste(simple_labs, sta)
+names(simple_labs) = nn
+
+mtv <- max(corrected_counties$time_value)
+corrected_counties %>% group_by(geo_value) %>% 
+  filter(any(flag == 'TRUE')) %>% 
+  select(data_source, signal, geo_value, time_value, value, corrected, flag) %>%
+  pivot_longer(value:corrected) %>%
+  ggplot(aes(time_value))+geom_line(aes(y=value, color=name))+
+  geom_point(
+    data = filter(corrected_counties, flag), 
+    aes(y=value), color="red") + 
+  facet_wrap(~data_source + signal + geo_value, scales = "free", ncol = 5,
+             labeller = labeller(geo_value = simple_labs))+
+  theme_cowplot() + xlab("date")+
+  ylab(attributes(county_filtered)$metadata$signal)+
+  coord_cartesian(xlim = mtv + c(-90,0)) +
+  scale_color_viridis_d(end=.5) + 
+  scale_x_date(date_breaks = "months" , date_labels = "%b")
+```
+
+## Show all corrected time points
+
+```{r}
+sum_check <- corrected_counties %>% 
+  group_by(data_source,signal,geo_value) %>%
+  summarise(original = sum(value, na.rm=TRUE),
+            corrected = sum(corrected, na.rm = TRUE)) %>% ungroup() %>%
+  mutate(diffs = abs(original-corrected)) %>%
+  filter(diffs > 1e-8) %>%
+  select(data_source,signal,geo_value, diffs)
+
+sum_check
+
+tosave <- corrected_counties %>% 
+  mutate(output = abs(corrected - value) > 0 | time_value > "2021-01-31") %>%
+  filter(output) %>% ungroup() %>%
+  dplyr::select(data_source,signal,geo_value, time_value, value, corrected) %>%
+  transmute(
+    location=as.character(geo_value),
+    location_name=as.character(NA),
+    reference_date=as.Date(time_value), 
+    issue_date=as.Date(NA),
+    variable_name = paste(data_source, signal, sep = "_"),
+    value = as.double(value),
+    new_value = as.double(corrected),
+    correction_date = Sys.Date(),
+    description = as.character("")
+    ) %>%
+  filter(reference_date >= params$outlier_start_date) %>%
+  arrange(reference_date)
+
+
+corrected_counties %>% 
+  mutate(output = abs(corrected - value) > 0) %>%
+  filter(output) %>%
+  dplyr::select(data_source,signal,geo_value, time_value, value, corrected) %>%
+  transmute(data_source = data_source,
+            geo_value = geo_value,
+            signal = signal,
+            time_value=time_value, 
+            geo_value=geo_value,
+            orig_value = value,
+            replacement = corrected
+            ) %>%
+  datatable(
+    options = list(scrollX = TRUE, scrollY = "300px",paging = FALSE),
+    rownames = NULL) 
+```
+
+```{r impute-others, eval=all(check_recent$mr <= "2021-01-31"), cache=params$cache_data}
+others <- suppressMessages(
+  covidcast_signals(
+    data_source = c("fb-survey", "indicator-combination"),
+    signal = c("smoothed_hh_cmnty_cli", "nmf_day_doc_fbc_fbs_ght"),
+    geo_type = "county", 
+    start_day = "2021-01-15")) %>%
+  aggregate_signals(format = "long") %>%
+  filter(geo_value %in% !!todump, !is.na(data_source), !is.na(signal))
+others <- others %>% 
+  group_by(data_source, signal, geo_value) %>%
+  filter(time_value > max(time_value) - 7) # most recent week
+made_up <- others %>%
+  mutate(time_value = time_value + 7) %>%
+  # bind_rows(others) %>%
+  ungroup() %>%
+  arrange(time_value) %>%
+  select(data_source, signal, geo_value, time_value, value) %>%
+  mutate(corrected = value) %>%
+  filter(time_value < Sys.Date()) %>%
+  transmute(
+    location = as.character(geo_value),
+    location_name = as.character(NA),
+    reference_date = as.Date(time_value), 
+    issue_date = as.Date(NA),
+    variable_name = paste(data_source, signal, sep = "_"),
+    value = as.double(value),
+    new_value = as.double(corrected),
+    correction_date = Sys.Date(),
+    description = as.character("")
+    )
+tosave <- bind_rows(tosave, made_up) %>% 
+  as_tibble() %>%
+  arrange(variable_name, location, reference_date)
+```
+
+
+
+```{r eval=params$write_RDS}
+update_corrections(corrections_db_path, "county", tosave)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

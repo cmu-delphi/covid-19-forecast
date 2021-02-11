@@ -7,10 +7,10 @@ strawman_single_region_quantiles <- function(data,
                                              ahead) {
 
   # This should filter only the partial current epiweek out.
-  data <- data %>% filter(epiweek <= target_epiweek - ahead)
+  data <- data %>% filter(.data$epiweek <= target_epiweek - ahead)
 
-  response <- data %>% pull(value)
-  train_epiweeks <- data %>% pull(epiweek)
+  response <- data %>% pull(.data$value)
+  train_epiweeks <- data %>% pull(.data$epiweek)
 
 
 
@@ -27,7 +27,9 @@ strawman_single_region_quantiles <- function(data,
   } else if(version == 2){
 
     vector_size <- length(increase) ** ahead
-    if(vector_size > 10000) stop("For version 2, we will probably want a better way of convolution.")
+    if(vector_size > 10000) {
+      stop("For version 2, we will probably want a better way of convolution.")
+    }
 
     z <- 0
 
@@ -37,7 +39,7 @@ strawman_single_region_quantiles <- function(data,
 
     empirical <- y + z
 
-  } else{
+  } else {
     stop("Invalid version.
          However, you should never have been able to see this message.
          Contact Samyak.")
@@ -46,15 +48,12 @@ strawman_single_region_quantiles <- function(data,
 
   quantiles <- pmax(0, stats::quantile(empirical, probs))
 
-  return(list(
-    output = data.frame(
-      probs = probs,
-      quantiles = quantiles
-    ),
-    diagnostics = list(
+  return(
+    list( 
+      output = data.frame(probs = probs, quantiles = quantiles),
+      diagnostics = list()
     )
-  ))
-
+  )
 }
 
 
@@ -75,44 +74,35 @@ strawman_quantiles_all_regions <- function(data,
   for (i in 1:length(unique_locations)) {
 
     current_location <- unique_locations[i]
+    current_location_indices <- (mydata$location == current_location)
+    current_location_y <- pull(mydata, .data$value)[current_location_indices]
 
-    current_location_indices <-
-      (mydata$location == current_location)
-
-    current_location_y <-
-      pull(mydata, value)[current_location_indices]
-
-
-    if(!all(is.na(current_location_y))){
+    if (!all(is.na(current_location_y))) {
       output_prediction <- strawman_single_region_quantiles(
         data = mydata %>%
-          filter(location == current_location) %>%
-          select(-location, -increase),
+          filter(.data$location == current_location) %>%
+          select(-.data$location, -.data$increase),
         increase = mydata %>%
-          filter(location == current_location) %>%
-          pull(increase),
+          filter(.data$location == current_location) %>%
+          pull(.data$increase),
         target_epiweek = target_epiweek,
         probs = probs,
         version = version,
-        ahead = ahead
-      )
-
+        ahead = ahead)
       current_location_output <- output_prediction$output
-    } else{
-      current_location_output <- cbind(probs = probs,
-                                       quantiles = NA)
+    } else {
+      current_location_output <- cbind(probs = probs, quantiles = NA)
     }
 
-
-
-    output_dataframe <- rbind(output_dataframe,
-                              cbind(location = current_location,
-                                    current_location_output))
+    output_dataframe <- rbind(
+      output_dataframe,
+      cbind(location = current_location, current_location_output)
+    )
   }
 
-  output_dataframe <- mutate(output_dataframe,
-                             probs = as.numeric(as.character(probs)),
-                             quantiles = as.numeric(as.character(quantiles)))
+  output_dataframe <- output_dataframe %>%
+    mutate(probs = as.numeric(as.character(.data$probs)),
+           quantiles = as.numeric(as.character(.data$quantiles)))
 
   return(output_dataframe)
 }

@@ -22,9 +22,13 @@ Imports:
     lubridate,
     DBI,
     MMWRweek,
-    tibble
-Suggests: 
+    tibble,
     RcppRoll,
+    assertthat,
+    fs,
+    evalcast
+Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards,
+Suggests: 
     knitr,
     rmarkdown
 Depends: 
