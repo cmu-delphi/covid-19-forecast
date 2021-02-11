@@ -1,0 +1,61 @@
+Package: zyzzyva
+Title: The zyzzyva forecaster
+Version: 20200808-215113
+Authors@R: 
+    c(person(given = "Rob",
+           family = "Tibshirani",
+           role = c("cre", "aut"),
+           email = "tibs@stanford.edu"),
+      person(given = "Maria",
+             family = "Jahja",
+             role = c("aut"),
+	     email = "maria@stat.cmu.edu"),
+      person(given = "Addison",
+             family = "Hu",
+             role = c("aut"),
+	     email = "addison@stat.cmu.edu"),	
+      person(given = "Vishnu",	
+             family = "Shankar",	
+             role = "ctb"),		
+      person(given = "Samyak",		
+             family = "Rajanala",	
+             role = "ctb"),		
+      person(given = "Balasubramanian",	
+           family = "Narasimhan",	
+           role = "ctb"))
+Description: The zyzzyva forecaster.
+License: MIT + file LICENSE
+Depends: R(>= 3.5.0)
+Encoding: UTF-8
+Suggests: testthat
+Imports:
+    evalcast,
+    forecast,
+    fuzzyjoin,
+    lubridate,
+    tibble,
+    tidyr,
+    tidyselect,
+    purrr,
+    dplyr,
+    quantgen,
+    glmnet,
+    stringr,
+    Iso,
+    zoo,
+    logger
+Remotes:
+    github::ryantibs/quantgen/R-package/quantgen,
+    github::cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards
+RoxygenNote: 7.1.1
+Collate: 
+    'calibration.R'
+    'transformation.R'
+    'modeling.R'
+    'preprocessing.R'
+    'io.R'
+    'modeling_structure.R'
+    'raw_forecaster.R'
+    'get_forecasters.R'
+    'top_n.R'
+    'zyzzyva-package.R'
