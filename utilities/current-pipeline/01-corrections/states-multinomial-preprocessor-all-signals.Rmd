@@ -45,7 +45,8 @@ states <-  suppressMessages(
       data_source = covidcast_data_source, 
       signal = covidcast_signal,
       geo_type = "state", 
-      start_day = start_date)
+      start_day = start_date,
+      end_day = Sys.Date())
 )
 
 # Aggregating signals, long format

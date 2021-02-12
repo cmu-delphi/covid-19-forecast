@@ -47,7 +47,8 @@ counties_all <- suppressMessages(
           data_source = covidcast_data_source, 
           covidcast_signal,
           geo_type = "county", 
-          start_day = outlier_start_date)) %>%
+          start_day = outlier_start_date,
+          end_day = Sys.Date())) %>%
   aggregate_signals(format = "long")
 
 #round double with decimals to integers
