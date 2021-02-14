@@ -52,6 +52,7 @@ counties_all <- suppressMessages(
           end_day = Sys.Date())) %>%
   aggregate_signals(format = "long")
 
+counties_all <- counties_all %>% filter(!is.na(signal), !is.na(data_source))
 #round double with decimals to integers
 counties_all$value <- as.integer(round(counties_all$value,digits = 0))
 ```

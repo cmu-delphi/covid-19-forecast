@@ -51,7 +51,8 @@ states <-  suppressMessages(
 )
 
 # Aggregating signals, long format
-states_all <- aggregate_signals(states, format = "long") 
+states_all <- aggregate_signals(states, format = "long") %>%
+  filter(!is.na(signal), !is.na(data_source))
 ```
 
 
