@@ -7,7 +7,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
   
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
                                               incidence_period = c("epiweek","day"),
-                                              ahead){
+                                              ahead, geo_type){
     
     forecast_date <- ymd(forecast_date)
     incidence_period <- match.arg(incidence_period)
