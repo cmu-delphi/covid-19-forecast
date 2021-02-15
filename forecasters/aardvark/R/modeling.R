@@ -150,7 +150,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     YX[[feature_name]] <- as.numeric(YX[[feature_name]])
   }
 
-  target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
+  target_dates <- get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
   dates <- df_align %>% 
     filter(location %in% locations$location, time_value %in% target_dates) %>%

@@ -5,7 +5,6 @@
 \title{Return the aardvark forecaster}
 \usage{
 get_forecasters(
-  geo_type = c("state", "county", "nation"),
   signals,
   ahead,
   kern = "tophat",
@@ -14,9 +13,6 @@ get_forecasters(
 )
 }
 \arguments{
-\item{geo_type}{String indicating geographical type, one of "county", state", 
-or "nation".}
-
 \item{signals}{Tibble with columns \code{data_source}, \code{signal}, 
 \code{start_day} that specify which variables from the COVIDcast API will 
 be used by forecaster. Each row of signals represents a separate signal, 
