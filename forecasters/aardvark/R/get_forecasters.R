@@ -56,8 +56,7 @@ get_forecasters <- function(geo_type = c("state","county","nation"), signals, ah
     features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
   }
 
-  aardvark_forecaster <- make_aardvark_forecaster(geo_type = geo_type,
-                                                  response = response,
+  aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
                                                   smoother = smoother,
                                                   aligner = aligner,
