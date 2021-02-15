@@ -115,13 +115,20 @@ corrected_states = states_all %>%
                                         "2020-12-23", "2020-12-24",
                                         "2020-12-29"))),
     #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
+    flag_bad_OH = (state == "OH" & signal == "deaths_incidence_num") &
+      (time_value %in% seq(ymd("2021-02-12"), 
+                           ymd("2021-02-14"), length.out = 3)),
     corrected = corrections_multinom_roll(
       value, value, flag_bad_RI, time_value, 7),
     corrected = corrections_multinom_roll(
       value, value, flag_bad_WA, time_value, 14),
+    corrected = corrections_multinom_roll(
+      value, value, flag_bad_OH, time_value, 60),
     #c(32,30,13,13,41,34,38)),
     corrected = corrections_multinom_roll(
-      corrected, excess, (flag & !flag_bad_RI & !flag_bad_WA ), time_value, 
+      corrected, excess, 
+      (flag & !flag_bad_RI & !flag_bad_WA & !flag_bad_OH), 
+      time_value, 
       backfill_lag, 
       reweight=function(x) exp_w(x, backfill_lag)),
     corrected = evalforecast:::multinomial_roll_sum(corrected),
