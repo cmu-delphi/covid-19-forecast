@@ -7,9 +7,6 @@
 #'     function is not available for a given set of parameters, an 
 #'     \code{NA} should returned instead of a function. This tells the 
 #'     evaluator to ignore that forecaster in that run.
-
-#' @param geo_type String indicating geographical type, one of "county", state", 
-#'                 or "nation".
 #' @param signals Tibble with columns \code{data_source}, \code{signal}, 
 #'     \code{start_day} that specify which variables from the COVIDcast API will 
 #'     be used by forecaster. Each row of signals represents a separate signal, 
@@ -33,10 +30,8 @@
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
 
-get_forecasters <- function(geo_type = c("state","county","nation"), signals, ahead, 
-                            kern = "tophat", strata_alpha = 0.5, bandwidth = 7){
+get_forecasters <- function(signals, ahead, kern = "tophat", strata_alpha = 0.5, bandwidth = 7){
   
-  geo_type <- match.arg(geo_type)
   response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
   
