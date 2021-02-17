@@ -11,7 +11,7 @@
 #'
 #' @return a data frame of the same format as `dat`
 #'
-#' @export
+
 multinomial_preprocessor <- function(dat, response, max_lag = Inf){
   # Preprocesses the response values in a data frame.
   # Replaces zeroes (which we suspect are due to lagged reporting) by samples from a multinomial.

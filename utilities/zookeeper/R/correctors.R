@@ -2,6 +2,7 @@
 #'
 #' @param data_source covidcast data_source for corrections
 #' @param signal vector of covidcast signals to correct
+#' @param geo_type the geo_type we're forecasting
 #' @param window_size size of rolling window
 #' @param backfill_lag how far back do we fill the spikes
 #' @param excess_cut currently ignored
@@ -19,6 +20,7 @@
 default_state_params <- function(
     data_source = "jhu-csse",
     signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+    geo_type = "state",
     window_size = 14,
     backfill_lag = 30,
     excess_cut = 0,
@@ -90,11 +92,16 @@ make_aardvark_corrector <- function(
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
         ungroup()
+      df[[i]] <- covidcast::as.covidcast_signal(
+        df[[i]],
+        signal = df[[i]]$signal[1],
+        geo_type = params$geo_type[1])
     }
 
     if (!is.null(corrections_db_path)) {
       corrected_df <- bind_rows(corrected) %>%
-        select(.data$data_source, .data$signal, .data$geo_value, .data$time_value,
+        select(.data$data_source, .data$signal, .data$geo_value,
+               .data$time_value,
                .data$value, .data$corrected, .data$flag)
       write_rds(corrected_df, file = corrections_db_path)
     }
