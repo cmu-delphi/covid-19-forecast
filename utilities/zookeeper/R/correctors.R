@@ -1,6 +1,7 @@
 #' Default parameters for aardvark state death corrections
 #'
-#' @param signals_to_correct either "response" or "all"
+#' @param data_source covidcast data_source for corrections
+#' @param signal vector of covidcast signals to correct
 #' @param window_size size of rolling window
 #' @param backfill_lag how far back do we fill the spikes
 #' @param excess_cut currently ignored
@@ -9,29 +10,27 @@
 #' @param sig_consec slightly smaller t-statistic if consecutive
 #' @param time_value_flag_date no corrections after this date
 #' @param multinomial_preprocessor logical, do we run the preporcessor
-#' @param corrections_db_path path to database if storing results
-#' @param integer_tol small number to handle integer checks
-#' @param ... ignored
 #'
 #' @return A list of paramter values
 #' @export
 #'
 #' @examples
 #' default_state_params(window_size=21)
-default_state_params <- function(signals_to_correct = "response",
-                                 window_size = 14,
-                                 backfill_lag = 30,
-                                 excess_cut = 0,
-                                 size_cut = 20,
-                                 sig_cut = 3,
-                                 sig_consec = 2.25,
-                                 time_value_flag_date = Sys.Date() + 1,
-                                 multinomial_preprocessor = TRUE,
-                                 corrections_db_path = NULL,
-                                 integer_tol = 1e-6,
-                                 ...) {
-  list(
-    signals_to_correct = signals_to_correct,
+default_state_params <- function(
+    data_source = "jhu-csse",
+    signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+    window_size = 14,
+    backfill_lag = 30,
+    excess_cut = 0,
+    size_cut = 20,
+    sig_cut = 3,
+    sig_consec = 2.25,
+    time_value_flag_date = Sys.Date() + 1,
+    multinomial_preprocessor = TRUE) {
+
+  tibble::tibble(
+    data_source = data_source,
+    signal = signal,
     window_size = window_size,
     backfill_lag = backfill_lag,
     excess_cut = excess_cut,
@@ -39,72 +38,83 @@ default_state_params <- function(signals_to_correct = "response",
     sig_cut = sig_cut,
     sig_consec = sig_consec,
     time_value_flag_date = time_value_flag_date,
-    multinomial_preprocessor = multinomial_preprocessor,
-    integer_tol = integer_tol
+    multinomial_preprocessor = multinomial_preprocessor
   )
 }
 
 
-
-#' Corrections function for aardvark
+#' Corrector for aardvark forecasts
 #'
-#' @param signals_list list of signals as returned from `covidcast_signals()`
-#'   uses the list (no aggregation)
-#' @param ... named corrections parameters passed to `default_state_params()`
+#' This function produces another function to create corrections. It expects
+#' the signals from covidcast to be a list (or a single signal).
 #'
-#' @return a list of signals the same length and format as the input with
-#'   updated entries in the `value` column
+#' @param params a tibble with corrections parameters. The number of
+#'   rows is the number of signals used by the forecaster. The
+#'   tibble is most easily generated with [default_state_params()].
+#' @param corrections_db_path path to store results, NULL by default
 #'
-#'   If the parameter `corrections_db_path` gives a path, intermediate output
-#'   is written to that sqlite database
+#' @return A function that takes a list of covidcast signals as the only
+#'   argument
 #' @export
-aardvark_state_corrections <- function(signals_list, ...){
-  if (class(signals_list)[1] == "covidcast_signal") {
-    # in case there's only one signal
-    signals_list <- list(signals_list)
-  }
-  params <- default_state_params(...)
-  len_params <- sapply(params, length)
-  max_len_params <- max(len_params)
-  in_names <- names(signals_list[[1]])
-  assert_that(all(len_params %in% c(1L, max_len_params)),
-              msg = paste("In apply_corrections: ",
-                          "corrections parameters must be length 1 or the",
-                          "same length as the longest corrections parameter."))
-  if (params$signals_to_correct == "response") {
-    corrected <- aardvark_state_corrections_single_signal(
-      signals_list[[1]], params)
-    signals_list[[1]] <- corrected %>%
-      mutate(value = .data$corrected) %>%
-      select(all_of(in_names))
-  }
-  if (params$signals_to_correct == "all") {
-    corrected <- list()
-    for (i in seq_along(signals_list)) {
-      corrected[[i]] <- aardvark_state_corrections_single_signal(
-        signals_list[[i]], params)
-      signals_list[[i]] <- corrected[[i]] %>%
-        mutate(value = .data$corrected) %>%
-        select(all_of(in_names))
+#'
+#' @examples
+#' make_aardvark_corrector(default_state_params(window_size=21))
+make_aardvark_corrector <- function(
+  params = default_state_params(),
+  corrections_db_path = NULL) {
+
+
+  aardvark_state_corrections <- function(df) {
+    if (class(df)[1] == "covidcast_signal") {
+      # in case there's only one signal
+      df <- list(df)
     }
-  }
-  if (!is.null(params$corrections_db_path)) {
-    corrected_df <- bind_rows(corrected) %>%
-      select(.data$data_source, .data$signal, .data$geo_value, .data$time_value,
-             .data$value, .data$corrected, .data$flag)
-    # save it to the db
-    update_corrections(params$corrections_db_path, "state", corrected_df)
+    params$to_correct <- TRUE # a key for deciding if we make corrections
+    in_names <- names(df[[1]])
+    all_signals <- df %>%
+      purrr::map_dfr(~.x %>%
+                       select(.data$data_source, .data$signal) %>%
+                       head(1))
+    params <- dplyr::left_join(all_signals, params)
+    if (all(is.na(params$to_correct))) {
+      warning(paste("No requested corrections data_source/signal pairs",
+                    "were actually present in the data. No corrections",
+                    "were implemented."))
+      return(df)
+    }
+    corrected <- list()
+    for (i in seq_along(df)) {
+      corrected[[i]] <- aardvark_state_corrections_single_signal(
+        df[[i]], params[i,])
+      df[[i]] <- corrected[[i]] %>%
+        mutate(value = .data$corrected) %>%
+        select(all_of(in_names)) %>%
+        ungroup()
+    }
+
+    if (!is.null(corrections_db_path)) {
+      corrected_df <- bind_rows(corrected) %>%
+        select(.data$data_source, .data$signal, .data$geo_value, .data$time_value,
+               .data$value, .data$corrected, .data$flag)
+      write_rds(corrected_df, file = corrections_db_path)
+    }
+    return(df)
   }
 
-  return(signals_list)
+  return(aardvark_state_corrections)
 }
 
 
 
-
+#' @importFrom lubridate ymd
 aardvark_state_corrections_single_signal <- function(x, params) {
-  # actually performs the corrections on one or more signals
-  x <- x %>%
+  if (is.na(params$to_correct)) {
+    # no corrections for this signal
+    x <- x %>% mutate(corrected = .data$value)
+    return(x)
+  }
+  # actually perform the corrections
+  x <- x %>% group_by(.data$geo_value) %>%
     dplyr::mutate(
       fmean = roll_meanr(.data$value, params$window_size),
       smean = roll_mean(.data$value, params$window_size, fill = NA),
@@ -137,16 +147,29 @@ aardvark_state_corrections_single_signal <- function(x, params) {
            .data$value < -params$size_cut),
       flag_bad_RI = (.data$geo_value == "ri" &
                        .data$value > 0 &
-                       abs(lag(.data$value) < params$integer_tol)),
-      corrected = corrections_multinom_roll( # fix RI reporting problem
+                       abs(lag(.data$value) < 1e-6)),
+      flag_bad_WA = (.data$geo_value == "wa" & .data$signal == "deaths_incidence_num") &
+        (.data$time_value %in% ymd(c("2020-12-16", "2020-12-17",
+                                     "2020-12-23", "2020-12-24",
+                                     "2020-12-29"))),
+      #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
+      flag_bad_OH = (.data$geo_value == "oh" & .data$signal == "deaths_incidence_num") &
+        (.data$time_value %in% seq(ymd("2021-02-12"),
+                                   ymd("2021-02-14"), length.out = 3)),
+      corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
+      corrected = corrections_multinom_roll(
+        .data$value, .data$value, .data$flag_bad_WA, .data$time_value, 14),
+      corrected = corrections_multinom_roll(
+        .data$value, .data$value, .data$flag_bad_OH, .data$time_value, 60),
       corrected = corrections_multinom_roll( # for everywhere else
-        .data$corrected, .data$value, (.data$flag & !.data$flag_bad_RI ),
+        .data$corrected, .data$value,
+        (.data$flag &
+           !.data$flag_bad_RI & !.data$flag_bad_WA & !.data$flag_bad_OH),
         .data$time_value, params$backfill_lag,
-        reweight=function(x) exp_w(x, params$backfill_lag)),
-      corrected = .data$corrected + # imputes forward due to weekly releases
-        missing_future(.data$geo_value == "ri", .data$time_value, .data$value,
-                       .data$fmean)
+        reweight = function(x) exp_w(x, params$backfill_lag)),
+      corrected = .data$corrected + # imputes forward if necessary
+        missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
     )
   if (params$multinomial_preprocessor) {
     x <- x %>% mutate(corrected = multinomial_roll_sum(.data$corrected))

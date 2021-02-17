@@ -22,7 +22,7 @@ multinomial_preprocessor <- function(dat, response, max_lag = Inf){
   # max_lag: maximum amount counts can be moved.
 
   # Put data in the right order.
-  dat <- dplyr::arrange(dat,reference_date)
+  dat <- dplyr::arrange(dat, .data$reference_date)
 
   # Impute at each location.
   locs <- unique(dat$location)
