@@ -18,18 +18,15 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
       return(NULL)
     }
 
-    df_train <- df %>% 
+    df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, X)) %>% 
       bind_rows %>%
-      long_to_wide %>%
-      filter(variable_name %in% c(response, features$variable_name)) %>% 
       distinct %>% 
-      select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
     df_train_smoothed <- expand_grid(distinct(select(df_train, c(location))),
                                      time_value = unique(df_train$time_value),
                                      variable_name = unique(df_train$variable_name)) %>%
-      left_join(df_train, by = c("location", "time_value","variable_name")) %>%
+      left_join(df_train, by = c("location", "time_value", "variable_name")) %>%
       mutate(value = if_else(is.na(value), replace_na(value,0), value)) %>%
       group_by(variable_name) %>%
       group_modify(~ smoother(.x) ) %>% 
@@ -56,8 +53,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
 }
 
 #' @importFrom magrittr %$%
-local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, incidence_period, ahead,
-                                       smoother, stratifier, aligner, modeler, bootstrapper, B, covidhub_probs, features, 
+local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, 
+                                       incidence_period, ahead, smoother, stratifier, aligner, 
+                                       modeler, bootstrapper, B, covidhub_probs, features, 
                                        alignment_variable){
 
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -229,8 +227,7 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 
 
 model_matrix <- function(dat, features = NULL){
-  # A wrapper around model.matrix,
-  # allowing us to dynamically build the formula we would like to feed to model matrix.
+
   X_frame <- dat %>% select(-response)
 
   if ( length(unique(X_frame$location)) > 1 ){
@@ -259,13 +256,7 @@ model_formula <- function(features){
 }
 
 make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
-  # Inputs:
-  #   alpha: numeric between 0 and 1
-  #   build_penalty_factor: function, taking as input the names of X and producing output which
-  #                         can be passed to cv.glmnet as the penalty.factor argument
-  #   fdev, mnlam: parameters to be passed to glmnet.control(). See help(glmnet.control) for details.
-  #   n_folds: number of folds to use for cross-validation.
-  
+
   cv_glmnet <- function(Y, X, wts, offset, locs, ...){
     stopifnot(is.character(locs))
     
@@ -280,7 +271,7 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
     }
 
     unique_locs <- unique(locs)
-    stopifnot(length(unique_locs) >= n_folds) # Need something to hold out.
+    stopifnot(length(unique_locs) >= n_folds)
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
     names(fold_for_each_loc) <- unique_locs
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
@@ -301,41 +292,10 @@ make_predict_glmnet <- function(lambda_choice){
   }
 }
 
-#' @importFrom covidcast aggregate_signals
 #' @import evalcast
-long_to_wide <- function(df){
-  # Manipulate evalcast df to the wide format previously used during evalforecast era
-  # This is a really hacky way to circumvent the issue while GitHub issue #269 is pending
-  if ( nrow(unique(df %>% select(data_source, signal, geo_value, time_value))) < nrow(df) ){
-    min_issue <- min(df$issue, na.rm = TRUE)
-    df.tmp <- df %>% 
-      mutate(issue = replace_na(issue, min_issue - 1)) %>%
-      group_by(data_source, signal, geo_value, time_value) %>%
-      top_n(1, wt = issue) %>% # NA only chosen if that's all there is
-      ungroup %>%
-      mutate(issue = na_if(issue, min_issue - 1)) # go back to NA
-  }else{
-    df.tmp <- df
-  }
-  match.string.1 <- with(df.tmp, paste0(data_source, "-", signal, geo_value, time_value))
-  df <- df %>% 
-    mutate(variable_name = paste(data_source, signal, sep = "-"))
-  # Need to open GitHub issue here
-  # --- covidcast::aggregate_signals gets rid of the cumulative cases signal unless I break the df up like this
-  # --- Maybe because the value column names are different character lengths?
-  df1 <- df %>% filter(variable_name == "jhu-csse-deaths_incidence_num") %>% 
-    aggregate_signals(format = "wide")
-  df2 <- df %>% filter(variable_name == "jhu-csse-confirmed_incidence_num") %>% 
-    aggregate_signals(format = "wide")
-  names(df1)[which(substr(names(df1),1,5) == "value")] <- "value"
-  df1$variable_name <- "jhu-csse-deaths_incidence_num"
-  names(df2)[which(substr(names(df2),1,5) == "value")] <- "value"
-  df2$variable_name <- "jhu-csse-confirmed_incidence_num"
-  df <- bind_rows(df1, df2)
-  match.string.2 <- with(df, paste0(variable_name, geo_value, time_value))
-  df$issue <- df.tmp$issue[match(match.string.2, match.string.1)]
-  df <- df %>% mutate(location = evalcast:::abbr_2_fips(df$geo_value)) %>%
-    select(location, geo_value, variable_name, value, time_value, issue)
-  df$value <- as.double(df$value)
-  return(df)
+reformat_df <- function(df, column){
+  df %>% select(names(df)[c(1,2,column)]) %>%
+    mutate(variable_name = strsplit(names(df)[column],":")[[1]][2]) %>%
+    rename(value = names(df)[column]) %>% mutate(location = evalcast:::abbr_2_fips(geo_value)) %>%
+    select(location, geo_value, variable_name, value, time_value)
 }
