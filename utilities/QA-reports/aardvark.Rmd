@@ -3,12 +3,16 @@ title: "Aardvark Trajectory Plots"
 author: "Delphi County Cases, Forecast on:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: html_document
+params:
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
+  today: !r Sys.getenv("TODAY")
+  output_dir: "/mnt"
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
 library(evalcast)
 library(ggplot2)
-aardvark <- readRDS("~/Downloads/aardvark_predictions_for_2021-02-15.RDS")
+aardvark  <- readRDS(file.path(params$output_dir, sprintf("aardvark_predictions_for_%s.RDS", params$forecast_date)))
 ```
 
 ## Showing 50/80/95% Quantiles

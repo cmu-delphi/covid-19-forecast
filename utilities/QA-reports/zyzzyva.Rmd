@@ -3,12 +3,17 @@ title: "Zyzzyva Trajectory Plots"
 author: "Delphi County Cases, Forecast on:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: html_document
+params:
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
+  output_dir: "/mnt"
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
 library(evalcast)
 library(ggplot2)
-zyzzyva <- readRDS("~/Downloads/zyzzyva_predictions_for_2021-02-15.RDS")
+
+##zyzzyva <- readRDS("~/Downloads/zyzzyva_predictions_for_2021-02-15.RDS")
+zyzzyva <- readRDS(file.path(params$output_dir, sprintf("predictions_for_%s.RDS", params$forecast_date)))
 ```
 
 ## Showing 50/80/95% Quantiles
