@@ -13,7 +13,7 @@ library(evalcast)
 library(ggplot2)
 
 ##zyzzyva <- readRDS("~/Downloads/zyzzyva_predictions_for_2021-02-15.RDS")
-zyzzyva <- readRDS(file.path(params$output_dir, sprintf("predictions_for_%s.RDS", params$forecast_date)))
+zyzzyva <- readRDS(file.path(params$output_dir, sprintf("zyzzyva_predictions_for_%s.RDS", params$forecast_date)))
 ```
 
 ## Showing 50/80/95% Quantiles
