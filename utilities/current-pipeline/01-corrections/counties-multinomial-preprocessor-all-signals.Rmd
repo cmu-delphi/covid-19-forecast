@@ -35,7 +35,7 @@ library(ggplot2)
 library(DT)
 library(ggforce)
 knitr::opts_chunk$set(warning = FALSE, message=FALSE, dev="CairoSVG")
-options(covidcast.base_url = "https://delphi-master-prod-01.delphi.cmu.edu/epidata/api.php")
+#options(covidcast.base_url = "https://delphi-master-prod-01.delphi.cmu.edu/epidata/api.php")
 source("process-funs.R")
 source("corrections.R")
 attach(params)
@@ -87,8 +87,7 @@ county_filtered <- filter(counties_all, geo_value %in% !!todump)
 Since we would only implement `corrections_multinom_roll` on confirmed_incidence_num, therefore only rows with a signal "confirmed_incidence_num" will be flagged here.
 
 ```{r calculate-roll-stats}
-df <- county_filtered %>% 
-  filter(signal == "confirmed_incidence_num") %>%
+county_filtered <- county_filtered %>% 
   group_by(data_source,geo_value)  %>% mutate(
   fmean = roll_meanr(value, window_size),
   # smean = roll_mean(value, window_size, fill = NA),
@@ -122,14 +121,10 @@ df <- county_filtered %>%
   #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
   )
 
-county_filtered <- county_filtered %>% 
-  left_join(df,by = c("data_source","signal","geo_value","time_value",
-                      "issue","lag","stderr","sample_size","dt","value"))
 
-county_filtered <-  county_filtered %>% 
-  mutate(FIP = substr(geo_value,1,2)) %>% 
-  mutate(state = names(STATE_TO_FIPS)[match(FIP,STATE_TO_FIPS)]) %>% 
-  select(-FIP) %>% relocate(state,.after=geo_value)
+county_filtered <- county_filtered %>% 
+  mutate(state = covidcast::fips_to_abbr(paste0(substr(geo_value,1,2),"000"))) %>% 
+  relocate(state, .after = geo_value)
 ```
 
 
@@ -150,7 +145,7 @@ corrected_counties <- county_filtered %>%
     # FIPS = as.numeric(geo_value),
     excess = value,# - na_replace(smedian, fmedian),
     #excess = floor(excess - excess_cut*sign(excess)*na_replace(smad,fmad)),
-    flag_bad_RI = (state == "RI"  & value > 10 & lag(value) == 0),
+    flag_bad_RI = (state == "ri"  & value > 10 & lag(value) == 0),
     corrected = corrections_multinom_roll(
       value, value, flag_bad_RI, time_value, 7),
     # flag_bad_VA =(geo_value == "51059"  && lag(value) > 0),
@@ -172,9 +167,9 @@ corrected_counties <- county_filtered %>%
 ```{r show-corrections, fig.height = 120, fig.width = 30, dev="CairoSVG"}
 simple_labs = covidcast::fips_to_name(unique(corrected_counties$geo_value))
 simple_labs = gsub(" County| city| Parish", "", simple_labs)
-sta = names(STATE_TO_FIPS)[match(substr(names(simple_labs), 1, 2), STATE_TO_FIPS)]
+sta = covidcast::fips_to_abbr(paste0(substr(names(simple_labs), 1, 2), "000"))
 nn = names(simple_labs)
-simple_labs = paste(simple_labs, sta)
+simple_labs = paste(simple_labs, toupper(sta))
 names(simple_labs) = nn
 
 mtv <- max(corrected_counties$time_value)
@@ -186,7 +181,7 @@ corrected_counties %>% group_by(geo_value) %>%
   geom_point(
     data = filter(corrected_counties, flag), 
     aes(y=value), color="red") + 
-  facet_wrap(~data_source + signal + geo_value, scales = "free", ncol = 5,
+  facet_wrap(~geo_value, scales = "free", ncol = 5,
              labeller = labeller(geo_value = simple_labs))+
   theme_cowplot() + xlab("date")+
   ylab(attributes(county_filtered)$metadata$signal)+

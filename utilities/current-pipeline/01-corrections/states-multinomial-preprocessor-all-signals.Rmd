@@ -32,7 +32,7 @@ library(RcppRoll)
 library(cowplot)
 library(ggplot2)
 library(DT)
-options(covidcast.base_url = "https://delphi-master-prod-01.delphi.cmu.edu/epidata/api.php")
+#options(covidcast.base_url = "https://delphi-master-prod-01.delphi.cmu.edu/epidata/api.php")
 #library(evalcast)
 knitr::opts_chunk$set(warning = FALSE, message=FALSE)
 source("process-funs.R")
@@ -51,7 +51,7 @@ states <-  suppressMessages(
 )
 
 # Aggregating signals, long format
-states_all <- states %>% bind_rows()
+states_all <- states %>% bind_rows() %>% filter(! geo_value %in% c("as","gu","vi","mp"))
 ```
 
 
@@ -77,7 +77,7 @@ states_all <- states_all %>% group_by(signal,geo_value) %>% mutate(
     (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
     (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
     (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
-  FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
+  #FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
   #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
   flag = flag & (time_value <= ymd(time_value_flag_date) | value < -size_cut)
   #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
@@ -97,7 +97,7 @@ Now we use the "multinomial" smoother to backfill the excess of any flagged outl
 ```{r}
 corrected_states = states_all %>% 
   mutate(
-    state = toupper(geo_value),
+    #state = toupper(geo_value),
     # try using everything, not just the "excess"
     excess = value,
     # excess = value - na_replace(smedian, fmedian),
@@ -108,13 +108,13 @@ corrected_states = states_all %>%
     #   reweight=function(x){ 
     #     exp_w(x, as.numeric(ymd("2020-05-18")-ymd(start_date)))
     #     }),
-    flag_bad_RI = (state == "RI"  & value > 0 & lag(value) == 0),
-    flag_bad_WA = (state == "WA" & signal == "deaths_incidence_num") &
+    flag_bad_RI = (geo_value == "ri"  & value > 0 & lag(value) == 0),
+    flag_bad_WA = (geo_value == "wa" & signal == "deaths_incidence_num") &
                      (time_value %in% ymd(c("2020-12-16", "2020-12-17", 
                                         "2020-12-23", "2020-12-24",
                                         "2020-12-29"))),
     #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
-    flag_bad_OH = (state == "OH" & signal == "deaths_incidence_num") &
+    flag_bad_OH = (geo_value == "oh" & signal == "deaths_incidence_num") &
       (time_value %in% seq(ymd("2021-02-12"), 
                            ymd("2021-02-14"), length.out = 3)),
     corrected = corrections_multinom_roll(
@@ -174,10 +174,10 @@ sum_check
 tosave <- corrected_states %>% 
   mutate(output = abs(corrected - value) > 0) %>%
   filter(output) %>% ungroup() %>%
-  dplyr::select(signal,geo_value, time_value, value, corrected, FIPS) %>%
+  dplyr::select(signal, geo_value, time_value, value, corrected) %>%
   transmute(
     location_name = toupper(geo_value),
-    location = substr(FIPS, 1,2),
+    location = substr(fips_to_abbr(geo_value), 1,2),
     reference_date=as.Date(time_value), 
     issue_date = as.Date(NA),
     variable_name = paste(covidcast_data_source, signal, sep = "_"),
@@ -192,7 +192,7 @@ tosave <- corrected_states %>%
 corrected_states %>% 
   mutate(output = abs(corrected - value) > 0) %>%
   filter(output) %>%
-  dplyr::select(signal,geo_value, time_value, value, corrected, ftstat, ststat) %>%
+  dplyr::select(signal, geo_value, time_value, value, corrected, ftstat, ststat) %>%
   transmute(signal = signal,
             time_value=time_value, 
             geo_value=geo_value,
