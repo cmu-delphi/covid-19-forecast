@@ -44,15 +44,15 @@ attach(params)
 Data retrieval
 ```{r, cache=params$cache_data}
 counties_all <- suppressMessages(
-        covidcast_signals(
+        covidcast_signal(
           data_source = covidcast_data_source, 
           covidcast_signal,
           geo_type = "county", 
           start_day = outlier_start_date,
-          end_day = Sys.Date())) %>%
-  aggregate_signals(format = "long")
+          end_day = Sys.Date()))
 
-counties_all <- counties_all %>% filter(!is.na(signal), !is.na(data_source))
+
+# counties_all <- counties_all %>% filter(!is.na(signal), !is.na(data_source))
 #round double with decimals to integers
 counties_all$value <- as.integer(round(counties_all$value,digits = 0))
 ```
