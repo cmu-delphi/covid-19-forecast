@@ -30,7 +30,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
                                      time_value = unique(df_train$time_value),
                                      variable_name = unique(df_train$variable_name)) %>%
       left_join(df_train, by = c("location", "time_value", "variable_name")) %>%
-      mutate(value = if_else(is.na(value), replace_na(value,0), value)) %>%
+      mutate(value = if_else(is.na(value), replace_na(value, 0), value)) %>%
       group_by(variable_name) %>%
       group_modify(~ smoother(.x) ) %>% 
       rename(original_value = value, value = smoothed_value) %>%
@@ -116,7 +116,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   
   df_point_preds <- bind_rows(point_preds_list)
   df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead) %>%
-    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% # Put response back on original scale.
+    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% 
     group_by(location, replicate) %>%
     summarize(value = sum(pmax(value, 0)), .groups = "drop")
   
@@ -163,7 +163,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
 
   preds <- list()
   for ( itr in 1:length(dates) ){
-    YX_use <- YX %>% mutate(t = as.numeric(date - dates[itr])) # Add time relative to date.
+    YX_use <- YX %>% mutate(t = as.numeric(date - dates[itr])) 
     forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates) # right align date and right time value
     forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
     forecast_time_values <- YX_time_values[forecast_rows]
@@ -174,7 +174,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     t <- YX_use %>% pull(t)
     YX_use <- YX_use %>% select(-t)
     
-    train_indices <- !is.na(YX_use$response) # response is NA only in the target period...
+    train_indices <- !is.na(YX_use$response)
     X_train_test <- model_matrix(YX_use, features)
     X_train <- X_train_test[train_indices,,drop = F]
     Y_train <- (YX_use %>% pull(response))[train_indices]
@@ -258,7 +258,7 @@ model_formula <- function(features){
   return(as.formula(formula_chr))
 }
 
-make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
+make_cv_glmnet <- function(alpha = 1, n_folds = 10){
 
   cv_glmnet <- function(Y, X, wts, offset, locs, ...){
     stopifnot(is.character(locs))
@@ -269,28 +269,22 @@ make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
       grepl(":", variable_names)        ~ 0,
       TRUE                             ~ 0 
     )
-    if ( all(penalty_factor == 0) ){
-      penalty_factor <- rep(1, length(penalty_factor))
-    }
 
     unique_locs <- unique(locs)
-    stopifnot(length(unique_locs) >= n_folds)
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
     names(fold_for_each_loc) <- unique_locs
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
 
-    glmnet.control(fdev = fdev, mnlam = mnlam)
+    glmnet.control(fdev = 0, mnlam = 100)
     cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
               penalty.factor = penalty_factor, intercept = FALSE,
-              nfolds = n_folds, foldid = fold_id, type.measure = "mse")
+              nfolds = n_folds, foldid = fold_id, type.measure = "mae")
   }
 }
 
 make_predict_glmnet <- function(lambda_choice){
-  # Inputs:
-  #   lambda_choice: either "lambda.1se" or "lambda.min"
-  predict_glmnet <- function(fit, X, offset, ...){
-    preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
+  predict_glmnet <- function(fit, X, ...){
+    preds <- predict(fit, newx = X, s = lambda_choice)[,1]
     return(preds)
   }
 }
