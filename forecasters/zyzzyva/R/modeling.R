@@ -50,7 +50,7 @@ ml.linear <- function(train_test,
     var_cols <- which(startsWith(colnames(train_X), slope_base_vars[i]))
     n_var_cols <- length(var_cols)
     if (n_var_cols <= 1) {
-      stop("Could not create slope vars in training X, not enough columns for ", var)
+      stop("Could not create slope vars in training X, not enough columns for ", slope_base_vars[i])
     }
     new_train_X[,i] <- stats::lsfit(-(1:n_var_cols), t(train_X[, var_cols]))$coef[2,]
     new_test_X[,i] <- stats::lsfit(-(1:n_var_cols), t(test_X[, var_cols]))$coef[2,]
