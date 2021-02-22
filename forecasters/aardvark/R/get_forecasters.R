@@ -29,7 +29,6 @@
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
-
 get_forecasters <- function(signals, ahead, kern = "tophat", strata_alpha = 0.5, bandwidth = 7){
   
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")

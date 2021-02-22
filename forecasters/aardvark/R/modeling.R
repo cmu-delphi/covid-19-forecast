@@ -1,7 +1,7 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, 
                                      degree = 0, smoother = NULL, stratifier = NULL, 
-                                     modeler = NULL, aligner = NULL, 
-                                     bootstrapper, B = 1000){
+                                     modeler = NULL, aligner = NULL, bootstrapper, 
+                                     B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -18,7 +18,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
       return(NULL)
     }
 
-    df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, X)) %>% 
+    df <- df %>% aggregate_signals(format = "wide") 
+    
+    df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
       bind_rows %>%
       distinct %>% 
       arrange(variable_name, geo_value, desc(time_value)) %>%
@@ -72,7 +74,10 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 
     df_train_use <- df_use %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
 
-    locs1 <- df_train_use %>% filter(variable_name == response & value > 0) %>% pull(location) %>% unique
+    locs1 <- df_train_use %>% 
+      filter(variable_name == response & value > 0) %>% 
+      pull(location) %>% 
+      unique
     df_align <- aligner(df_train_use, forecast_dates[itr])
     target_dates <-  get_target_period(forecast_dates[itr], incidence_period, ahead) %$%
       seq(start, end, by = "days")
@@ -226,11 +231,8 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   return(df_with_lags)
 }
 
-
 model_matrix <- function(dat, features = NULL){
-
   X_frame <- dat %>% select(-response)
-
   if ( length(unique(X_frame$location)) > 1 ){
     X_formula <- model_formula(features)
     X_train <- Matrix::Matrix( model.matrix(X_formula, X_frame), sparse = T)
