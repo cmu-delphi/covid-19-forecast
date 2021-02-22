@@ -1,0 +1,31 @@
+---
+title: "Aardvark Trajectory Plots"
+author: "Delphi County Cases, Forecast on:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+params:
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
+  today: !r Sys.getenv("TODAY")
+  output_dir: "/mnt"
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(evalcast)
+library(ggplot2)
+aardvark  <- readRDS(file.path(params$output_dir, sprintf("aardvark_predictions_for_%s.RDS", params$forecast_date)))
+```
+
+## Showing 50/80/95% Quantiles
+
+```{r, fig.height = 80, fig.width = 30, dev="CairoSVG", echo=FALSE}
+tp <- plot_trajectory(aardvark, 
+                      plot_it = FALSE, 
+                      start_day = Sys.Date() - 90)
+
+tp + theme_bw(base_size = 20) + 
+  scale_fill_viridis_d() + 
+  scale_colour_viridis_d() +
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5) +
+  theme(legend.position = "none") + ylab("") + xlab("")
+```
+

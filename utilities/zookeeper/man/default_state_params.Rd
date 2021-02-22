@@ -5,7 +5,8 @@
 \title{Default parameters for aardvark state death corrections}
 \usage{
 default_state_params(
-  signals_to_correct = "response",
+  data_source = "jhu-csse",
+  signal = c("deaths_incidence_num", "confirmed_incidence_num"),
   window_size = 14,
   backfill_lag = 30,
   excess_cut = 0,
@@ -13,14 +14,13 @@ default_state_params(
   sig_cut = 3,
   sig_consec = 2.25,
   time_value_flag_date = Sys.Date() + 1,
-  multinomial_preprocessor = TRUE,
-  corrections_db_path = NULL,
-  integer_tol = 1e-06,
-  ...
+  multinomial_preprocessor = TRUE
 )
 }
 \arguments{
-\item{signals_to_correct}{either "response" or "all"}
+\item{data_source}{covidcast data_source for corrections}
+
+\item{signal}{vector of covidcast signals to correct}
 
 \item{window_size}{size of rolling window}
 
@@ -37,12 +37,6 @@ default_state_params(
 \item{time_value_flag_date}{no corrections after this date}
 
 \item{multinomial_preprocessor}{logical, do we run the preporcessor}
-
-\item{corrections_db_path}{path to database if storing results}
-
-\item{integer_tol}{small number to handle integer checks}
-
-\item{...}{ignored}
 }
 \value{
 A list of paramter values

@@ -218,7 +218,7 @@ sum_check
 
 tosave <- corrected_states %>% 
   mutate(output = abs(corrected - value) > 0) %>%
-  filter(output) %>% ungroup() %>%
+  filter(output | time_value > "2021-02-01") %>% ungroup() %>%
   dplyr::select(signal,geo_value, time_value, value, corrected, FIPS) %>%
   transmute(
     location_name = toupper(geo_value),

@@ -1,53 +1,50 @@
-make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, degree = 0, 
-                                     smoother = NULL, stratifier = NULL, modeler = NULL, 
-                                     aligner = NULL, bootstrapper, B = 1000){
+make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, 
+                                     degree = 0, smoother = NULL, stratifier = NULL, 
+                                     modeler = NULL, aligner = NULL, 
+                                     bootstrapper, B = 1000){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
-                                              ahead){
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
+                                              incidence_period = c("epiweek","day"),
+                                              ahead, geo_type){
     
-    incidence_period <- match.arg(incidence_period)
     forecast_date <- ymd(forecast_date)
+    incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
+    
+    if ( geo_type == "nation" ){
+      return(NULL)
+    }
 
     df_train <- df %>% 
       bind_rows %>%
       long_to_wide %>%
       filter(variable_name %in% c(response, features$variable_name)) %>% 
       distinct %>% 
-      #filter((variable_name != response) | (issue >= time_value + backfill_buffer) ) %>%
       select(-issue) %>% 
       arrange(variable_name, geo_value, desc(time_value))
     
-    location_df <- distinct(select(df_train, c(location)))
-    df_train_empty <- expand_grid(location_df,
-                                  time_value = unique(df_train$time_value),
-                                  variable_name = unique(df_train$variable_name))
-    df_train_all <- left_join(df_train_empty, df_train, by = c("location", 
-                                                               "time_value", 
-                                                               "variable_name"))
-    
-
-    df_train_all_no_na <- df_train_all %>%
-      mutate(value = if_else(is.na(value), replace_na(value,0), value))
-    
-    df_train_smoothed <- df_train_all_no_na %>%
+    df_train_smoothed <- expand_grid(distinct(select(df_train, c(location))),
+                                     time_value = unique(df_train$time_value),
+                                     variable_name = unique(df_train$variable_name)) %>%
+      left_join(df_train, by = c("location", "time_value","variable_name")) %>%
+      mutate(value = if_else(is.na(value), replace_na(value,0), value)) %>%
       group_by(variable_name) %>%
       group_modify(~ smoother(.x) ) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
 
-    df_all <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)), 
-                          probs = covidhub_probs)
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
                                            smoother, stratifier, aligner, modeler,
                                            bootstrapper, B, covidhub_probs, 
                                            features, alignment_variable)
     
-    predictions <- df_all %>% 
+    predictions <- expand_grid(unique(df_train_smoothed %>% 
+                                        select(location, geo_value)),
+                               probs = covidhub_probs) %>% 
       left_join(df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
@@ -153,7 +150,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     YX[[feature_name]] <- as.numeric(YX[[feature_name]])
   }
 
-  target_dates <- evalcast::get_target_period(forecast_date, incidence_period, ahead) %$%
+  target_dates <- get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
   dates <- df_align %>% 
     filter(location %in% locations$location, time_value %in% target_dates) %>%
@@ -230,6 +227,80 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   return(df_with_lags)
 }
 
+
+model_matrix <- function(dat, features = NULL){
+  # A wrapper around model.matrix,
+  # allowing us to dynamically build the formula we would like to feed to model matrix.
+  X_frame <- dat %>% select(-response)
+
+  if ( length(unique(X_frame$location)) > 1 ){
+    X_formula <- model_formula(features)
+    X_train <- Matrix::Matrix( model.matrix(X_formula, X_frame), sparse = T)
+  } else{
+    if ( all(names(X_frame) == "location") ){
+      X_train <- matrix(0, ncol = 1, nrow = nrow(X_frame))
+      colnames(X_train) <- "zero_col"
+    } else{
+      X_train <- data.matrix(X_frame %>% select(-location))
+    }
+  }
+  return(X_train)
+}
+
+model_formula <- function(features){
+  main_effect_features <- features %>% 
+    mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
+    mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
+                                  feature_name)) %>% pull(feature_name)
+  main_effect_chr <- paste0(main_effect_features, collapse = " + ")
+  main_effect_chr <- paste0(main_effect_chr, "- 1")
+  formula_chr <- paste0("~ ", main_effect_chr)
+  return(as.formula(formula_chr))
+}
+
+make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
+  # Inputs:
+  #   alpha: numeric between 0 and 1
+  #   build_penalty_factor: function, taking as input the names of X and producing output which
+  #                         can be passed to cv.glmnet as the penalty.factor argument
+  #   fdev, mnlam: parameters to be passed to glmnet.control(). See help(glmnet.control) for details.
+  #   n_folds: number of folds to use for cross-validation.
+  
+  cv_glmnet <- function(Y, X, wts, offset, locs, ...){
+    stopifnot(is.character(locs))
+    
+    variable_names <- colnames(X)
+    penalty_factor <- case_when(
+      grepl("location", variable_names) ~ 1,
+      grepl(":", variable_names)        ~ 0,
+      TRUE                             ~ 0 
+    )
+    if ( all(penalty_factor == 0) ){
+      penalty_factor <- rep(1, length(penalty_factor))
+    }
+
+    unique_locs <- unique(locs)
+    stopifnot(length(unique_locs) >= n_folds) # Need something to hold out.
+    fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
+    names(fold_for_each_loc) <- unique_locs
+    fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
+
+    glmnet.control(fdev = fdev, mnlam = mnlam)
+    cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
+              penalty.factor = penalty_factor, intercept = FALSE,
+              nfolds = n_folds, foldid = fold_id, type.measure = "mse")
+  }
+}
+
+make_predict_glmnet <- function(lambda_choice){
+  # Inputs:
+  #   lambda_choice: either "lambda.1se" or "lambda.min"
+  predict_glmnet <- function(fit, X, offset, ...){
+    preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
+    return(preds)
+  }
+}
+
 #' @importFrom covidcast aggregate_signals
 #' @import evalcast
 long_to_wide <- function(df){
@@ -267,81 +338,4 @@ long_to_wide <- function(df){
     select(location, geo_value, variable_name, value, time_value, issue)
   df$value <- as.double(df$value)
   return(df)
-}
-
-model_matrix <- function(dat, features = NULL){
-  # A wrapper around model.matrix,
-  # allowing us to dynamically build the formula we would like to feed to model matrix.
-  X_frame <- dat %>% select(-response)
-
-  if ( length(unique(X_frame$location)) > 1 ){
-    X_formula <- model_formula(features)
-    X_train <- Matrix::Matrix( model.matrix(X_formula, X_frame), sparse = T)
-  } else{
-    if ( all(names(X_frame) == "location") ){
-      X_train <- matrix(0, ncol = 1, nrow = nrow(X_frame))
-      colnames(X_train) <- "zero_col"
-    } else{
-      X_train <- data.matrix(X_frame %>% select(-location))
-    }
-  }
-  return(X_train)
-}
-
-model_formula <- function(features){
-  main_effect_features <- features %>% 
-    mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
-    mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
-                                  feature_name)) %>% pull(feature_name)
-  main_effect_chr <- paste0(main_effect_features, collapse = " + ")
-  main_effect_chr <- paste0(main_effect_chr, "- 1")
-  formula_chr <- paste0("~ ", main_effect_chr)
-  return(as.formula(formula_chr))
-}
-
-make_cv_glmnet <- function(alpha = 1, fdev = 0, mnlam = 100, n_folds = 10){
-  # Closure, allowing us to pass tuning parameters to cv.glmnet
-  # Inputs:
-  #   alpha: numeric between 0 and 1
-  #   build_penalty_factor: function, taking as input the names of X and producing output which
-  #                         can be passed to cv.glmnet as the penalty.factor argument
-  #   fdev, mnlam: parameters to be passed to glmnet.control(). See help(glmnet.control) for details.
-  #   n_folds: number of folds to use for cross-validation.
-  
-  cv_glmnet <- function(Y, X, wts, offset, locs, ...){
-    stopifnot(is.character(locs))
-    
-    variable_names <- colnames(X)
-    penalty_factor <- case_when(
-      grepl("location", variable_names) ~ 1, # Penalize location-specific effects
-      grepl(":", variable_names)        ~ 0, # Don't penalize interactions
-      TRUE                             ~ 0 # Don't penalize intercept
-    )
-    if ( all(penalty_factor == 0) ){
-      penalty_factor <- rep(1, length(penalty_factor))
-    }
-    
-    # (2) Determine folds for cross validation.
-    unique_locs <- unique(locs)
-    stopifnot(length(unique_locs) >= n_folds) # Need something to hold out.
-    fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
-    names(fold_for_each_loc) <- unique_locs
-    fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
-    
-    # (3) Fit our model.
-    glmnet.control(fdev = fdev, mnlam = mnlam)
-    cv.glmnet(x = X, y = Y, alpha = alpha, weights = wts, offset = offset,
-              penalty.factor = penalty_factor, intercept = FALSE,
-              nfolds = n_folds, foldid = fold_id, type.measure = "mse")
-  }
-}
-
-make_predict_glmnet <- function(lambda_choice){
-  # Closure, allowing us to pass parameters to predict.glmnet.
-  # Inputs:
-  #   lambda_choice: either "lambda.1se" or "lambda.min"
-  predict_glmnet <- function(fit, X, offset, ...){
-    preds <- predict(fit, newx = X, newoffset = offset, s = lambda_choice)[,1]
-    return(preds)
-  }
 }

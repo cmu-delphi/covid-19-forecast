@@ -11,7 +11,7 @@
 #'
 #' @return a data frame of the same format as `dat`
 #'
-#' @export
+
 multinomial_preprocessor <- function(dat, response, max_lag = Inf){
   # Preprocesses the response values in a data frame.
   # Replaces zeroes (which we suspect are due to lagged reporting) by samples from a multinomial.
@@ -22,7 +22,7 @@ multinomial_preprocessor <- function(dat, response, max_lag = Inf){
   # max_lag: maximum amount counts can be moved.
 
   # Put data in the right order.
-  dat <- dplyr::arrange(dat,reference_date)
+  dat <- dplyr::arrange(dat, .data$reference_date)
 
   # Impute at each location.
   locs <- unique(dat$location)
