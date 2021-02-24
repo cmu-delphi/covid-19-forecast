@@ -2,10 +2,12 @@
 
 export("%>%")
 export(apply_corrections)
+export(default_county_params)
 export(default_state_params)
 export(format_predictions_for_reichlab_submission)
 export(get_data_corrections)
 export(make_aardvark_corrector)
+export(make_zyzzyva_corrector)
 export(update_corrections)
 import(dplyr)
 importFrom(RcppRoll,roll_mean)
