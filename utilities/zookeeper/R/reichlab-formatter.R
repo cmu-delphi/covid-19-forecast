@@ -63,7 +63,7 @@ format_predictions_for_reichlab_submission <- function(predictions_cards,
     mutate(type = "point", quantile = NA)
 
   reichlab_df <- bind_rows(reichlab_quantile, reichlab_point) %>%
-    filter(.data$location %in% geo_values_to_filter)
+    filter(!.data$location %in% geo_values_to_filter)
   locs_to_reformat <- reichlab_df$location[nchar(reichlab_df$location) == 2L]
   reichlab_df$location[nchar(reichlab_df$location) == 2L] <-
     evalcast:::abbr_2_fips(locs_to_reformat)
