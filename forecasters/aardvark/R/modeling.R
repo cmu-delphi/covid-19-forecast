@@ -277,7 +277,9 @@ make_cv_glmnet <- function(alpha = 1, n_folds = 10){
       TRUE                             ~ 0 
     )
     
-    print(penalty_factor)
+    if ( all(penalty_factor == 0) ){
+      penalty_factor <- rep(1, length(penalty_factor))
+    }
 
     unique_locs <- unique(locs)
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
