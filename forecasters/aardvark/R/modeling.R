@@ -170,7 +170,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
   preds <- list()
   for ( itr in 1:length(dates) ){
     YX_use <- YX %>% mutate(t = as.numeric(date - dates[itr])) 
-    forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates) # right align date and right time value
+    forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates)
     forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
     forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
@@ -185,7 +185,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, band
     X_train <- X_train_test[train_indices,,drop = F]
     Y_train <- (YX_use %>% pull(response))[train_indices]
     wts_train <- wts[train_indices]
-    X_test <- X_train_test[forecast_rows,,drop = F] # Keep a one row matrix as a matrix.
+    X_test <- X_train_test[forecast_rows,,drop = F]
     
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
@@ -270,10 +270,14 @@ make_cv_glmnet <- function(alpha = 1, n_folds = 10){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
+    print(variable_names)
+    
     penalty_factor <- case_when(
       grepl("location", variable_names) ~ 1,
       TRUE                             ~ 0 
     )
+    
+    print(penalty_factor)
 
     unique_locs <- unique(locs)
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
