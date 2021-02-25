@@ -13,10 +13,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
     incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
-    
-    if ( geo_type == "nation" ){
-      return(NULL)
-    }
 
     df <- df %>% aggregate_signals(format = "wide") 
     
@@ -35,6 +31,16 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
       group_modify(~ smoother(.x) ) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
+    
+    if ( geo_type == "nation" ){
+      df_train_smoothed <- df_train_smoothed %>%
+        select(-c(location, geo_value)) %>%
+        group_by(variable_name, time_value) %>%
+        summarise(original_value = sum(original_value), value = sum(value), .groups = "drop") %>%
+        mutate(location = "00", geo_value = "US")
+    }
+    
+    saveRDS(df_train_smoothed, file = "~/Desktop/checkpoint_1.rds")
 
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
