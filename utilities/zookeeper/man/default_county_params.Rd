@@ -2,7 +2,7 @@
 % Please edit documentation in R/corrector-zyzzyva.R
 \name{default_county_params}
 \alias{default_county_params}
-\title{Default parameters for zyzzyva county case corrections}
+\title{Default parameters for  county case corrections}
 \usage{
 default_county_params(
   data_source = "usa-facts",
@@ -45,7 +45,7 @@ default_county_params(
 A list of parameter values
 }
 \description{
-Default parameters for zyzzyva county case corrections
+Default parameters for  county case corrections
 }
 \examples{
 default_state_params(window_size=21)

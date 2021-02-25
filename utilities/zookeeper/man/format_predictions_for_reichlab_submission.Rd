@@ -4,11 +4,17 @@
 \alias{format_predictions_for_reichlab_submission}
 \title{Format evalcast predictions_cards for submission to Reich Lab}
 \usage{
-format_predictions_for_reichlab_submission(predictions_cards)
+format_predictions_for_reichlab_submission(
+  predictions_cards,
+  geo_values_to_filter = NULL
+)
 }
 \arguments{
 \item{predictions_cards}{data frame of predictions of the type returned by
 evalcast. You must pass in a single df.}
+
+\item{geo_values_to_filter}{character string or list thereof of geo_values to exclude from the
+final output.}
 }
 \value{
 a tibble for conversion to csv
