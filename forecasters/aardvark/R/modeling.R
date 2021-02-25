@@ -270,7 +270,6 @@ make_cv_glmnet <- function(alpha = 1, n_folds = 10){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
-    print(variable_names)
     
     penalty_factor <- case_when(
       grepl("location", variable_names) ~ 1,
