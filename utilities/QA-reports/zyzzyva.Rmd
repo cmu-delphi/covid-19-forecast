@@ -29,7 +29,7 @@ simple_labs <- function(geo_value) {
 
 tp <- plot_trajectory(zyzzyva, 
                       plot_it = FALSE,
-                      start_day = lubridate::ymd(params$today) - lubridate::days(x = 90))                      
+                      start_day = lubridate::ymd(params$today) - lubridate::days(x = 90))
 
 tp + theme_bw(base_size = 20) + 
   scale_fill_viridis_d() + 
