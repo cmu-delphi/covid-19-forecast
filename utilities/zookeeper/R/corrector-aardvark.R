@@ -1,4 +1,4 @@
-#' Default parameters for aardvark state death corrections
+#' Default parameters for state death corrections
 #'
 #' @param data_source covidcast data_source for corrections
 #' @param signal vector of covidcast signals to correct
@@ -45,7 +45,7 @@ default_state_params <- function(
 }
 
 
-#' Corrector for aardvark forecasts
+#' Corrector for state forecasts
 #'
 #' This function produces another function to create corrections. It expects
 #' the signals from covidcast to be a list (or a single signal).
@@ -54,6 +54,7 @@ default_state_params <- function(
 #'   rows is the number of signals used by the forecaster. The
 #'   tibble is most easily generated with [default_state_params()].
 #' @param corrections_db_path path to store results, NULL by default
+#' @param dump_locations character vector of locations to ignore
 #'
 #' @return A function that takes a list of covidcast signals as the only
 #'   argument
@@ -63,13 +64,18 @@ default_state_params <- function(
 #' make_aardvark_corrector(default_state_params(window_size=21))
 make_aardvark_corrector <- function(
   params = default_state_params(),
-  corrections_db_path = NULL) {
+  corrections_db_path = NULL,
+  dump_locations = c("as","gu","mp","vi")) {
 
 
   aardvark_state_corrections <- function(df) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
+    }
+    if (!is.null(dump_locations)) {
+      df <- purrr::map(df, ~.x %>%
+                         dplyr::filter(! geo_value %in% dump_locations))
     }
     params$to_correct <- TRUE # a key for deciding if we make corrections
     in_names <- names(df[[1]])

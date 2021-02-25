@@ -1,4 +1,4 @@
-#' Default parameters for zyzzyva county case corrections
+#' Default parameters for  county case corrections
 #'
 #' @param data_source covidcast data_source for corrections
 #' @param signal vector of covidcast signals to correct
@@ -46,7 +46,7 @@ default_county_params <- function(
 }
 
 
-#' Corrector for zyzzyva forecasts
+#' Corrector for county forecasts
 #'
 #' This function produces another function to create corrections. It expects
 #' the signals from covidcast to be a list (or a single signal).
@@ -55,6 +55,7 @@ default_county_params <- function(
 #'   rows is the number of signals used by the forecaster. The
 #'   tibble is most easily generated with [default_state_params()].
 #' @param corrections_db_path path to store results, NULL by default
+#' @param dump_locations character vector of locations to ignore
 #'
 #' @return A function that takes a list of covidcast signals as the only
 #'   argument
@@ -64,13 +65,18 @@ default_county_params <- function(
 #' make_zyzzyva_corrector(default_state_params(window_size=21))
 make_zyzzyva_corrector <- function(
   params = default_county_params(),
-  corrections_db_path = NULL) {
+  corrections_db_path = NULL,
+  dump_locations = NULL) {
 
 
   zyzzyva_county_corrections <- function(df) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
+    }
+    if (!is.null(dump_locations)) {
+      df <- purrr::map(df, ~.x %>%
+                         dplyr::filter(! geo_value %in% dump_locations))
     }
     params$to_correct <- TRUE # a key for deciding if we make corrections
     in_names <- names(df[[1]])

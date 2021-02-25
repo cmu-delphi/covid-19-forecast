@@ -9,13 +9,16 @@
 #'
 #' @param predictions_cards data frame of predictions of the type returned by
 #'   evalcast. You must pass in a single df.
+#' @param geo_values_to_filter character string or list thereof of geo_values to exclude from the
+#'   final output.
 #'
 #' @return a tibble for conversion to csv
 #' @export
 #' @importFrom purrr map map_lgl map_int map2
 #' @importFrom dplyr bind_rows filter
 #' @importFrom assertthat assert_that
-format_predictions_for_reichlab_submission <- function(predictions_cards){
+format_predictions_for_reichlab_submission <- function(predictions_cards,
+                                                       geo_values_to_filter = NULL){
 
   # (A) Remove non-predictions
   assert_that(class(predictions_cards)[1] == "predictions_cards",
@@ -59,7 +62,8 @@ format_predictions_for_reichlab_submission <- function(predictions_cards){
     filter(evalcast:::find_quantile_match(.data$quantile, 0.5)) %>%
     mutate(type = "point", quantile = NA)
 
-  reichlab_df <- bind_rows(reichlab_quantile, reichlab_point)
+  reichlab_df <- bind_rows(reichlab_quantile, reichlab_point) %>%
+    filter(!.data$location %in% geo_values_to_filter)
   locs_to_reformat <- reichlab_df$location[nchar(reichlab_df$location) == 2L]
   reichlab_df$location[nchar(reichlab_df$location) == 2L] <-
     evalcast:::abbr_2_fips(locs_to_reformat)

@@ -2,11 +2,12 @@
 % Please edit documentation in R/corrector-zyzzyva.R
 \name{make_zyzzyva_corrector}
 \alias{make_zyzzyva_corrector}
-\title{Corrector for zyzzyva forecasts}
+\title{Corrector for county forecasts}
 \usage{
 make_zyzzyva_corrector(
   params = default_county_params(),
-  corrections_db_path = NULL
+  corrections_db_path = NULL,
+  dump_locations = NULL
 )
 }
 \arguments{
@@ -15,6 +16,8 @@ rows is the number of signals used by the forecaster. The
 tibble is most easily generated with [default_state_params()].}
 
 \item{corrections_db_path}{path to store results, NULL by default}
+
+\item{dump_locations}{character vector of locations to ignore}
 }
 \value{
 A function that takes a list of covidcast signals as the only

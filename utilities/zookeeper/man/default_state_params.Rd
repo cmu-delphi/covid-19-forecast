@@ -2,7 +2,7 @@
 % Please edit documentation in R/corrector-aardvark.R
 \name{default_state_params}
 \alias{default_state_params}
-\title{Default parameters for aardvark state death corrections}
+\title{Default parameters for state death corrections}
 \usage{
 default_state_params(
   data_source = "jhu-csse",
@@ -45,7 +45,7 @@ default_state_params(
 A list of paramter values
 }
 \description{
-Default parameters for aardvark state death corrections
+Default parameters for state death corrections
 }
 \examples{
 default_state_params(window_size=21)
