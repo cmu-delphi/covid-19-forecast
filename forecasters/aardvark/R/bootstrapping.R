@@ -1,4 +1,4 @@
-make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth){
+make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth = 14){
 
   by_location_gaussian_bootstrap_weekly <- function(B, df_point_preds, forecast_date, incidence_period, ahead){
 

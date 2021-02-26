@@ -18,17 +18,16 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
     
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
       bind_rows %>%
-      distinct %>% 
-      arrange(variable_name, geo_value, desc(time_value)) %>%
+      distinct %>%
       mutate(value = as.double(value))
     
-    df_train_smoothed <- expand_grid(distinct(select(df_train, c(location))),
+    df_train_smoothed <- expand_grid(distinct(select(df_train, location)),
                                      time_value = unique(df_train$time_value),
                                      variable_name = unique(df_train$variable_name)) %>%
       left_join(df_train, by = c("location", "time_value", "variable_name")) %>%
       mutate(value = if_else(is.na(value), replace_na(value, 0), value)) %>%
       group_by(variable_name) %>%
-      group_modify(~ smoother(.x) ) %>% 
+      group_modify(~ smoother(.x)) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
@@ -37,10 +36,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
         select(-c(location, geo_value)) %>%
         group_by(variable_name, time_value) %>%
         summarise(original_value = sum(original_value), value = sum(value), .groups = "drop") %>%
-        mutate(location = "00", geo_value = "US")
+        mutate(location = "00", geo_value = "us")
     }
-    
-    saveRDS(df_train_smoothed, file = "~/Desktop/checkpoint_1.rds")
 
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
                                            forecast_date, incidence_period, ahead, 
@@ -292,7 +289,7 @@ make_cv_glmnet <- function(alpha = 1, n_folds = 10){
   }
 }
 
-make_predict_glmnet <- function(lambda_choice){
+make_predict_glmnet <- function(lambda_choice = "lambda.min"){
   predict_glmnet <- function(fit, X, ...){
     preds <- predict(fit, newx = X, s = lambda_choice)[,1]
     return(preds)

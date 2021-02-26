@@ -1,4 +1,4 @@
-make_stratifier_by_n_responses <- function(alpha){
+make_stratifier_by_n_responses <- function(alpha = 0.5){
   stratify_by_n_responses <- function(df_use, response){
 
     df_response <- df_use %>% filter(variable_name == !!response)
