@@ -31,6 +31,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
+    saveRDS(df_train_smoothed, file = "~/Desktop/df.rds")
+    
     if ( geo_type == "nation" ){
       df_train_smoothed <- df_train_smoothed %>%
         select(-c(location, geo_value)) %>%
