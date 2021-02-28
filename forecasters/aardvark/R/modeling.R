@@ -73,6 +73,7 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
   for ( itr in 1:length(forecast_dates) ){
 
     df_train_use <- df_use %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
+    df_align <- aligner(df_train_use, forecast_dates[itr])
     
     df_train_use <- df_train_use %>% 
       mutate(observed_value = value)
