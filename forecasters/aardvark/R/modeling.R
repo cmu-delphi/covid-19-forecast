@@ -1,7 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, 
-                                     degree = 0, smoother = NULL, stratifier = NULL, 
-                                     modeler = NULL, aligner = NULL, bootstrapper, 
-                                     B = 1000){
+                                     smoother = NULL, stratifier = NULL, modeler = NULL, 
+                                     aligner = NULL, bootstrapper = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -31,8 +30,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
-    saveRDS(df_train_smoothed, file = "~/Desktop/df.rds")
-    
     if ( geo_type == "nation" ){
       df_train_smoothed <- df_train_smoothed %>%
         select(-c(location, geo_value)) %>%
@@ -41,14 +38,12 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
         mutate(location = "00", geo_value = "us")
     }
 
-    df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, degree, bandwidth, 
-                                           forecast_date, incidence_period, ahead, 
-                                           smoother, stratifier, aligner, modeler,
-                                           bootstrapper, B, covidhub_probs, 
-                                           features, alignment_variable)
+    df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, bandwidth, forecast_date, 
+                                           incidence_period, ahead, smoother, stratifier, aligner, 
+                                           modeler, bootstrapper, covidhub_probs, features, 
+                                           alignment_variable)
     
-    predictions <- expand_grid(unique(df_train_smoothed %>% 
-                                        select(location, geo_value)),
+    predictions <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)),
                                probs = covidhub_probs) %>% 
       left_join(df_preds, by = c("location", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
@@ -61,9 +56,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
 }
 
 #' @importFrom magrittr %$%
-local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, forecast_date, 
+local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_date, 
                                        incidence_period, ahead, smoother, stratifier, aligner, 
-                                       modeler, bootstrapper, B, covidhub_probs, features, 
+                                       modeler, bootstrapper, covidhub_probs, features, 
                                        alignment_variable){
 
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
@@ -105,12 +100,12 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
     
     df_point_preds_less_grim <- df_with_lags %>% 
       filter(!strata) %>%
-      local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr], 
+      local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr], 
                                             incidence_period, ahead, features, df_align, modeler)
     
     df_point_preds_more_grim <- df_with_lags %>% 
       filter(strata) %>%
-      local_lasso_daily_forecast_by_stratum(response, degree, bandwidth, forecast_dates[itr],
+      local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr],
                                             incidence_period, ahead, features, df_align, modeler)
 
     point_preds_list[[itr]] <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
@@ -120,7 +115,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
   }
   
   df_point_preds <- bind_rows(point_preds_list)
-  df_bootstrap_preds <- bootstrapper(B, df_point_preds, forecast_date, incidence_period, ahead) %>%
+  df_bootstrap_preds <- bootstrapper(df_point_preds, forecast_date, incidence_period, ahead) %>%
     pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% 
     group_by(location, replicate) %>%
     summarize(value = sum(pmax(value, 0)), .groups = "drop")
@@ -133,7 +128,7 @@ local_lasso_daily_forecast <- function(df_use, response, degree, bandwidth, fore
 
 #' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
-local_lasso_daily_forecast_by_stratum <- function(df_use, response, degree, bandwidth,forecast_date, 
+local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, forecast_date, 
                                                   incidence_period, ahead, features, df_align, modeler){
   response_name <- paste0(response, "_lag_0")
   locations <- df_use %>% 
@@ -269,7 +264,6 @@ make_cv_glmnet <- function(alpha = 1, n_folds = 10){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
-    
     penalty_factor <- case_when(
       grepl("location", variable_names) ~ 1,
       TRUE                             ~ 0 
@@ -300,8 +294,8 @@ make_predict_glmnet <- function(lambda_choice = "lambda.min"){
 
 #' @import evalcast
 reformat_df <- function(df, column){
-  df %>% select(names(df)[c(1,2,column)]) %>%
-    mutate(variable_name = strsplit(names(df)[column],":")[[1]][2]) %>%
+  df %>% select(names(df)[c(1, 2, column)]) %>%
+    mutate(variable_name = strsplit(names(df)[column], ":")[[1]][2]) %>%
     rename(value = names(df)[column]) %>% mutate(location = evalcast:::abbr_2_fips(geo_value)) %>%
     select(location, geo_value, variable_name, value, time_value)
 }

@@ -1,6 +1,7 @@
-make_by_location_gaussian_bootstrap_weekly <- function(ave, bandwidth = 14){
+make_by_location_gaussian_bootstrap_weekly <- function(ave = weighted.mean, bandwidth = 14){
 
-  by_location_gaussian_bootstrap_weekly <- function(B, df_point_preds, forecast_date, incidence_period, ahead){
+  by_location_gaussian_bootstrap_weekly <- function(df_point_preds, forecast_date, 
+                                                    incidence_period, ahead, B = 1000){
 
     target_dates <- get_target_period(forecast_date, incidence_period, ahead) %$%
       seq(start,end,by = "days")

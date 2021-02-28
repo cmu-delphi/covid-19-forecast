@@ -1,4 +1,4 @@
-make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_period = "epiweek"){
+make_time_aligner <- function(alignment_variable, threshold, ahead){
 
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
 
@@ -13,7 +13,7 @@ make_time_aligner <- function(alignment_variable, threshold, ahead, incidence_pe
 
     locations <- df_use %>% pull(location) %>% unique
     train_dates <- df_use %>% pull(time_value) %>% unique
-    target_dates <-  get_target_period(forecast_date, incidence_period, ahead) %$%
+    target_dates <-  get_target_period(forecast_date, incidence_period = "epiweek", ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
     df_align <- expand_grid(location = locations, time_value = dates) %>% 
