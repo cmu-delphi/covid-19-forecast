@@ -3,11 +3,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
                                      bootstrapper = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
-  
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, 
-                                              incidence_period = c("epiweek","day"),
+  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
                                               ahead, geo_type){
-    
     forecast_date <- ymd(forecast_date)
     incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
@@ -30,8 +27,6 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
       group_modify(~ smoother(.x)) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
-    
-    saveRDS(df_train_smoothed, file = "~/Desktop/df.rds")
     
     if ( geo_type == "nation" ){
       df_train_smoothed <- df_train_smoothed %>%
@@ -63,7 +58,6 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
                                        incidence_period, ahead, smoother, aligner, 
                                        modeler, bootstrapper, covidhub_probs, features, 
                                        alignment_variable){
-
   bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
   if ( bootstrap_bandwidth > 7 ){
     train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
@@ -77,20 +71,13 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
 
     df_train_use <- df_use %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
     df_align <- aligner(df_train_use, forecast_dates[itr])
-    
-    df_train_use <- df_train_use %>% 
-      mutate(observed_value = value)
+    df_train_use <- df_train_use %>% mutate(observed_value = value)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                         ahead, response, features) %>%
       left_join(df_align, by = c("location", "time_value"))
-    
-    
-    
-    df_point_preds <- df_with_lags %>%
+    point_preds_list[[itr]] <- df_with_lags %>%
       local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr], 
-                                            incidence_period, ahead, features, df_align, modeler)
-    
-    point_preds_list[[itr]] <- df_point_preds %>%
+                                            incidence_period, ahead, features, df_align, modeler) %>%
       left_join(df_use %>% filter(variable_name == response) %>% select(location, time_value, value),
                 by = c("location", "time_value")) %>%
       rename(observed_value = value)
@@ -101,7 +88,6 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
     pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% 
     group_by(location, replicate) %>%
     summarize(value = sum(pmax(value, 0)), .groups = "drop")
-  
   preds_df <- df_bootstrap_preds %>% 
     group_by(location) %>% 
     group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
@@ -117,7 +103,6 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     filter(variable_name == all_of(response_name)) %>% 
     select(location, geo_value) %>% 
     distinct
-  
   YX <- df_use %>% 
     select(location, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
@@ -151,21 +136,19 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
     YX_use <- YX_use %>% select(-date)
-    
     wts <- dnorm( YX_use$t  / bandwidth )
     t <- YX_use %>% pull(t)
     YX_use <- YX_use %>% select(-t)
-    
     train_indices <- !is.na(YX_use$response)
     X_train_test <- model_matrix(YX_use, features)
     X_train <- X_train_test[train_indices,,drop = F]
     Y_train <- (YX_use %>% pull(response))[train_indices]
     wts_train <- wts[train_indices]
     X_test <- X_train_test[forecast_rows,,drop = F]
-    
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
-    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t)
+    
+    check <- try(fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t))
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
                                preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
@@ -174,10 +157,17 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
   return(df_final)
 }
 
+#' @import evalcast
+reformat_df <- function(df, column){
+  df %>% select(names(df)[c(1, 2, column)]) %>%
+    mutate(variable_name = strsplit(names(df)[column], ":")[[1]][2]) %>%
+    rename(value = names(df)[column]) %>% mutate(location = evalcast:::abbr_2_fips(geo_value)) %>%
+    select(location, geo_value, variable_name, value, time_value)
+}
+
 #' @importFrom evalcast get_target_period
 #' @import purrr
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
-
   df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
   locations <- df_use %>% 
     filter(variable_name == response) %>% 
@@ -242,7 +232,6 @@ model_formula <- function(features){
 make_cv_glmnet <- function(){
   cv_glmnet <- function(Y, X, wts, locs, n_folds = 10, ...){
     stopifnot(is.character(locs))
-    
     variable_names <- colnames(X)
     penalty_factor <- case_when(
       grepl("location", variable_names) ~ 1,
@@ -266,7 +255,6 @@ make_cv_glmnet <- function(){
 }
 
 make_predict_glmnet <- function(){
-  
   predict_glmnet <- function(fit, X, ...){
     preds <- predict(fit, newx = X, s = "lambda.min")[,1]
     return(preds)
@@ -276,40 +264,27 @@ make_predict_glmnet <- function(){
 #' @importFrom stats var
 make_fv_glmnet_by_location <- function(n_validation = 14){
   fv_glmnet_by_location <- function(Y, X = NULL, wts = rep(1,length(Y)), locs, t){
-
     fits <- list()
-    for(loc in unique(locs)){
+    for ( loc in unique(locs) ){
       loc_indices <- which(locs %in% loc)
-      
       Y_loc <- Y[loc_indices]
       X_loc <- X[loc_indices,]
       wts_loc <- wts[loc_indices]
       t_loc <- t[loc_indices]
-
       train_indices <- which( !(order(t_loc, decreasing = T) %in% 1:n_validation) )
       validation_indices <- which ( order(t_loc, decreasing = T) %in% 1:n_validation )
-      
       Y_loc_train <- Y_loc[train_indices]
-      if(!is.null(X_loc)) X_loc_train <- X_loc[train_indices,] else X_loc_train <- NULL
+      X_loc_train <- X_loc[train_indices,]
       wts_loc_train <- wts_loc[train_indices]
-      
       Y_loc_validation <- Y_loc[validation_indices]
-      if(!is.null(X_loc)) X_loc_validation <- X_loc[validation_indices,] else X_loc_validation <- NULL
+      X_loc_validation <- X_loc[validation_indices,]
       wts_loc_validation <- wts_loc[validation_indices]
-      
       glmnet.control(fdev = 0, mnlam = 100)
-      candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train,
-                               alpha = 1, weights = wts_loc_train, intercept = TRUE)
-      
-      error_validation_set <- colMeans( (Y_loc_validation - predict(candidate_fits, newx = X_loc_validation)) ** 2)
+      candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train, alpha = 1, weights = wts_loc_train, intercept = TRUE, nlambda = 250)
+      error_validation_set <- colMeans( abs((Y_loc_validation - predict(candidate_fits, newx = X_loc_validation)) ))
       optimal_lambda <- candidate_fits$lambda[which.min(error_validation_set)]
-      if (is.na(optimal_lambda)){
-        optimal_lambda <- 0
-      }
-      
-      fit <- glmnet(x = X_loc, y = Y_loc, alpha = 1, weights = wts_loc, intercept = TRUE, lambda = optimal_lambda)
-      
-      fits[[as.character(loc)]] <- fit
+      optimal_lambda <- ifelse(is.na(optimal_lambda), 0, optimal_lambda) 
+      fits[[as.character(loc)]] <- glmnet(x = X_loc, y = Y_loc, alpha = 1, weights = wts_loc, intercept = TRUE, lambda = optimal_lambda)
     }
     return(fits)
   }
@@ -328,13 +303,4 @@ make_predict_glmnet_by_location <- function(){
     }
     return(preds)
   }
-}
-
-
-#' @import evalcast
-reformat_df <- function(df, column){
-  df %>% select(names(df)[c(1, 2, column)]) %>%
-    mutate(variable_name = strsplit(names(df)[column], ":")[[1]][2]) %>%
-    rename(value = names(df)[column]) %>% mutate(location = evalcast:::abbr_2_fips(geo_value)) %>%
-    select(location, geo_value, variable_name, value, time_value)
 }
