@@ -32,8 +32,8 @@ get_forecasters <- function(signals, ahead){
   
   smoother <- make_kernel_smoother()
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
-  model_fitter <- make_cv_glmnet()
-  model_predicter <- make_predict_glmnet()
+  model_fitter <- make_fv_glmnet_by_location()
+  model_predicter <- make_predict_glmnet_by_location()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
   bootstrapper <- make_by_location_gaussian_bootstrap_weekly()
   
