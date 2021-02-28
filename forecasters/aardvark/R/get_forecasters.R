@@ -31,7 +31,6 @@ get_forecasters <- function(signals, ahead){
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
   smoother <- make_kernel_smoother()
-  stratifier <- make_stratifier_by_n_responses()
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
   
   model_fitter <- make_cv_glmnet()
@@ -50,7 +49,6 @@ get_forecasters <- function(signals, ahead){
                                                   features = features,
                                                   smoother = smoother,
                                                   aligner = aligner,
-                                                  stratifier = stratifier,
                                                   modeler = modeler,
                                                   bootstrapper = bootstrapper)
 

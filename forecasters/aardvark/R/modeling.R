@@ -1,6 +1,6 @@
-make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth = 7, 
-                                     smoother = NULL, stratifier = NULL, modeler = NULL, 
-                                     aligner = NULL, bootstrapper = NULL){
+make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother = NULL, 
+                                     aligner = NULL, modeler = NULL, bandwidth = 7,
+                                     bootstrapper = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -39,7 +39,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
     }
 
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, bandwidth, forecast_date, 
-                                           incidence_period, ahead, smoother, stratifier, aligner, 
+                                           incidence_period, ahead, smoother, aligner, 
                                            modeler, bootstrapper, covidhub_probs, features, 
                                            alignment_variable)
     
@@ -57,7 +57,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, bandwidth
 
 #' @importFrom magrittr %$%
 local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_date, 
-                                       incidence_period, ahead, smoother, stratifier, aligner, 
+                                       incidence_period, ahead, smoother, aligner, 
                                        modeler, bootstrapper, covidhub_probs, features, 
                                        alignment_variable){
 
@@ -73,42 +73,20 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
   for ( itr in 1:length(forecast_dates) ){
 
     df_train_use <- df_use %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
-
-    locs1 <- df_train_use %>% 
-      filter(variable_name == response & value > 0) %>% 
-      pull(location) %>% 
-      unique
-    df_align <- aligner(df_train_use, forecast_dates[itr])
-    target_dates <-  get_target_period(forecast_dates[itr], incidence_period, ahead) %$%
-      seq(start, end, by = "days")
-    locs2 <- df_align %>% 
-      filter(time_value %in% target_dates) %>%
-      group_by(location) %>%
-      summarize(n_na_align_dates = sum(is.na(align_date)), .groups = "drop") %>%
-      filter(n_na_align_dates == 0) %>% 
-      pull(location) %>% 
-      unique
     
     df_train_use <- df_train_use %>% 
-      filter(location %in% intersect(locs1,locs2)) %>% 
       mutate(observed_value = value)
-    df_strata <- stratifier(df_train_use, response)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                         ahead, response, features) %>%
-      left_join(df_align, by = c("location", "time_value")) %>%
-      left_join(df_strata, by = "location")
+      left_join(df_align, by = c("location", "time_value"))
     
-    df_point_preds_less_grim <- df_with_lags %>% 
-      filter(!strata) %>%
+    
+    
+    df_point_preds <- df_with_lags %>%
       local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr], 
                                             incidence_period, ahead, features, df_align, modeler)
     
-    df_point_preds_more_grim <- df_with_lags %>% 
-      filter(strata) %>%
-      local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr],
-                                            incidence_period, ahead, features, df_align, modeler)
-
-    point_preds_list[[itr]] <- bind_rows(df_point_preds_less_grim, df_point_preds_more_grim) %>%
+    point_preds_list[[itr]] <- df_point_preds %>%
       left_join(df_use %>% filter(variable_name == response) %>% select(location, time_value, value),
                 by = c("location", "time_value")) %>%
       rename(observed_value = value)
@@ -186,7 +164,8 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, offset = NULL, 
                           intercept = FALSE, locs = train_locs, t = train_t)
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                               preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL, locs = forecast_locs))
+                               preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL, 
+                                                         locs = forecast_locs))
   }
   df_final <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1]) %>%
     left_join(bind_rows(preds), by = c("location", "time_value"))
