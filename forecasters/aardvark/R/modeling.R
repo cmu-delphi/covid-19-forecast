@@ -237,7 +237,7 @@ model_formula <- function(features){
 }
 
 make_cv_glmnet <- function(){
-  cv_glmnet <- function(Y, X, wts, locs, n_folds = 10){
+  cv_glmnet <- function(Y, X, wts, locs, n_folds = 10, ...){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
@@ -264,7 +264,7 @@ make_cv_glmnet <- function(){
 
 make_predict_glmnet <- function(){
   
-  predict_glmnet <- function(fit, X){
+  predict_glmnet <- function(fit, X, ...){
     preds <- predict(fit, newx = X, s = "lambda.min")[,1]
     return(preds)
   }
