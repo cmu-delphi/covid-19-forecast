@@ -162,11 +162,9 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
-    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, offset = NULL, 
-                          intercept = FALSE, locs = train_locs, t = train_t)
+    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs)
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                               preds = modeler$predicter(fit  = fit, X = X_test, offset = NULL, 
-                                                         locs = forecast_locs))
+                               preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
   df_final <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1]) %>%
     left_join(bind_rows(preds), by = c("location", "time_value"))
@@ -239,7 +237,7 @@ model_formula <- function(features){
 }
 
 make_cv_glmnet <- function(){
-  cv_glmnet <- function(Y, X, wts, offset, locs){
+  cv_glmnet <- function(Y, X, wts, locs){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
@@ -258,7 +256,7 @@ make_cv_glmnet <- function(){
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
   
     glmnet.control(fdev = 0, mnlam = 100)
-    cv.glmnet(x = X, y = Y, alpha = 1, weights = wts, offset = offset,
+    cv.glmnet(x = X, y = Y, alpha = 1, weights = wts, offset = NULL,
               penalty.factor = penalty_factor, intercept = FALSE,
               nfolds = 10, foldid = fold_id, type.measure = "mae")
   }
