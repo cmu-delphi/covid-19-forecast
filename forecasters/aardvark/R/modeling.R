@@ -237,7 +237,7 @@ model_formula <- function(features){
 }
 
 make_cv_glmnet <- function(){
-  cv_glmnet <- function(Y, X, wts, locs){
+  cv_glmnet <- function(Y, X, wts, locs, n_folds = 10){
     stopifnot(is.character(locs))
     
     variable_names <- colnames(X)
@@ -258,7 +258,7 @@ make_cv_glmnet <- function(){
     glmnet.control(fdev = 0, mnlam = 100)
     cv.glmnet(x = X, y = Y, alpha = 1, weights = wts, offset = NULL,
               penalty.factor = penalty_factor, intercept = FALSE,
-              nfolds = 10, foldid = fold_id, type.measure = "mae")
+              nfolds = n_folds, foldid = fold_id, type.measure = "mae")
   }
 }
 
