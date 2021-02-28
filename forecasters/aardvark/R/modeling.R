@@ -299,7 +299,7 @@ make_fv_glmnet_by_location <- function(n_validation = 14){
       
       glmnet.control(fdev = 0, mnlam = 100)
       candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train,
-                               alpha = 1, weights = wts_loc_train, intercept = intercept)
+                               alpha = 1, weights = wts_loc_train, intercept = TRUE)
       
       error_validation_set <- colMeans( (Y_loc_validation - predict(candidate_fits, newx = X_loc_validation)) ** 2)
       optimal_lambda <- candidate_fits$lambda[which.min(error_validation_set)]
