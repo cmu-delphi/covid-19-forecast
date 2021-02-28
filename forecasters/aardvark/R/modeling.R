@@ -162,9 +162,9 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
-    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs)
+    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, ...)
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                               preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
+                               preds = modeler$predicter(fit  = fit, X = X_test, ...))
   }
   df_final <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1]) %>%
     left_join(bind_rows(preds), by = c("location", "time_value"))
@@ -272,17 +272,15 @@ make_predict_glmnet <- function(){
 
 #' @importFrom stats var
 make_fv_glmnet_by_location <- function(n_validation = 14){
-  fv_glmnet_by_location <- function(Y, X = NULL, wts = rep(1,length(Y)), offset = NULL,
-                                    intercept = TRUE, locs, t){
+  fv_glmnet_by_location <- function(Y, X = NULL, wts = rep(1,length(Y)), locs, t){
 
     fits <- list()
     for(loc in unique(locs)){
       loc_indices <- which(locs %in% loc)
       
       Y_loc <- Y[loc_indices]
-      if(!is.null(X)) X_loc <- X[loc_indices,]else X_loc <- NULL
+      X_loc <- X[loc_indices,]
       wts_loc <- wts[loc_indices]
-      if(!is.null(offset)) offset_loc <- offset[loc_indices] else offset_loc <- NULL
       t_loc <- t[loc_indices]
 
       train_indices <- which( !(order(t_loc, decreasing = T) %in% 1:n_validation) )
@@ -291,28 +289,22 @@ make_fv_glmnet_by_location <- function(n_validation = 14){
       Y_loc_train <- Y_loc[train_indices]
       if(!is.null(X_loc)) X_loc_train <- X_loc[train_indices,] else X_loc_train <- NULL
       wts_loc_train <- wts_loc[train_indices]
-      if(!is.null(offset_loc)) offset_loc_train <- offset_loc[train_indices] else offset_loc_train <- NULL
       
       Y_loc_validation <- Y_loc[validation_indices]
       if(!is.null(X_loc)) X_loc_validation <- X_loc[validation_indices,] else X_loc_validation <- NULL
       wts_loc_validation <- wts_loc[validation_indices]
-      if(!is.null(offset_loc)) offset_loc_validation <- offset_loc[validation_indices] else offset_loc_validation <- NULL
       
       glmnet.control(fdev = 0, mnlam = 100)
       candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train,
-                               alpha = 1, weights = wts_loc_train, offset = offset_loc_validation,
-                               intercept = intercept)
+                               alpha = 1, weights = wts_loc_train, intercept = intercept)
       
-      error_validation_set <- colMeans( (Y_loc_validation -
-                                         predict(candidate_fits,newx = X_loc_validation,newoffset = offset_loc_validation)) ** 2)
+      error_validation_set <- colMeans( (Y_loc_validation - predict(candidate_fits, newx = X_loc_validation)) ** 2)
       optimal_lambda <- candidate_fits$lambda[which.min(error_validation_set)]
       if (is.na(optimal_lambda)){
         optimal_lambda <- 0
       }
       
-      fit <- glmnet(x = X_loc, y = Y_loc,
-                    alpha = 1, weights = wts_loc, offset = offset_loc,
-                    intercept = intercept, lambda = optimal_lambda)
+      fit <- glmnet(x = X_loc, y = Y_loc, alpha = 1, weights = wts_loc, intercept = TRUE, lambda = optimal_lambda)
       
       fits[[as.character(loc)]] <- fit
     }
@@ -321,7 +313,7 @@ make_fv_glmnet_by_location <- function(n_validation = 14){
 }
 
 make_predict_glmnet_by_location <- function(){
-  predict_glmnet_by_location <- function(fit, X, offset, locs){
+  predict_glmnet_by_location <- function(fit, X, locs){
     preds <- numeric(length(locs))
     names(preds) <- as.character(locs)
     for ( loc in locs ){
@@ -329,8 +321,7 @@ make_predict_glmnet_by_location <- function(){
       loc_chr <- as.character(loc)
       fit_loc <- fit[[loc_chr]]
       X_loc <- X[loc_indices,,drop = F]
-      offset_loc <- offset[loc_indices]
-      preds[loc_chr] <- predict(fit_loc, newx = X_loc, newoffset = offset_loc)[1]
+      preds[loc_chr] <- predict(fit_loc, newx = X_loc)[1]
     }
     return(preds)
   }
