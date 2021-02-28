@@ -162,9 +162,9 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     
     train_locs <- (YX_use %>% pull(location))[train_indices]
     train_t <- t[train_indices]
-    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, ...)
+    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t)
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
-                               preds = modeler$predicter(fit  = fit, X = X_test, ...))
+                               preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
   df_final <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1]) %>%
     left_join(bind_rows(preds), by = c("location", "time_value"))
