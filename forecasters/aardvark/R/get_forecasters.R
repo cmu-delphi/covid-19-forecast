@@ -32,7 +32,6 @@ get_forecasters <- function(signals, ahead){
   
   smoother <- make_kernel_smoother()
   aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
-  
   model_fitter <- make_cv_glmnet()
   model_predicter <- make_predict_glmnet()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
