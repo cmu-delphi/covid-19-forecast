@@ -169,7 +169,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
                                preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
-  df_final <- expand_grid(locations, time_value = target_dates, strata = df_use$strata[1]) %>%
+  df_final <- expand_grid(locations, time_value = target_dates) %>%
     left_join(bind_rows(preds), by = c("location", "time_value"))
   return(df_final)
 }
