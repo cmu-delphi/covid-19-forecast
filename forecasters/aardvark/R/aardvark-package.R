@@ -7,8 +7,8 @@
 #' all geo-locations, after some time-alignment is performed as a preprocessing step to facilitate 
 #' comparison between locations. Heavier weight is placed on more recent training data, to account 
 #' for nonstationarity in the underlying process. A lasso penalty is added to induce variable 
-#' selection and prevent overfitting. Quantiles are computed using a residual (Gaussian) 
-#' bootstrap, separately for each location.
+#' selection and prevent overfitting. Quantiles of the forecast distribution are computed using a 
+#' residual (Gaussian) bootstrap, separately for each location.
 #'
 #' @name aardvark-package
 #' @docType package
