@@ -15,8 +15,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
       bind_rows %>%
       distinct %>%
-      mutate(value = as.double(value)) %>%
-      filter( !(geo_value %in% c("hi","dc","vt")) )
+      mutate(value = as.double(value)) #%>%
+      #filter( !(geo_value %in% c("hi","dc","vt")) )
     
     df_train_smoothed <- expand_grid(distinct(select(df_train, location)),
                                      time_value = unique(df_train$time_value),
@@ -27,6 +27,8 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
       group_modify(~ smoother(.x)) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
+    
+    saveRDS(df_train_smoothed, file = "~/Desktop/df.rds")
     
     if ( geo_type == "nation" ){
       df_train_smoothed <- df_train_smoothed %>%
