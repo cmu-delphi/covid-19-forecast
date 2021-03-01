@@ -231,11 +231,7 @@ make_cv_glmnet <- function(){
   cv_glmnet <- function(Y, X, wts, locs, n_folds = 10, ...){
     stopifnot(is.character(locs))
     variable_names <- colnames(X)
-    penalty_factor <- case_when(
-      grepl("location", variable_names) ~ 1,
-      TRUE                             ~ 0 
-    )
-    
+    penalty_factor <- case_when( grepl("location", variable_names) ~ 1, TRUE ~ 0 )
     if ( all(penalty_factor == 0) ){
       penalty_factor <- rep(1, length(penalty_factor))
     }
@@ -244,7 +240,6 @@ make_cv_glmnet <- function(){
     fold_for_each_loc <- rep(1:n_folds, length.out = length(unique_locs))
     names(fold_for_each_loc) <- unique_locs
     fold_id <- sapply(locs, FUN = function(loc){which(names(fold_for_each_loc) == loc)})
-  
     glmnet.control(fdev = 0, mnlam = 100)
     cv.glmnet(x = X, y = Y, alpha = 1, weights = wts, offset = NULL,
               penalty.factor = penalty_factor, intercept = FALSE,
