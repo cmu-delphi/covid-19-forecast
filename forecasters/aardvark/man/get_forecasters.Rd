@@ -2,15 +2,9 @@
 % Please edit documentation in R/get_forecasters.R
 \name{get_forecasters}
 \alias{get_forecasters}
-\title{Return the aardvark forecaster}
+\title{Return the desired forecaster function}
 \usage{
-get_forecasters(
-  signals,
-  ahead,
-  kern = "tophat",
-  strata_alpha = 0.5,
-  bandwidth = 7
-)
+get_forecasters(signals, ahead)
 }
 \arguments{
 \item{signals}{Tibble with columns \code{data_source}, \code{signal}, 
@@ -20,13 +14,6 @@ and first row is taken to be the response.}
 
 \item{ahead}{The number of incidence periods ahead to forecast the response.
 For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
-
-\item{kern}{The type of kernel to use for smoothing the signals. Right now, 
-just "tophat", i.e. boxcar}
-
-\item{strata_alpha}{Stratification proportion parameter}
-
-\item{bandwidth}{Kernel bandwidth (in days) for the local weighting kernel}
 }
 \value{
 A list with an element named \code{aardvark_forecaster}, 
