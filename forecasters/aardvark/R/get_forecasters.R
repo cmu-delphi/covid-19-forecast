@@ -31,7 +31,7 @@ get_forecasters <- function(signals, ahead){
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
   smoother <- make_kernel_smoother()
-  aligner <- make_time_aligner(alignment_variable = cases, threshold = 0, ahead = ahead)
+  aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 100)
   model_fitter <- make_fv_glmnet_by_location()
   model_predicter <- make_predict_glmnet_by_location()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
