@@ -1,0 +1,41 @@
+---
+title: "Zyzzyva Trajectory Plots"
+author: "Delphi County Cases, Forecast on:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+params:
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
+  today: !r Sys.getenv("TODAY")
+  output_dir: "/mnt"
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(evalcast)
+library(ggplot2)
+
+##zyzzyva <- readRDS("~/Downloads/zyzzyva_predictions_for_2021-02-15.RDS")
+zyzzyva <- readRDS(file.path(params$output_dir, sprintf("zyzzyva_predictions_for_%s.RDS", params$forecast_date)))
+```
+
+## Showing 50/80/95% Quantiles
+
+```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE}
+simple_labs <- function(geo_value) {
+  sl <- covidcast::fips_to_name(geo_value)
+  sl <- gsub(" County| city| Parish", "", sl)
+  state <- evalcast:::fips_2_abbr(substr(names(sl), 1, 2))
+  paste(sl, toupper(state))
+}
+
+tp <- plot_trajectory(zyzzyva, 
+                      plot_it = FALSE,
+                      start_day = lubridate::ymd(params$today) - lubridate::days(x = 90))
+
+tp + theme_bw(base_size = 20) + 
+  scale_fill_viridis_d() + 
+  scale_colour_viridis_d() +
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5,
+             labeller = labeller(geo_value = simple_labs)) +
+  theme(legend.position = "none") + ylab("") + xlab("")
+```
+
