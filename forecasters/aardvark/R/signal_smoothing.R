@@ -1,4 +1,4 @@
-make_kernel_smoother <- function(h, kern = c("tophat"), first_date = NULL, last_date = NULL){
+make_kernel_smoother <- function(h = 7, kern = "tophat", first_date = NULL, last_date = NULL){
   # Inputs:
   # -- h: bandwidth (number of trailing days to smooth over)
   # -- kernel: name of smoothing kernel to use

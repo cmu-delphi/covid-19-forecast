@@ -1,4 +1,4 @@
-#' Return the aardvark forecaster
+#' Return the desired forecaster function
 #'
 #' @description The \link[evalcast]{evalcast-package} production 
 #'     evaluator will first call this function to determine all the forecasters
@@ -13,10 +13,6 @@
 #'     and first row is taken to be the response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
-#' @param kern The type of kernel to use for smoothing the signals. Right now, 
-#'     just "tophat", i.e. boxcar
-#' @param strata_alpha Stratification proportion parameter
-#' @param bandwidth Kernel bandwidth (in days) for the local weighting kernel
 #' @return A list with an element named \code{aardvark_forecaster}, 
 #'     which is itself a list consisting of the forecaster function and a \code{type} 
 #'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} 
@@ -29,20 +25,17 @@
 #'     ahead <- 1
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
+get_forecasters <- function(signals, ahead){
 
-get_forecasters <- function(signals, ahead, kern = "tophat", strata_alpha = 0.5, bandwidth = 7){
+  response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
+  cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
-  response <- paste(signals$data_source[1], signals$signal[1], sep = "-")
-  cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "-")
-  
-  smoother <- make_kernel_smoother(h = 7, kern = kern)
-  stratifier <- make_stratifier_by_n_responses(alpha = strata_alpha)
-  aligner <- make_time_aligner(alignment_variable = cases, threshold = 500, ahead = ahead)
-  
-  model_fitter <- make_cv_glmnet(alpha = 1)
-  model_predicter <- make_predict_glmnet(lambda_choice = "lambda.min")
+  smoother <- make_kernel_smoother()
+  aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 5000)
+  model_fitter <- make_cv_glmnet()
+  model_predicter <- make_predict_glmnet()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
-  bootstrapper <- make_by_location_gaussian_bootstrap_weekly(weighted.mean, bandwidth = 14)
+  bootstrapper <- make_by_location_gaussian_bootstrap_weekly()
   
   features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
   if ( ahead == 1 ){
@@ -55,9 +48,7 @@ get_forecasters <- function(signals, ahead, kern = "tophat", strata_alpha = 0.5,
                                                   features = features,
                                                   smoother = smoother,
                                                   aligner = aligner,
-                                                  stratifier = stratifier,
                                                   modeler = modeler,
-                                                  bandwidth = bandwidth,
                                                   bootstrapper = bootstrapper)
 
   return(list(aardvark_forecaster = list(forecaster = aardvark_forecaster, type = "standalone")))
