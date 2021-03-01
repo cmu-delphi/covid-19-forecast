@@ -1,4 +1,4 @@
-make_time_aligner <- function(alignment_variable, threshold, ahead){
+make_time_aligner <- function(alignment_variable, ahead, threshold = 0){
 
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
 
