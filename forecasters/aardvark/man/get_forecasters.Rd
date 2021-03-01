@@ -4,7 +4,7 @@
 \alias{get_forecasters}
 \title{Return the desired forecaster function}
 \usage{
-get_forecasters(signals, ahead)
+get_forecasters(geo_type = "state", signals, ahead)
 }
 \arguments{
 \item{signals}{Tibble with columns \code{data_source}, \code{signal}, 
@@ -23,17 +23,18 @@ A list with an element named \code{aardvark_forecaster},
     \code{list(forecaster = NA, type = "standalone")}.
 }
 \description{
-The \link[evalcast]{evalcast-package} production 
-    evaluator will first call this function to determine all the forecasters
-    available for the given parameter specifications. It expects to get back 
-    a named list of lists of forecaster functions and types. If a forecaster 
-    function is not available for a given set of parameters, an 
-    \code{NA} should returned instead of a function. This tells the 
-    evaluator to ignore that forecaster in that run.
+The \link[evalcast]{evalcast-package} production evaluator 
+    will first call this function to determine all the forecasters available
+    for the given parameter specifications. It expects to get back a named 
+    list of lists of forecaster functions and types. If a forecaster function 
+    is not available for a given set of parameters, an \code{NA} should 
+    returned instead of a function. This tells the evaluator to ignore that
+    forecaster in that run.
 }
 \examples{
-    signals <- dplyr::tibble(data_source = "jhu-csse",
+    state_signals <- dplyr::tibble(data_source = "jhu-csse",
     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
     ahead <- 1
-    aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+    state_forecaster <- aardvark::get_forecasters(geo_type = "state", signals = state_signals, 
+                                                  ahead = ahead)[[1]]$forecaster
 }

@@ -1,12 +1,12 @@
 #' Return the desired forecaster function
 #'
-#' @description The \link[evalcast]{evalcast-package} production 
-#'     evaluator will first call this function to determine all the forecasters
-#'     available for the given parameter specifications. It expects to get back 
-#'     a named list of lists of forecaster functions and types. If a forecaster 
-#'     function is not available for a given set of parameters, an 
-#'     \code{NA} should returned instead of a function. This tells the 
-#'     evaluator to ignore that forecaster in that run.
+#' @description The \link[evalcast]{evalcast-package} production evaluator 
+#'     will first call this function to determine all the forecasters available
+#'     for the given parameter specifications. It expects to get back a named 
+#'     list of lists of forecaster functions and types. If a forecaster function 
+#'     is not available for a given set of parameters, an \code{NA} should 
+#'     returned instead of a function. This tells the evaluator to ignore that
+#'     forecaster in that run.
 #' @param signals Tibble with columns \code{data_source}, \code{signal}, 
 #'     \code{start_day} that specify which variables from the COVIDcast API will 
 #'     be used by forecaster. Each row of signals represents a separate signal, 
@@ -20,30 +20,47 @@
 #'     \code{list(forecaster = NA, type = "standalone")}.
 #' @export get_forecasters
 #' @examples 
-#'     signals <- dplyr::tibble(data_source = "jhu-csse",
+#'     state_signals <- dplyr::tibble(data_source = "jhu-csse",
 #'     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
 #'     ahead <- 1
-#'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
+#'     state_forecaster <- aardvark::get_forecasters(geo_type = "state", signals = state_signals, 
+#'                                                   ahead = ahead)[[1]]$forecaster
 
-get_forecasters <- function(signals, ahead){
+get_forecasters <- function(geo_type = "state", signals, ahead){
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
+  if ( geo_type == "state" ){
+    
+    features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
+    if ( ahead == 1 ){
+      features[["lag"]] <- rep(c(1, 7, 14), times = 2)
+    }else{
+      features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
+    }
+    
+    aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 5000)
+  }
+  
+  if ( geo_type == "county" ){
+    
+    features <- tibble(variable_name = rep(response, 3))
+    if ( ahead == 1 ){
+      features[["lag"]] <- c(1, 7, 14)
+    }else{
+      features[["lag"]] <- c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7)
+    }
+    
+    aligner <- make_time_aligner(alignment_variable = response, ahead = ahead, threshold = 50)
+  }
+  
   smoother <- make_kernel_smoother()
-  aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 5000)
   model_fitter <- make_cv_glmnet()
   model_predicter <- make_predict_glmnet()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
-  bootstrapper <- make_by_location_gaussian_bootstrap_weekly()
+  bootstrapper <- make_gaussian_bootstrap_by_geo_value()
   
-  features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
-  if ( ahead == 1 ){
-    features[["lag"]] <- rep(c(1, 7, 14), times = 2)
-  }else{
-    features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
-  }
-
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
                                                   smoother = smoother,

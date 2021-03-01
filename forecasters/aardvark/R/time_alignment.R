@@ -7,20 +7,20 @@ make_time_aligner <- function(alignment_variable, ahead, threshold = 500){
     
     day0 <- df_alignment_variable %>% 
       arrange(geo_value, time_value) %>%
-      group_by(location, geo_value, variable_name) %>%
+      group_by(geo_value, variable_name) %>%
       mutate(cumul_value = cumsum(value)) %>%
       arrange(variable_name, geo_value, time_value) %>%
       filter(cumul_value >= threshold) %>%
-      group_by(location) %>%
+      group_by(geo_value) %>%
       summarize(value = min(time_value), .groups = "drop")
 
-    locations <- df_use %>% pull(location) %>% unique
+    geo_values <- df_use %>% pull(geo_value) %>% unique
     train_dates <- df_use %>% pull(time_value) %>% unique
     target_dates <-  get_target_period(forecast_date, incidence_period = "epiweek", ahead) %$%
       seq(start, end, by = "days")
     dates <- unique(c(train_dates, target_dates))
-    df_align <- expand_grid(location = locations, time_value = dates) %>% 
-      left_join(day0, by = "location") %>%
+    df_align <- expand_grid(geo_value = geo_values, time_value = dates) %>% 
+      left_join(day0, by = "geo_value") %>%
       mutate(align_date = ifelse(time_value - value >= 0, time_value - value, NA)) %>%
       select(-value)
     

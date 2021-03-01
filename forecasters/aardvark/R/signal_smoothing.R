@@ -1,4 +1,4 @@
-make_kernel_smoother <- function(h = 7, kern = "tophat", first_date = NULL, last_date = NULL){
+make_kernel_smoother <- function(h = 7, kern = "boxcar", first_date = NULL, last_date = NULL){
   # Inputs:
   # -- h: bandwidth (number of trailing days to smooth over)
   # -- kernel: name of smoothing kernel to use
@@ -7,7 +7,7 @@ make_kernel_smoother <- function(h = 7, kern = "tophat", first_date = NULL, last
   
   kern <- match.arg(kern)
 
-  if ( kern == "tophat" ){
+  if ( kern == "boxcar" ){
     
     kernel_smoother <- function(dat){
       
@@ -22,7 +22,7 @@ make_kernel_smoother <- function(h = 7, kern = "tophat", first_date = NULL, last
       full_df <- left_join(date_df, dat, by = c("time_value"))
       
       smoothed_dat <- full_df %>%
-        group_by(location) %>%
+        group_by(geo_value) %>%
         arrange(time_value) %>%
         mutate(smoothed_value = rollmean(value, h, align = "right", fill = "extend")) %>%
         ungroup

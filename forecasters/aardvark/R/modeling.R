@@ -18,10 +18,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
       distinct %>%
       mutate(value = as.double(value))
     
-    df_train_smoothed <- expand_grid(distinct(select(df_train, location)),
+    df_train_smoothed <- expand_grid(distinct(select(df_train, geo_value)),
                                      time_value = unique(df_train$time_value),
                                      variable_name = unique(df_train$variable_name)) %>%
-      left_join(df_train, by = c("location", "time_value", "variable_name")) %>%
+      left_join(df_train, by = c("geo_value", "time_value", "variable_name")) %>%
       mutate(value = if_else(is.na(value), replace_na(value, 0), value)) %>%
       group_by(variable_name) %>%
       group_modify(~ smoother(.x)) %>% 
@@ -30,10 +30,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
     
     if ( geo_type == "nation" ){
       df_train_smoothed <- df_train_smoothed %>%
-        select(-c(location, geo_value)) %>%
+        select(-geo_value) %>%
         group_by(variable_name, time_value) %>%
         summarise(original_value = sum(original_value), value = sum(value), .groups = "drop") %>%
-        mutate(location = "00", geo_value = "us")
+        mutate(geo_value = "us")
     }
 
     df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, bandwidth, forecast_date, 
@@ -41,9 +41,9 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
                                            modeler, bootstrapper, covidhub_probs, features, 
                                            alignment_variable)
     
-    predictions <- expand_grid(unique(df_train_smoothed %>% select(location, geo_value)),
+    predictions <- expand_grid(unique(df_train_smoothed %>% select(geo_value)),
                                probs = covidhub_probs) %>% 
-      left_join(df_preds, by = c("location", "probs")) %>%
+      left_join(df_preds, by = c("geo_value", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
       rename(quantile = probs, value = quantiles) %>%
       select(ahead, geo_value, quantile, value) %>% 
@@ -74,22 +74,22 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
     df_train_use <- df_train_use %>% mutate(observed_value = value)
     df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                         ahead, response, features) %>%
-      left_join(df_align, by = c("location", "time_value"))
+      left_join(df_align, by = c("geo_value", "time_value"))
     point_preds_list[[itr]] <- df_with_lags %>%
       local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr], 
                                             incidence_period, ahead, features, df_align, modeler) %>%
-      left_join(df_use %>% filter(variable_name == response) %>% select(location, time_value, value),
-                by = c("location", "time_value")) %>%
+      left_join(df_use %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
+                by = c("geo_value", "time_value")) %>%
       rename(observed_value = value)
   }
   
   df_point_preds <- bind_rows(point_preds_list)
   df_bootstrap_preds <- bootstrapper(df_point_preds, forecast_date, incidence_period, ahead) %>%
-    pivot_longer(-c(location, time_value), names_to = "replicate", values_to = "value") %>% 
-    group_by(location, replicate) %>%
+    pivot_longer(-c(geo_value, time_value), names_to = "replicate", values_to = "value") %>% 
+    group_by(geo_value, replicate) %>%
     summarize(value = sum(pmax(value, 0)), .groups = "drop")
   preds_df <- df_bootstrap_preds %>% 
-    group_by(location) %>% 
+    group_by(geo_value) %>% 
     group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
   return(preds_df)
 }
@@ -99,12 +99,12 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
 local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, forecast_date, 
                                                   incidence_period, ahead, features, df_align, modeler){
   response_name <- paste0(response, "_lag_0")
-  locations <- df_use %>% 
+  geo_values <- df_use %>% 
     filter(variable_name == all_of(response_name)) %>% 
-    select(location, geo_value) %>% 
+    select(geo_value) %>% 
     distinct
   YX <- df_use %>% 
-    select(location, align_date, time_value, variable_name, value) %>% 
+    select(geo_value, align_date, time_value, variable_name, value) %>% 
     filter(!is.na(align_date)) %>%
     pivot_wider(names_from = "variable_name", values_from = "value") %>%
     rename(response = response_name, date = align_date)
@@ -124,7 +124,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
   target_dates <- get_target_period(forecast_date, incidence_period, ahead) %$%
     seq(start, end, by = "days")
   dates <- df_align %>% 
-    filter(location %in% locations$location, time_value %in% target_dates) %>%
+    filter(geo_value %in% geo_values$geo_value, time_value %in% target_dates) %>%
     pull(align_date) %>% 
     unique
 
@@ -132,7 +132,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
   for ( itr in 1:length(dates) ){
     YX_use <- YX %>% mutate(t = as.numeric(date - dates[itr])) 
     forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates)
-    forecast_locs <- YX_use[forecast_rows,] %>% pull(location)
+    forecast_locs <- YX_use[forecast_rows,] %>% pull(geo_value)
     forecast_time_values <- YX_time_values[forecast_rows]
     stopifnot(unique(forecast_locs) == forecast_locs)
     YX_use <- YX_use %>% select(-date)
@@ -145,15 +145,15 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     Y_train <- (YX_use %>% pull(response))[train_indices]
     wts_train <- wts[train_indices]
     X_test <- X_train_test[forecast_rows,,drop = F]
-    train_locs <- (YX_use %>% pull(location))[train_indices]
+    train_locs <- (YX_use %>% pull(geo_value))[train_indices]
     train_t <- t[train_indices]
     
     check <- try(fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t))
-    preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
+    preds[[itr]] <- data.frame(geo_value = forecast_locs, time_value = forecast_time_values,
                                preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
-  df_final <- expand_grid(locations, time_value = target_dates) %>%
-    left_join(bind_rows(preds), by = c("location", "time_value"))
+  df_final <- expand_grid(geo_values, time_value = target_dates) %>%
+    left_join(bind_rows(preds), by = c("geo_value", "time_value"))
   return(df_final)
 }
 
@@ -161,17 +161,17 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
 reformat_df <- function(df, column){
   df %>% select(names(df)[c(1, 2, column)]) %>%
     mutate(variable_name = strsplit(names(df)[column], ":")[[1]][2]) %>%
-    rename(value = names(df)[column]) %>% mutate(location = evalcast:::abbr_2_fips(geo_value)) %>%
-    select(location, geo_value, variable_name, value, time_value)
+    rename(value = names(df)[column]) %>%
+    select(geo_value, variable_name, value, time_value)
 }
 
 #' @importFrom evalcast get_target_period
 #' @import purrr
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
   df_use <- df_use %>% filter(variable_name %in% c(features$variable_name, response))
-  locations <- df_use %>% 
+  geo_values <- df_use %>% 
     filter(variable_name == response) %>% 
-    select(location, geo_value) %>% 
+    select(geo_value) %>% 
     distinct %>% 
     arrange(geo_value)
   target_period <- get_target_period(forecast_date, incidence_period, ahead)
@@ -186,9 +186,9 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
   feature_names <- paste0(features$variable_name, "_lag_", features$lag)
   response_name <- paste0(response, "_lag_", 0)
   
-  df_with_lags <- expand_grid(locations, time_value = all_dates, variable_name = variables) %>%
-    left_join(df_use, by = c("location", "geo_value", "time_value", "variable_name")) %>%
-    group_by(location, variable_name) %>%
+  df_with_lags <- expand_grid(geo_values, time_value = all_dates, variable_name = variables) %>%
+    left_join(df_use, by = c("geo_value", "time_value", "variable_name")) %>%
+    group_by(geo_value, variable_name) %>%
     arrange(time_value) %>%
     mutate_at(.vars = vars(value), .funs = lag_functions) %>%
     ungroup() %>%
@@ -204,15 +204,15 @@ make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, 
 
 model_matrix <- function(dat, features = NULL){
   X_frame <- dat %>% select(-response)
-  if ( length(unique(X_frame$location)) > 1 ){
+  if ( length(unique(X_frame$geo_value)) > 1 ){
     X_formula <- model_formula(features)
     X_train <- Matrix::Matrix( model.matrix(X_formula, X_frame), sparse = T)
   } else{
-    if ( all(names(X_frame) == "location") ){
+    if ( all(names(X_frame) == "geo_value") ){
       X_train <- matrix(0, ncol = 1, nrow = nrow(X_frame))
       colnames(X_train) <- "zero_col"
     } else{
-      X_train <- data.matrix(X_frame %>% select(-location))
+      X_train <- data.matrix(X_frame %>% select(-geo_value))
     }
   }
   return(X_train)
@@ -262,8 +262,8 @@ make_predict_glmnet <- function(){
 }
 
 #' @importFrom stats var
-make_fv_glmnet_by_location <- function(n_validation = 14){
-  fv_glmnet_by_location <- function(Y, X = NULL, wts = rep(1,length(Y)), locs, t){
+make_fv_glmnet_by_geo_value <- function(n_validation = 14){
+  fv_glmnet_by_geo_value <- function(Y, X = NULL, wts = rep(1,length(Y)), locs, t){
     fits <- list()
     for ( loc in unique(locs) ){
       loc_indices <- which(locs %in% loc)
@@ -290,8 +290,8 @@ make_fv_glmnet_by_location <- function(n_validation = 14){
   }
 }
 
-make_predict_glmnet_by_location <- function(){
-  predict_glmnet_by_location <- function(fit, X, locs){
+make_predict_glmnet_by_geo_value <- function(){
+  predict_glmnet_by_geo_value <- function(fit, X, locs){
     preds <- numeric(length(locs))
     names(preds) <- as.character(locs)
     for ( loc in locs ){
