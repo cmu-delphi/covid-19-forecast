@@ -4,7 +4,7 @@ test_that("aardvark state corrector works", {
   sigs <- suppressMessages(covidcast::covidcast_signals(
     "jhu-csse",
     c("deaths_incidence_num", "confirmed_incidence_num"),
-    "2021-01-01",
+    "2020-11-01",
     "2021-02-15",
     "state"
   ))

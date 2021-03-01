@@ -169,16 +169,21 @@ aardvark_state_corrections_single_signal <- function(x, params) {
       flag_bad_OH = (.data$geo_value == "oh" & .data$signal == "deaths_incidence_num") &
         (.data$time_value %in% seq(ymd("2021-02-12"),
                                    ymd("2021-02-14"), length.out = 3)),
+      flag_bad_VA = (.data$geo_value == "va" & .data$signal == "deaths_incidence_num") &
+        (.data$time_value > ymd("2021-02-20")),
       corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
       corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_WA, .data$time_value, 14),
       corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_OH, .data$time_value, 60),
+      corrected = corrections_multinom_roll(
+        .data$value, .data$value, .data$flag_bad_VA, .data$time_value, 60),
       corrected = corrections_multinom_roll( # for everywhere else
         .data$corrected, .data$value,
         (.data$flag &
-           !.data$flag_bad_RI & !.data$flag_bad_WA & !.data$flag_bad_OH),
+           !.data$flag_bad_RI & !.data$flag_bad_WA &
+           !.data$flag_bad_OH & !.data$flag_bad_VA),
         .data$time_value, params$backfill_lag,
         reweight = function(x) exp_w(x, params$backfill_lag)),
       corrected = .data$corrected + # imputes forward if necessary
