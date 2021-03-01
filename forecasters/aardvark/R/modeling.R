@@ -15,8 +15,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
       bind_rows %>%
       distinct %>%
-      mutate(value = as.double(value)) #%>%
-      #filter( !(geo_value %in% c("hi","dc","vt")) )
+      mutate(value = as.double(value))
     
     df_train_smoothed <- expand_grid(distinct(select(df_train, location)),
                                      time_value = unique(df_train$time_value),

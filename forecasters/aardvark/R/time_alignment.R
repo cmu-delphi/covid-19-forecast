@@ -1,4 +1,4 @@
-make_time_aligner <- function(alignment_variable, ahead, threshold = 0){
+make_time_aligner <- function(alignment_variable, ahead, threshold = 500){
 
   days_since_threshold_attained_first_time_aligner <- function(df_use, forecast_date){
 
@@ -6,10 +6,13 @@ make_time_aligner <- function(alignment_variable, ahead, threshold = 0){
     df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
     
     day0 <- df_alignment_variable %>% 
-      filter(value >= threshold) %>%
-      select(-value) %>%
+      arrange(geo_value, time_value) %>%
+      group_by(location, geo_value, variable_name) %>%
+      mutate(cumul_value = cumsum(value)) %>%
+      arrange(variable_name, geo_value, time_value) %>%
+      filter(cumul_value >= threshold) %>%
       group_by(location) %>%
-      summarise(value = min(time_value), .groups = "drop")
+      summarize(value = min(time_value), .groups = "drop")
 
     locations <- df_use %>% pull(location) %>% unique
     train_dates <- df_use %>% pull(time_value) %>% unique
