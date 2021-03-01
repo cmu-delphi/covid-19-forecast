@@ -66,7 +66,10 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
     forecast_dates <- forecast_date
   }
   
-  save.image(file = "~/Desktop/workspace.rds")
+  save(df_use, response, bandwidth, forecast_date, 
+       incidence_period, ahead, smoother, aligner, 
+       modeler, bootstrapper, covidhub_probs, features, 
+       alignment_variable, file = "~/Desktop/workspace.rds")
 
   point_preds_list <- list()
   for ( itr in 1:length(forecast_dates) ){
@@ -282,7 +285,7 @@ make_fv_glmnet_by_location <- function(n_validation = 14){
       X_loc_validation <- X_loc[validation_indices,]
       wts_loc_validation <- wts_loc[validation_indices]
       glmnet.control(fdev = 0, mnlam = 100)
-      candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train, alpha = 1, weights = wts_loc_train, intercept = TRUE, nlambda = 250)
+      candidate_fits <- glmnet(x = X_loc_train, y = Y_loc_train, alpha = 1, weights = wts_loc_train, intercept = TRUE, nlambda = 100)
       error_validation_set <- colMeans( abs((Y_loc_validation - predict(candidate_fits, newx = X_loc_validation)) ))
       optimal_lambda <- candidate_fits$lambda[which.min(error_validation_set)]
       optimal_lambda <- ifelse(is.na(optimal_lambda), 0, optimal_lambda) 
