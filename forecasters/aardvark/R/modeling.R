@@ -219,13 +219,11 @@ model_matrix <- function(dat, features = NULL){
 }
 
 model_formula <- function(features){
-  main_effect_features <- features %>% 
+  features <- features %>% 
     mutate(feature_name = paste0(variable_name, "_lag_", lag)) %>%
     mutate(feature_name = if_else(grepl("-", feature_name), paste0("`", feature_name, "`"),
                                   feature_name)) %>% pull(feature_name)
-  main_effect_chr <- paste0(main_effect_features, collapse = " + ")
-  main_effect_chr <- paste0(main_effect_chr, "- 1")
-  formula_chr <- paste0("~ ", main_effect_chr)
+  formula_chr <- paste0("~ ", paste0(features, collapse = " + "), "- 1")
   return(as.formula(formula_chr))
 }
 
@@ -251,13 +249,6 @@ make_cv_glmnet <- function(){
     cv.glmnet(x = X, y = Y, alpha = 1, weights = wts, offset = NULL,
               penalty.factor = penalty_factor, intercept = FALSE,
               nfolds = n_folds, foldid = fold_id, type.measure = "mae")
-  }
-}
-
-make_predict_glmnet <- function(){
-  predict_glmnet <- function(fit, X, ...){
-    preds <- predict(fit, newx = X, s = "lambda.min")[,1]
-    return(preds)
   }
 }
 
@@ -287,6 +278,13 @@ make_fv_glmnet_by_geo_value <- function(n_validation = 14){
       fits[[as.character(loc)]] <- glmnet(x = X_loc, y = Y_loc, alpha = 1, weights = wts_loc, intercept = TRUE, lambda = optimal_lambda)
     }
     return(fits)
+  }
+}
+
+make_predict_glmnet <- function(){
+  predict_glmnet <- function(fit, X, ...){
+    preds <- predict(fit, newx = X, s = "lambda.min")[,1]
+    return(preds)
   }
 }
 
