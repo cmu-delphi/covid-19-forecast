@@ -1,23 +1,25 @@
 
-na_replace <- function(a,b){
+na_replace <- function(a, b) {
   stopifnot(length(a) == length(b) || length(b) == 1)
   a[is.na(a)] <- b[is.na(a)]
   a
 }
 
 
-exp_w <- function(x, std_decay = 30, b0 = 8, a = exp(1)/2){
+exp_w <- function(x, std_decay = 30, b0 = 8, a = exp(1) / 2){
   stopifnot(length(x) <= std_decay)
-  w <- (1:std_decay)/std_decay
+  w <- (1:std_decay) / std_decay
   w <- tail(w, length(x))
-  1 / (1 + exp(-w*b0 + a))
+  1 / (1 + exp(-w * b0 + a))
 }
 
-missing_future <- function(selector, time_value, excess, preds){
+missing_future <- function(selector, time_value, excess, preds) {
+  if (!any(excess > 0)) return(0L)
   local_tail <- (selector & time_value > time_value[max(which(excess > 0))])
   if (!any(local_tail)) return(0L)
-  tot <- round(sum(preds[local_tail]))
-  rmultinom(1, tot, as.numeric(local_tail))
+  tot <- round(sum(preds[local_tail], na.rm = TRUE))
+  if (tot <= 0) return(0L)
+  stats::rmultinom(1, tot, as.numeric(local_tail))
 }
 
 replace_manual <- function(selector, original, replacement) {
@@ -54,7 +56,7 @@ corrections_multinom_roll <- function(
                     sum(expectations[ii_lag], na.rm = TRUE), 0)
     bin_w[is.na(bin_w)] <- 0
 
-    if (all(bin_w == 0)) bin_w <- rep(1/length(ii_lag), times = length(ii_lag))
+    if (all(bin_w == 0)) bin_w <- rep(1 / length(ii_lag), times = length(ii_lag))
 
     #reweight bin_w
     zz <- reweight(bin_w)

@@ -26,7 +26,7 @@
 #'     aardvark_forecaster <- aardvark::get_forecasters(signals = signals, ahead = ahead)[[1]]$forecaster
 
 get_forecasters <- function(signals, ahead){
-  
+
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
