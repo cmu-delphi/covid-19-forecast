@@ -151,6 +151,9 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     train_t <- t[train_indices]
     
     check <- try(fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t))
+    if ( class(check) == "try-error" ){
+      save(Y_train, X_train, wts_train, train_locs, train_t, YX_use, df_use)
+    }
     preds[[itr]] <- data.frame(location = forecast_locs, time_value = forecast_time_values,
                                preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
