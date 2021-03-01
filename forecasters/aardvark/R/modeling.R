@@ -66,11 +66,6 @@ local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_dat
     forecast_dates <- forecast_date
   }
   
-  save(df_use, response, bandwidth, forecast_date, 
-       incidence_period, ahead, smoother, aligner, 
-       modeler, bootstrapper, covidhub_probs, features, 
-       alignment_variable, file = "~/Desktop/workspace.rds")
-
   point_preds_list <- list()
   for ( itr in 1:length(forecast_dates) ){
 
