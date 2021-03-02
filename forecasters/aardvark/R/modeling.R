@@ -1,6 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother = NULL, 
                                      aligner = NULL, modeler = NULL, bandwidth = 7,
-                                     bootstrapper = NULL){
+                                     bootstrapper = NULL, geo_type_overwrite = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
@@ -10,6 +10,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
     incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
+    geo_type <- ifelse(geo_type_overwrite == "nation", "nation", geo_type)
 
     df <- df %>% aggregate_signals(format = "wide") 
     
