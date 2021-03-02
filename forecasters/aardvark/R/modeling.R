@@ -18,6 +18,11 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
       distinct %>%
       mutate(value = as.double(value))
     
+    if ( geo_type == "county" ){
+      df_train <- df_train %>% 
+        filter(geo_value %in% get_top_n_locations(df_train, response, 200))
+    }
+    
     df_train_smoothed <- expand_grid(distinct(select(df_train, geo_value)),
                                      time_value = unique(df_train$time_value),
                                      variable_name = unique(df_train$variable_name)) %>%
@@ -163,6 +168,31 @@ reformat_df <- function(df, column){
     mutate(variable_name = strsplit(names(df)[column], ":")[[1]][2]) %>%
     rename(value = names(df)[column]) %>%
     select(geo_value, variable_name, value, time_value)
+}
+
+get_top_n_locations <- function(df, response, n){
+  stopifnot(is.data.frame(df),
+            is.character(response),
+            is.numeric(n))
+  stopifnot(c("geo_value",
+              "time_value",
+              "variable_name",
+              "value") %in% names(df))
+  stopifnot(response %in% df$variable_name)
+  stopifnot(n > 0, n == round(n))
+  df_use <- df %>% select(geo_value, time_value, variable_name, value)
+  df_latest <- df_use %>%
+    filter(variable_name == response) %>%
+    group_by(geo_value, time_value) %>%
+    top_n(n = 1, wt = time_value) %>%
+    ungroup()
+  top_n_locations <- df_latest %>%
+    group_by(geo_value) %>%
+    summarise(value = sum(value, na.rm = T)) %>%
+    ungroup() %>%
+    top_n(n = !!n, wt = value) %>%
+    pull(geo_value)
+  return(top_n_locations)
 }
 
 #' @importFrom evalcast get_target_period
