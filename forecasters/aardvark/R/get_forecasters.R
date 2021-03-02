@@ -38,15 +38,15 @@ get_forecasters <- function(geo_type = "state", signals, ahead){
   
   if ( geo_type == "nation" ){
     
-    features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
+    features <- tibble(variable_name = rep(response, 3))
     if ( ahead == 1 ){
-      features[["lag"]] <- rep(c(1, 7, 14), times = 2)
+      features[["lag"]] <- c(1, 7, 14)
     }else{
-      features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
+      features[["lag"]] <- c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7)
     }
     
     aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 0)
-    model_fitter <- make_fv_glmnet_by_geo_value(n_validation = 28)
+    model_fitter <- make_fv_glmnet_by_geo_value(n_validation = 35)
     model_predicter <- make_predict_glmnet_by_geo_value()
   }
   
