@@ -46,7 +46,7 @@ get_forecasters <- function(geo_type = "state", signals, ahead){
     }
     
     aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 0)
-    model_fitter <- make_fv_glmnet_by_geo_value()
+    model_fitter <- make_fv_glmnet_by_geo_value(n_validation = 28)
     model_predicter <- make_predict_glmnet_by_geo_value()
   }
   

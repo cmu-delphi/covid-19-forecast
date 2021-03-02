@@ -279,7 +279,7 @@ make_cv_glmnet <- function(){
 }
 
 #' @importFrom stats var
-make_fv_glmnet_by_geo_value <- function(n_validation = 14){
+make_fv_glmnet_by_geo_value <- function(n_validation = 28){
   fv_glmnet_by_geo_value <- function(Y, X = NULL, wts = rep(1,length(Y)), locs, t){
     fits <- list()
     for ( loc in unique(locs) ){
