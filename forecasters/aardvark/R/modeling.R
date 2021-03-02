@@ -154,7 +154,7 @@ local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, f
     train_locs <- (YX_use %>% pull(geo_value))[train_indices]
     train_t <- t[train_indices]
     
-    check <- try(fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t))
+    fit <- modeler$fitter(Y = Y_train, X = X_train, wts = wts_train, locs = train_locs, t = train_t)
     preds[[itr]] <- data.frame(geo_value = forecast_locs, time_value = forecast_time_values,
                                preds = modeler$predicter(fit  = fit, X = X_test, locs = forecast_locs))
   }
