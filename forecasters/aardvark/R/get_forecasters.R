@@ -88,7 +88,7 @@ get_forecasters <- function(geo_type = "state", signals, ahead){
                                                   aligner = aligner,
                                                   modeler = modeler,
                                                   bootstrapper = bootstrapper,
-                                                  geo_type_overwrite = geo_type)
+                                                  geo_type_override = geo_type)
 
   return(list(aardvark_forecaster = list(forecaster = aardvark_forecaster, type = "standalone")))
 }
