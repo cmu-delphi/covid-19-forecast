@@ -48,6 +48,7 @@ corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 pd <- evalcast:::setup_plot_trajectory(
   aardvark, geo_type = "county",
   start_day = ymd(params$today) - days(x = 90))
+
 pd$truth_df <- left_join(
   pd$truth_df, corrected, 
   by = c("geo_value" = "geo_value", "target_end_date" = "time_value"))
