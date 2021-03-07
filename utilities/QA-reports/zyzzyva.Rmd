@@ -74,6 +74,7 @@ g <- g +
              color = "orange", size = 3)
 
 g + theme_bw(base_size = 20) + 
-  facet_wrap(~geo_value, scales = "free_y", ncol = 5) +
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5, 
+             labeller(geo_value = simple_labs)) +
   theme(legend.position = "none") + ylab("") + xlab("")
 ```
