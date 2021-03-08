@@ -9,7 +9,7 @@ params:
   output_dir: "/mnt"
 ---
 
-```{r setup, include=FALSE, echo=FALSE}
+```{r setup, include=FALSE, echo=FALSE, message=FALSE}
 library(evalcast)
 library(zookeeper)
 library(lubridate)
@@ -34,7 +34,7 @@ simple_labs <- function(geo_value) {
 * Blue line (without dots) is the "corrected" cases
 
 
-```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE}
+```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE, message=FALSE}
 # Grab corrected data
 zyz <- make_zyzzyva_corrector()
 corrected <- suppressMessages(covidcast::covidcast_signal(
@@ -75,6 +75,6 @@ g <- g +
 
 g + theme_bw(base_size = 20) + 
   facet_wrap(~geo_value, scales = "free_y", ncol = 5, 
-             labeller(geo_value = simple_labs)) +
+             labeller = labeller(geo_value = simple_labs)) +
   theme(legend.position = "none") + ylab("") + xlab("")
 ```
