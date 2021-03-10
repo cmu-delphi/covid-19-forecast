@@ -1,0 +1,57 @@
+---
+title: "zyzzyva-corrections"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(zookeeper)
+library(covidcast)
+library(tidyverse)
+library(lubridate)
+df <- suppressMessages(
+  covidcast_signal(
+    "usa-facts",
+    "confirmed_incidence_num",
+    start_day = Sys.Date() - 180,
+    geo_type = "county"
+  )
+)
+
+big_locs <- df %>% 
+  group_by(geo_value) %>%
+  summarise(total = sum(value)) %>%
+  slice_max(total, n = 250) %>% 
+  select(geo_value) %>%
+  pull()
+
+df <- df %>% filter(geo_value %in% big_locs)
+
+aad <- make_zyzzyva_corrector(corrections_db_path = "zyzzyva-corrections.RDS")
+corrected <- aad(df)
+corrected <- readRDS("zyzzyva-corrections.RDS") %>%
+  filter(time_value > Sys.Date() - duration(3, "months")) %>%
+  select(-data_source) %>%
+  pivot_longer(value:corrected)
+
+simple_labs <- function(geo_value) {
+  sl <- covidcast::fips_to_name(geo_value)
+  sl <- gsub(" County| city| Parish", "", sl)
+  state <- evalcast:::fips_2_abbr(substr(names(sl), 1, 2))
+  paste(sl, toupper(state))
+}
+```
+
+```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
+corrected %>% 
+  ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
+  geom_point(data = filter(corrected, flag), aes(y = value), color="orange") +
+  facet_wrap(~geo_value , scales = "free", ncol = 3, 
+             labeller = labeller(geo_value = simple_labs)) +
+  theme_bw() + xlab("") + ylab("") +
+  scale_color_viridis_d(begin=.25, end=.75) + 
+  theme(legend.position = "none") +
+  scale_x_date(date_breaks = "months" , date_labels = "%b")
+```
+
+
+

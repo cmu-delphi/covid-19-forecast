@@ -1,0 +1,80 @@
+---
+title: "Zyzzyva Trajectory Plots"
+author: "Delphi County Cases, Forecast on:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+params:
+  forecast_date: !r Sys.getenv("FORECAST_DATE")
+  today: !r Sys.getenv("TODAY")
+  output_dir: "/mnt"
+---
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE}
+library(evalcast)
+library(zookeeper)
+library(lubridate)
+library(tidyverse)
+
+zyzzyva <- readRDS(file.path(
+  params$output_dir, 
+  sprintf("zyzzyva_predictions_for_%s.RDS", params$forecast_date)))
+
+simple_labs <- function(geo_value) {
+  sl <- covidcast::fips_to_name(geo_value)
+  sl <- gsub(" County| city| Parish", "", sl)
+  state <- evalcast:::fips_2_abbr(substr(names(sl), 1, 2))
+  paste(sl, toupper(state))
+}
+```
+
+## Trajectory plots
+
+* Fan displays 50/80/95% confidence intervals
+* Black line (with dots) is reported cases
+* Blue line (without dots) is the "corrected" cases
+
+
+```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE, message=FALSE}
+# Grab corrected data
+zyz <- make_zyzzyva_corrector()
+corrected <- suppressMessages(covidcast::covidcast_signal(
+  "usa-facts","confirmed_incidence_num", 
+  start_day = ymd(params$today) - days(x = 90), 
+  geo_type = "county")) %>% 
+  zyz()  # make corrections
+corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
+
+# setup the plot and join corrections to the truth
+pd <- evalcast:::setup_plot_trajectory(
+  zyzzyva, geo_type = "county",
+  start_day = ymd(params$today) - days(x = 90))
+
+pd$truth_df <- left_join(
+  pd$truth_df, corrected, 
+  by = c("geo_value" = "geo_value", "target_end_date" = "time_value"))
+
+g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
+
+# build the fan
+g <- g + geom_ribbon(
+  data = pd$quantiles_df,
+  mapping = aes(ymin = lower, ymax = upper, fill = interval)) +
+  scale_fill_brewer(palette = "Blues")
+
+# line layer
+g <- g +
+  geom_line(aes(y = .data$value.y), color = "#3182BD") + # corrected
+  geom_line(aes(y = .data$value.x)) + # reported
+  geom_line(data = pd$points_df, 
+            mapping = aes(y = .data$value),
+            color = "orange", size = 1) +
+  geom_point(aes(y = .data$value.x)) + # reported gets dots
+  geom_point(data = pd$points_df, 
+             mapping = aes(y = .data$value),
+             color = "orange", size = 3)
+
+g + theme_bw(base_size = 20) + 
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5, 
+             labeller = labeller(geo_value = simple_labs)) +
+  theme(legend.position = "none") + ylab("") + xlab("")
+```

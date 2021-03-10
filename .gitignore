@@ -2,3 +2,11 @@
 *.Rproj.user
 *.Rproj
 *.Rhistory
+*.Rcheck/
+.Rhistory
+.Ruserdata
+.Rproj.user
+*_cache/
+*_files/
+utilities/current-pipeline/01-corrections/*.html
+utilities/QA-reports/*.html

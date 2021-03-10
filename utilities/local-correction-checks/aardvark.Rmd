@@ -1,0 +1,40 @@
+---
+title: "aardvark-corrections"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(zookeeper)
+library(covidcast)
+library(tidyverse)
+library(lubridate)
+df <- suppressMessages(
+  covidcast_signals(
+    "jhu-csse",
+    c("deaths_incidence_num","confirmed_incidence_num"),
+    start_day = Sys.Date() - duration(6, "months"),
+    geo_type = "state"
+  )
+)
+
+aad <- make_aardvark_corrector(corrections_db_path = "aardvark-corrections.RDS")
+corrected <- aad(df)
+corrected <- readRDS("aardvark-corrections.RDS") %>%
+  filter(time_value > Sys.Date() - duration(3, "months")) %>%
+  select(-data_source) %>%
+  pivot_longer(value:corrected)
+```
+
+```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
+corrected %>% 
+  ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
+  geom_point(data = filter(corrected, flag), aes(y = value), color="orange") +
+  facet_wrap(~signal + geo_value , scales = "free", ncol = 3) +
+  theme_bw() + xlab("") + ylab("") +
+  scale_color_viridis_d(begin=.25, end=.75) + 
+  theme(legend.position = "none") +
+  scale_x_date(date_breaks = "months" , date_labels = "%b")
+```
+
+
+

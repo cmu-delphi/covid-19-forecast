@@ -1,0 +1,263 @@
+---
+title: "State death corrections with backfilling"
+author: "Delphi Group - Last run:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+params:
+  window_size: 14
+  start_date: "2020-03-01"
+  sig_cut: 3
+  size_cut: 20
+  sig_consec: 2.25
+  outlier_start_date: "2020-03-15"
+  time_value_flag_date: !r Sys.Date()
+  cache_data: FALSE
+  backfill_lag: 30
+  covidcast_data_source: "jhu-csse"
+  covidcast_signal: !r c("deaths_incidence_num", "confirmed_incidence_num")
+  corrections_db_path: "./data_corrections-hack.sqlite"
+  excess_cut: 0
+  write_RDS: TRUE
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+library(covidcast)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(lubridate)
+library(RcppRoll)
+library(cowplot)
+library(ggplot2)
+library(DT)
+#library(evalcast)
+knitr::opts_chunk$set(warning = FALSE, message=FALSE)
+source("process-funs.R")
+source("corrections.R")
+attach(params)
+```
+
+```{r grab-data, cache=params$cache_data}
+states <-  suppressMessages(
+  covidcast_signals(
+      data_source = covidcast_data_source, 
+      signal = covidcast_signal,
+      geo_type = "state", 
+      start_day = start_date)
+)
+
+# Aggregating signals, long format
+states_all <- aggregate_signals(states, format = "long") 
+check_recent <- states_all %>%
+  group_by(data_source, signal) %>%
+  summarise(mr = max(time_value))
+```
+
+```{r grab-external, eval=all(check_recent$mr<="2021-02-01"), cache=params$cache_data}
+# shouldn't run if we have data after February 1
+library(readr)
+library(stringr)
+process_jhu <- function(raw) {
+  raw %>%
+    mutate(
+      state_fips = paste0(
+        FIPS %>% 
+          str_pad(width = 7, "left", pad = "0") %>% 
+          str_sub(start = 1, end = 2),
+        "000")) %>% 
+    group_by(state_fips) %>% 
+    select(-(1:11)) %>% 
+    summarize_all(sum) %>% 
+    pivot_longer(cols = contains("/"), names_to = "date") %>% 
+    mutate(date = lubridate::mdy(date)) %>% 
+    group_by(state_fips) %>% 
+    mutate(incidence = value - lag(value, order_by = date)) %>% 
+    ungroup() %>% 
+    select(state_fips, date, incidence) %>% 
+    rename(fips = state_fips,
+           time_value = date,
+           value = incidence) %>%
+    mutate(geo_value = tolower(fips_to_abbr(fips)),
+           fips = NULL,
+           data_source = "jhu-csse",
+           issue = max(time_value),
+           lag = 0L,
+           stderr = NA,
+           sample_size = NA) %>%
+    filter(!is.na(geo_value), time_value > "2021-02-01")
+}
+state_deaths <- read_csv(
+  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
+  col_types = cols(FIPS = col_character()))
+state_cases <- read_csv(
+  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
+  col_types = cols(FIPS = col_character()))
+state_cases <- process_jhu(state_cases) %>% 
+  mutate(signal = "confirmed_incidence_num")
+state_deaths <- process_jhu(state_deaths) %>%
+  mutate(signal = "deaths_incidence_num")
+filler <- bind_rows(state_cases, state_deaths)
+attributes(filler$geo_value) <- NULL
+states_all <- bind_rows(states_all, filler) %>%
+  arrange(signal, geo_value, time_value)
+```
+
+
+```{r calculate-roll-stats}
+states_all <- states_all %>% 
+  group_by(signal,geo_value) %>% 
+  mutate(
+    fmean = roll_meanr(value, window_size),
+    smean = roll_mean(value, window_size, fill = NA),
+    fmedian = roll_medianr(value, window_size),
+    smedian = roll_median(value, window_size, fill = NA),
+    fsd = roll_sdr(value, window_size),
+    ssd = roll_sd(value, window_size,fill = NA),
+    fmad = roll_medianr(abs(value-fmedian), window_size),
+    smad = roll_median(abs(value-smedian), window_size, fill=NA),
+    ftstat = abs(value-fmedian)/fsd, # mad in denominator is wrong scale, 
+    ststat = abs(value-smedian)/ssd, # basically results in all the data flagged
+    flag = 
+      (abs(value) > size_cut & !is.na(ststat) & ststat > sig_cut) | # best case
+      (is.na(ststat) & abs(value) > size_cut & !is.na(ftstat) & ftstat > sig_cut) | 
+      # use filter if smoother is missing
+      (value < -size_cut & (!is.na(ststat) | !is.na(ftstat))), # big negative
+    flag = flag | # these allow smaller values to also be outliers if they are consecutive
+      (dplyr::lead(flag) & !is.na(ststat) & ststat > sig_consec) | 
+      (dplyr::lag(flag) & !is.na(ststat) & ststat > sig_consec) |
+      (dplyr::lead(flag) & is.na(ststat) & ftstat > sig_consec) |
+      (dplyr::lag(flag) & is.na(ststat) & ftstat > sig_consec),
+    FIPS = as.numeric(STATE_TO_FIPS[toupper(geo_value)]),
+    #flag = flag & (time_value < ymd("2020-10-24") | value < -size_cut)  
+    flag = flag & (time_value <= ymd(time_value_flag_date) | value < -size_cut)
+    #flag = flag & !(geo_value=="nc" & time_value > ymd("2020-10-22"))
+  )
+```
+
+
+## Make corrections
+
+Now we use the "multinomial" smoother to backfill the excess of any flagged outliers. Some notes:
+  
+* We use a new function `corrections_multinom_roll()` to do the backfill.
+* It backfills randomly based on smoother as weights
+* Optionally allows for filling non-uniformly.
+* As of 10/4, we convolve with a linear decay over 30 days. 
+
+```{r}
+corrected_states = states_all %>% 
+  mutate(
+    state = toupper(geo_value),
+    # try using everything, not just the "excess"
+    excess = value,
+    # excess = value - na_replace(smedian, fmedian),
+    # excess = floor(excess - excess_cut*sign(excess)*na_replace(smad,fmad)),
+    # flag_big_ny = (geo_value == "ny" & time_value == ymd("2020-05-18")),
+    # corrected = corrections_multinom_roll(
+    #   value, excess, flag_big_ny, time_value, Inf, smedian,
+    #   reweight=function(x){ 
+    #     exp_w(x, as.numeric(ymd("2020-05-18")-ymd(start_date)))
+    #     }),
+    flag_bad_RI = (state == "RI"  & value > 0 & lag(value) == 0),
+    flag_bad_WA = (state == "WA" & signal == "deaths_incidence_num") &
+                     (time_value %in% ymd(c("2020-12-16", "2020-12-17", 
+                                        "2020-12-23", "2020-12-24",
+                                        "2020-12-29"))),
+    #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
+    corrected = corrections_multinom_roll(
+      value, value, flag_bad_RI, time_value, 7),
+    corrected = corrections_multinom_roll(
+      value, value, flag_bad_WA, time_value, 14),
+    #c(32,30,13,13,41,34,38)),
+    corrected = corrections_multinom_roll(
+      corrected, excess, (flag & !flag_bad_RI & !flag_bad_WA ), time_value, 
+      backfill_lag, 
+      reweight=function(x) exp_w(x, backfill_lag)),
+    corrected = evalforecast:::multinomial_roll_sum(corrected),
+    corrected = corrected + # imputes forward due to weekly releases
+      missing_future(TRUE, time_value, excess, fmean)
+      #missing_future(state=="WI", time_value, excess, fmedian)
+  )
+#corrected_states$corrected[corrected_states$state=="NC" & corrected_states$time_value > ymd("2020-10-22")] = c(32,30,13,13,41,34,38)
+```
+
+## Visualizations
+
+* These are states in which corrections are made
+* Yellow: original value; purple: corrected value; red dot: flagged outlier
+
+```{r show-corrections, fig.height = 120, fig.width = 10, dev="CairoSVG"}
+mtv <- max(corrected_states$time_value)
+corrected_states %>% 
+  select(signal, geo_value, time_value, value, corrected, flag) %>%
+  pivot_longer(value:corrected) %>%
+  ggplot(aes(time_value)) + geom_line(aes(y=value,color=name)) +
+  geom_point(data = filter(corrected_states, flag), aes(y=value), color="red") +
+  facet_wrap(~signal + geo_value , scales = "free", ncol = 2) +
+  theme_cowplot() + xlab("date") + 
+  coord_cartesian(xlim = mtv + c(-90,0)) +
+  ylab(attributes(states)$metadata$signal) +
+  scale_color_viridis_d(end = .5) + 
+  scale_x_date(date_breaks = "months" , date_labels = "%b")
+```
+
+## Show all corrected time points
+
+```{r}
+sum_check = corrected_states %>% 
+  group_by(signal,geo_value) %>%
+  summarise(original = sum(value, na.rm=TRUE),
+            corrected = sum(corrected, na.rm = TRUE)) %>% ungroup() %>%
+  mutate(diffs = abs(original-corrected)) %>%
+  filter(diffs > 1e-8) %>%
+  select(signal,geo_value, diffs)
+
+sum_check
+
+tosave <- corrected_states %>% 
+  mutate(output = abs(corrected - value) > 0) %>%
+  filter(output | time_value > "2021-02-01") %>% ungroup() %>%
+  dplyr::select(signal,geo_value, time_value, value, corrected, FIPS) %>%
+  transmute(
+    location_name = toupper(geo_value),
+    location = substr(FIPS, 1,2),
+    reference_date=as.Date(time_value), 
+    issue_date = as.Date(NA),
+    variable_name = paste(covidcast_data_source, signal, sep = "_"),
+    value = as.double(value),
+    new_value = as.double(corrected), 
+    correction_date = Sys.Date(),
+    description = as.character("")
+  ) %>%
+  filter(reference_date >= params$outlier_start_date) %>%
+  dplyr::relocate(location)
+
+corrected_states %>% 
+  mutate(output = abs(corrected - value) > 0) %>%
+  filter(output) %>%
+  dplyr::select(signal,geo_value, time_value, value, corrected, ftstat, ststat) %>%
+  transmute(signal = signal,
+            time_value=time_value, 
+            geo_value=geo_value,
+            orig_value = value,
+            replacement = corrected
+  ) %>%
+  datatable(
+    options = list(
+      scrollX = TRUE, scrollY = "300px",paging = FALSE),
+    rownames = NULL) 
+```
+
+```{r eval=params$write_RDS}
+update_corrections(corrections_db_path, "state", tosave)
+```
+
+
+
+
+
+
+
+
