@@ -1,19 +1,30 @@
-make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother = NULL, 
-                                     aligner = NULL, modeler = NULL, bandwidth = 7,
-                                     bootstrapper = NULL, geo_type_override = NULL){
+#' @importFrom magrittr %$%
+
+make_aardvark_forecaster <- function(response = NULL, 
+                                     features = NULL, 
+                                     aligner = NULL, 
+                                     modeler = NULL, 
+                                     bandwidth = 7,
+                                     bootstrapper = NULL, 
+                                     geo_type_override = NULL)
+  {
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
-  local_forecaster_with_shrinkage <- function(df, forecast_date, signals, incidence_period = c("epiweek","day"),
-                                              ahead, geo_type){
+  
+  aardvark_forecaster <- function(df, 
+                                  forecast_date, 
+                                  signals, 
+                                  incidence_period = c("epiweek","day"),
+                                  ahead, 
+                                  geo_type){
 
     forecast_date <- ymd(forecast_date)
     incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
-    geo_type <- ifelse(geo_type_overwrite == "nation", "nation", geo_type)
+    geo_type <- ifelse(geo_type_override == "nation", "nation", geo_type)
 
     df <- df %>% aggregate_signals(format = "wide") 
-    
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
       bind_rows %>%
       distinct %>%
@@ -30,7 +41,7 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
       left_join(df_train, by = c("geo_value", "time_value", "variable_name")) %>%
       mutate(value = if_else(is.na(value), replace_na(value, 0), value)) %>%
       group_by(variable_name) %>%
-      group_modify(~ smoother(.x)) %>% 
+      group_modify(~ kernel_smoother(.x)) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
@@ -42,10 +53,36 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
         mutate(geo_value = "us")
     }
 
-    df_preds <- local_lasso_daily_forecast(df_train_smoothed, response, bandwidth, forecast_date, 
-                                           incidence_period, ahead, smoother, aligner, 
-                                           modeler, bootstrapper, covidhub_probs, features, 
-                                           alignment_variable)
+    bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
+    train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
+    forecast_dates <- c(train_forecast_dates, forecast_date)
+    
+    point_preds_list <- list()
+    for ( itr in 1:length(forecast_dates) ){
+      
+      df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
+      df_align <- aligner(df_train_use, forecast_dates[itr])
+      df_train_use <- df_train_use %>% mutate(observed_value = value)
+      df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
+                                          ahead, response, features) %>%
+        left_join(df_align, by = c("geo_value", "time_value"))
+      
+      point_preds_list[[itr]] <- df_with_lags %>%
+        daily_forecast(response, bandwidth, forecast_dates[itr], incidence_period, ahead, features, df_align, 
+                       modeler) %>%
+        left_join(df_train_smoothed %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
+                  by = c("geo_value", "time_value")) %>%
+        rename(observed_value = value)
+    }
+    
+    df_point_preds <- bind_rows(point_preds_list)
+    df_bootstrap_preds <- bootstrapper(df_point_preds, forecast_date, incidence_period, ahead) %>%
+      pivot_longer(-c(geo_value, time_value), names_to = "replicate", values_to = "value") %>% 
+      group_by(geo_value, replicate) %>%
+      summarize(value = sum(pmax(value, 0)), .groups = "drop")
+    df_preds <- df_bootstrap_preds %>% 
+      group_by(geo_value) %>% 
+      group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
     
     predictions <- expand_grid(unique(df_train_smoothed %>% select(geo_value)),
                                probs = covidhub_probs) %>% 
@@ -60,50 +97,10 @@ make_aardvark_forecaster <- function(response = NULL, features = NULL, smoother 
 }
 
 #' @importFrom magrittr %$%
-local_lasso_daily_forecast <- function(df_use, response, bandwidth, forecast_date, 
-                                       incidence_period, ahead, smoother, aligner, 
-                                       modeler, bootstrapper, covidhub_probs, features, 
-                                       alignment_variable){
-  bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
-  if ( bootstrap_bandwidth > 7 ){
-    train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
-    forecast_dates <- c(train_forecast_dates, forecast_date)
-  } else{
-    forecast_dates <- forecast_date
-  }
-  
-  point_preds_list <- list()
-  for ( itr in 1:length(forecast_dates) ){
-
-    df_train_use <- df_use %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
-    df_align <- aligner(df_train_use, forecast_dates[itr])
-    df_train_use <- df_train_use %>% mutate(observed_value = value)
-    df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
-                                        ahead, response, features) %>%
-      left_join(df_align, by = c("geo_value", "time_value"))
-    point_preds_list[[itr]] <- df_with_lags %>%
-      local_lasso_daily_forecast_by_stratum(response, bandwidth, forecast_dates[itr], 
-                                            incidence_period, ahead, features, df_align, modeler) %>%
-      left_join(df_use %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
-                by = c("geo_value", "time_value")) %>%
-      rename(observed_value = value)
-  }
-  
-  df_point_preds <- bind_rows(point_preds_list)
-  df_bootstrap_preds <- bootstrapper(df_point_preds, forecast_date, incidence_period, ahead) %>%
-    pivot_longer(-c(geo_value, time_value), names_to = "replicate", values_to = "value") %>% 
-    group_by(geo_value, replicate) %>%
-    summarize(value = sum(pmax(value, 0)), .groups = "drop")
-  preds_df <- df_bootstrap_preds %>% 
-    group_by(geo_value) %>% 
-    group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
-  return(preds_df)
-}
-
-#' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
-local_lasso_daily_forecast_by_stratum <- function(df_use, response, bandwidth, forecast_date, 
-                                                  incidence_period, ahead, features, df_align, modeler){
+daily_forecast <- function(df_use, response, bandwidth, forecast_date, incidence_period, ahead, 
+                           features, df_align, modeler){
+  
   response_name <- paste0(response, "_lag_0")
   geo_values <- df_use %>% 
     filter(variable_name == all_of(response_name)) %>% 
@@ -194,6 +191,25 @@ get_top_n_locations <- function(df, response, n){
     top_n(n = !!n, wt = value) %>%
     pull(geo_value)
   return(top_n_locations)
+}
+
+kernel_smoother <- function(dat, h = 7, kern = "boxcar"){
+  
+  if ( kern == "boxcar" ){
+    
+    first_date <- min(dat %>% pull(time_value))
+    last_date <- max(dat %>% pull(time_value))
+    date_df <- data.frame(time_value = seq(first_date, last_date, by = "days"))
+    full_df <- left_join(date_df, dat, by = c("time_value"))
+    
+    smoothed_dat <- full_df %>%
+      group_by(geo_value) %>%
+      arrange(time_value) %>%
+      mutate(smoothed_value = rollmean(value, h, align = "right", fill = "extend")) %>%
+      ungroup
+    
+    return(smoothed_dat)
+  }
 }
 
 #' @importFrom evalcast get_target_period

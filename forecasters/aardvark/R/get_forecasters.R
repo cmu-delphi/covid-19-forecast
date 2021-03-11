@@ -21,9 +21,11 @@
 #' @export get_forecasters
 #' @examples 
 #'     state_signals <- dplyr::tibble(data_source = "jhu-csse",
-#'     signal = c("deaths_incidence_num", "confirmed_incidence_num"), start_day = "2020-03-07")
+#'                                    signal = c("deaths_incidence_num", "confirmed_incidence_num"), 
+#'                                    start_day = "2020-03-07")
 #'     ahead <- 1
-#'     state_forecaster <- aardvark::get_forecasters(geo_type = "state", signals = state_signals, 
+#'     state_forecaster <- aardvark::get_forecasters(geo_type = "state", 
+#'                                                   signals = state_signals, 
 #'                                                   ahead = ahead)[[1]]$forecaster
 
 get_forecasters <- function(geo_type = "state", signals, ahead){
@@ -78,13 +80,11 @@ get_forecasters <- function(geo_type = "state", signals, ahead){
     model_predicter <- make_predict_glmnet()
   }
   
-  smoother <- make_kernel_smoother()
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
   bootstrapper <- make_gaussian_bootstrap_by_geo_value()
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
-                                                  smoother = smoother,
                                                   aligner = aligner,
                                                   modeler = modeler,
                                                   bootstrapper = bootstrapper,
