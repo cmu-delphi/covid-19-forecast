@@ -44,6 +44,52 @@ default_state_params <- function(
   )
 }
 
+# 
+special_flags_marker <- function(
+  geo_value = NA,
+  signal = NA,
+  time_value = NA,
+  max_lag = NA) {
+  tibble::tibble(
+    geo_value = geo_value,
+    signal = signal,
+    time_value = time_value,
+    max_lag = max_lag
+  )
+}
+
+#' @examples
+#' special_flags <- special_flags_marker(c('wa','oh'), 
+#'                                      c('deaths_incidence_num','deaths_incidence_num'),
+#'                                      list(lubridate::ymd(c("2020-12-16", "2020-12-17","2020-12-23", "2020-12-24","2020-12-29")),
+#'                                            seq(lubridate::ymd("2021-02-20"), lubridate::ymd(time_value_flag_date),by=1)),
+#'                                      c(14,60))
+#'    
+#'             
+#'  Two helper functions
+#'  (1) Add special flagging columns, this function will create columns like "flag_bad_va", "flag_bad_wa", etc.    
+special_flagging <- function(df,special_flags){
+  for (i in 1:nrow(special_flags)){
+    varname <- paste0('flag_bad_',special_flags$geo_value[i])
+    df <- mutate(df,{{varname}} := (.data$geo_value == special_flags$geo_value[i] &
+                                      .data$signal == special_flags$signal[i]) &
+                   as.Date(.data$time_value) %in% unlist(special_flags$time_value[i]))
+  }
+  return(df)
+}
+
+#' This function makes corrections on special flagging columns
+special_correction <- function(df,special_flags){
+  for (i in 1:nrow(special_flags)){
+    varname <- paste0('flag_bad_',special_flags$geo_value[i])
+    df <- df %>% mutate(corrected = corrections_multinom_roll(
+      .data$value, .data$value, .data[[varname]], .data$time_value, as.numeric(special_flags$max_lag[i])))
+  }
+  return(df$corrected)
+}
+
+
+
 
 #' Corrector for state forecasts
 #'
@@ -65,6 +111,7 @@ default_state_params <- function(
 make_aardvark_corrector <- function(
   params = default_state_params(),
   corrections_db_path = NULL,
+  special_flags = special_flags_marker()
   dump_locations = c("as","gu","mp","vi")) {
 
 
@@ -120,7 +167,7 @@ make_aardvark_corrector <- function(
 
 
 #' @importFrom lubridate ymd
-aardvark_state_corrections_single_signal <- function(x, params) {
+aardvark_state_corrections_single_signal <- function(x, params,special_flags) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)
@@ -158,37 +205,65 @@ aardvark_state_corrections_single_signal <- function(x, params) {
       flag = .data$flag & # no corrections after some date
         (.data$time_value < ymd(params$time_value_flag_date) |
            .data$value < -params$size_cut),
+      # RI is not included in the special flagging process because it's sort of regular correlation 
       flag_bad_RI = (.data$geo_value == "ri" &
                        .data$value > 0 &
-                       abs(lag(.data$value) < 1e-6)),
-      flag_bad_WA = (.data$geo_value == "wa" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value %in% ymd(c("2020-12-16", "2020-12-17",
-                                     "2020-12-23", "2020-12-24",
-                                     "2020-12-29"))),
-      #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
-      flag_bad_OH = (.data$geo_value == "oh" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value %in% seq(ymd("2021-02-12"),
-                                   ymd("2021-02-14"), length.out = 3)),
-      flag_bad_VA = (.data$geo_value == "va" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value > ymd("2021-02-20")),
-      corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
-      corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_WA, .data$time_value, 14),
-      corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_OH, .data$time_value, 60),
-      corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_VA, .data$time_value, 60),
-      corrected = corrections_multinom_roll( # for everywhere else
-        .data$corrected, .data$value,
-        (.data$flag &
-           !.data$flag_bad_RI & !.data$flag_bad_WA &
-           !.data$flag_bad_OH & !.data$flag_bad_VA),
-        .data$time_value, params$backfill_lag,
-        reweight = function(x) exp_w(x, params$backfill_lag)),
-      corrected = .data$corrected + # imputes forward if necessary
-        missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
-    )
+                       abs(lag(.data$value) < 1e-6))))
+ 
+  # Check is there is special correction to make
+  if (all(is.na(special_flags)) == TRUE){
+    x <- x 
+  }else{
+    x <- special_flagging(x, special_flags)
+  } 
+  
+  # Correction on Rhode Island 
+  x_temp <- x %>% mutate(corrected = corrections_multinom_roll(
+    .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7))
+
+  # Correction on states that require special correction
+  x_temp$corrected <- special_correction(x_temp,special_flags) 
+  x <- x_temp
+
+  # General corrections
+  # Use index to locate the regular flags that don't overlap with special flags
+  x_special <- x %>% 
+    mutate(index = row_number()) %>% 
+    pivot_longer(c(min(grep("flag_bad",colnames(x))):max(grep("flag_bad",colnames(x)))),
+                names_to = "flag_name",values_to ="flag_value") %>%
+    group_by(index) %>%
+    filter(flag & flag_value == FALSE) %>% 
+    pivot_wider(names_from = flag_name, values_from = flag_value) %>%
+    ungroup() %>%
+    dplyr::select(-c(corrected, index)) 
+
+  
+  # The idea here is that we stack the "special flag dataframe" (x_special) to the dataframe, and if a row is duplicated, 
+  # it means that it is a corrected special, flagged row. Then we can locate it and avoid correcting it again
+  # We later remove the stacked stacked special flag dataframe "[-c(1:(nrow(x_special)))]"
+  
+  # A copy of original dataframe
+  x_copy <-  x %>% 
+    mutate(index = row_number()) %>%
+    dplyr::select(-c(corrected,index)) 
+
+  # add column ' flag_loc' for flag indication for corrections_multinom_roll
+  x <- x  %>% ungroup() %>%
+    mutate(flag_loc = (duplicated(rbind(x_special, unique(x_copy)))[-c(1:(nrow(x_special)))])) %>% 
+    group_by(.data$geo_value)  
+
+  x <- x %>% mutate(
+    corrected = corrections_multinom_roll( # for everywhere else
+      .data$corrected, .data$value,
+      .data$flag_loc,
+      .data$time_value, params$backfill_lag,
+      reweight = function(x) exp_w(x, params$backfill_lag)),
+    corrected = .data$corrected + # imputes forward if necessary
+      missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
+  )
+
+
+
   if (params$multinomial_preprocessor) {
     x <- x %>% mutate(corrected = multinomial_roll_sum(.data$corrected))
   }
