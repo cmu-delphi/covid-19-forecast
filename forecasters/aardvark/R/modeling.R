@@ -3,11 +3,8 @@
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
                                      aligner = NULL, 
-                                     modeler = NULL, 
-                                     bandwidth = 7,
-                                     bootstrapper = NULL, 
-                                     geo_type_override = NULL)
-  {
+                                     modeler = NULL,
+                                     geo_type_override = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -18,6 +15,7 @@ make_aardvark_forecaster <- function(response = NULL,
                                   ahead, 
                                   geo_type){
 
+    bandwidth <- 7
     forecast_date <- ymd(forecast_date)
     incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
@@ -53,7 +51,7 @@ make_aardvark_forecaster <- function(response = NULL,
         mutate(geo_value = "us")
     }
 
-    bootstrap_bandwidth <- environment(bootstrapper)$bandwidth
+    bootstrap_bandwidth <- 14
     train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
     forecast_dates <- c(train_forecast_dates, forecast_date)
     
@@ -76,7 +74,7 @@ make_aardvark_forecaster <- function(response = NULL,
     }
     
     df_point_preds <- bind_rows(point_preds_list)
-    df_bootstrap_preds <- bootstrapper(df_point_preds, forecast_date, incidence_period, ahead) %>%
+    df_bootstrap_preds <- gaussian_bootstrap_by_geo_value(df_point_preds, forecast_date, incidence_period, ahead) %>%
       pivot_longer(-c(geo_value, time_value), names_to = "replicate", values_to = "value") %>% 
       group_by(geo_value, replicate) %>%
       summarize(value = sum(pmax(value, 0)), .groups = "drop")

@@ -94,13 +94,11 @@ get_forecasters <- function(geo_type, signals, ahead){
   }
   
   modeler <- list(fitter = model_fitter, predicter = model_predicter)
-  bootstrapper <- make_gaussian_bootstrap_by_geo_value()
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
                                                   aligner = aligner,
                                                   modeler = modeler,
-                                                  bootstrapper = bootstrapper,
                                                   geo_type_override = geo_type)
 
   return(aardvark_forecaster)
