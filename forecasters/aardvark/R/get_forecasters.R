@@ -1,9 +1,8 @@
-#' Return the desired forecaster function
+#' Return the desired Delphi Lab pandemic forecaster
 #'
 #' @description The \link[evalcast]{evalcast-package} production evaluator 
 #'     will first call this function to determine all the forecasters available
-#'     for the given parameter specifications. It expects to get back a named 
-#'     list of lists of forecaster functions and types. If a forecaster function 
+#'     for the given parameter specifications. If a forecaster function 
 #'     is not available for a given set of parameters, an \code{NA} should 
 #'     returned instead of a function. This tells the evaluator to ignore that
 #'     forecaster in that run.
@@ -13,11 +12,7 @@
 #'     and first row is taken to be the response.
 #' @param ahead The number of incidence periods ahead to forecast the response.
 #'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
-#' @return A list with an element named \code{aardvark_forecaster}, 
-#'     which is itself a list consisting of the forecaster function and a \code{type} 
-#'     string (one of \code{c("standalone","ensemble")}), with \code{type = "ensemble"} 
-#'     now deprecated. Unavailable forecasters are marked as 
-#'     \code{list(forecaster = NA, type = "standalone")}.
+#' @return The forecaster function. Unavailable forecasters return \code{NA}.
 #' @export get_forecasters
 #' @examples 
 #'     state_signals <- dplyr::tibble(data_source = "jhu-csse",
@@ -26,13 +21,25 @@
 #'     ahead <- 1
 #'     state_forecaster <- aardvark::get_forecasters(geo_type = "state", 
 #'                                                   signals = state_signals, 
-#'                                                   ahead = ahead)[[1]]$forecaster
+#'                                                   ahead = ahead)
+#'    \dontrun{
+#'    preds <- get_predictions(forecaster = state_forecaster,
+#'                             name_of_forecaster = "aardvark",
+#'                             signals = state_signals,
+#'                             forecast_dates = "2021-02-22",
+#'                             incidence_period = "epiweek",
+#'                             ahead = ahead,
+#'                             geo_type = geo_type,
+#'                             apply_corrections = corrections,
+#'                             signal_aggregation = "list",
+#'                             as_of_override = function(forecast_date){return(as.Date("2021-02-22") + 7)}
+#'                             )
+#'    }
 
 get_forecasters <- function(geo_type = "state", signals, ahead){
   
   if ( !(geo_type %in% c("county", "state", "nation")) ){
-    list(aardvark_forecaster = list(forecaster = NA, type = "standalone")
-    )
+    aardvark_forecaster <- NA
   }
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
@@ -90,5 +97,5 @@ get_forecasters <- function(geo_type = "state", signals, ahead){
                                                   bootstrapper = bootstrapper,
                                                   geo_type_override = geo_type)
 
-  return(list(aardvark_forecaster = list(forecaster = aardvark_forecaster, type = "standalone")))
+  return(aardvark_forecaster)
 }
