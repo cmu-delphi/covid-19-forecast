@@ -12,7 +12,7 @@
 #'
 #' @name aardvark-package
 #' @docType package
-#' @author Alden Green and Collin A. Politsch \cr \cr
+#' @author Collin A. Politsch and Alden Green \cr \cr
 #' \strong{Maintainer}: Collin A. Politsch <ceubanks@andrew.cmu.edu>
 #' @import covidcast
 #' @import lubridate

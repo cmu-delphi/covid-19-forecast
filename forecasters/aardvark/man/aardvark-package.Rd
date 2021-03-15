@@ -24,7 +24,7 @@ Relevant links:
 }
 }
 \author{
-Alden Green and Collin A. Politsch \cr \cr
+Collin A. Politsch and Alden Green \cr \cr
 \strong{Maintainer}: Collin A. Politsch <ceubanks@andrew.cmu.edu>
 }
 \keyword{package}
