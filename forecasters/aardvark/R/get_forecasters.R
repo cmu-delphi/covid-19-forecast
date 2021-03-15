@@ -1,4 +1,4 @@
-#' Return the desired Delphi Lab pandemic forecaster
+#' Return the desired Carnegie Mellon Delphi Lab pandemic forecaster
 #'
 #' @description The \link[evalcast]{evalcast-package} production evaluator 
 #'     will first call this function to determine all the forecasters available
@@ -14,35 +14,35 @@
 #'     \code{start_day} that specify which variables from the COVIDcast API will 
 #'     be used by forecaster. Each row of signals represents a separate signal, 
 #'     and first row is taken to be the response.
-#' @param ahead The number of incidence periods ahead to forecast the response.
-#'     For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.
-#' @return The forecaster function. Unavailable forecasters return \code{NA}.
+#' @param ahead The number of epiweeks ahead to forecast the response. One of 1, 2, 3, 4.
+#' @return The forecaster function.
 #' @export get_forecasters
 #' @examples 
-#'     state_signals <- dplyr::tibble(data_source = "jhu-csse",
-#'                                    signal = c("deaths_incidence_num", "confirmed_incidence_num"), 
-#'                                    start_day = "2020-03-07")
-#'     ahead <- 1
-#'     state_forecaster <- aardvark::get_forecasters(geo_type = "state", 
-#'                                                   signals = state_signals, 
-#'                                                   ahead = ahead)
-#'    \dontrun{
-#'    preds <- get_predictions(forecaster = state_forecaster,
-#'                             name_of_forecaster = "aardvark",
-#'                             signals = state_signals,
-#'                             forecast_dates = "2021-02-22",
-#'                             incidence_period = "epiweek",
-#'                             ahead = ahead,
-#'                             geo_type = geo_type,
-#'                             apply_corrections = corrections,
-#'                             signal_aggregation = "list",
-#'                             as_of_override = function(forecast_date){return(as.Date("2021-02-22") + 7)}
-#'                             )
-#'    }
+#' state_signals <- dplyr::tibble(data_source = "jhu-csse",
+#'                                signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+#'                                start_day = "2020-11-07")
+#' ahead <- 1
+#' state_forecaster <- aardvark::get_forecasters(geo_type = "state",
+#'                                               signals = state_signals,
+#'                                               ahead = ahead)
+#'                                               
+#'\dontrun{
+#' corrections <- zookeeper::make_aardvark_corrector()
+#' 
+#' preds <- get_predictions(forecaster = state_forecaster,
+#'                          name_of_forecaster = "aardvark",
+#'                          signals = state_signals,
+#'                          forecast_dates = "2021-02-22",
+#'                          incidence_period = "epiweek",
+#'                          ahead = ahead,
+#'                          geo_type = geo_type,
+#'                          apply_corrections = corrections,
+#'                          signal_aggregation = "list",
+#'                          as_of_override = function(forecast_date){return(as.Date("2021-02-22") + 7)}
+#'                          )
+#' }
 
-get_forecasters <- function(geo_type = "state", 
-                            signals, 
-                            ahead){
+get_forecasters <- function(geo_type, signals, ahead){
   
   if ( !(geo_type %in% c("county", "state", "nation")) ){
     aardvark_forecaster <- NA
@@ -53,11 +53,11 @@ get_forecasters <- function(geo_type = "state",
   
   if ( geo_type == "nation" ){
     
-    features <- tibble(variable_name = rep(response, 3))
+    features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
     if ( ahead == 1 ){
-      features[["lag"]] <- c(1, 7, 14)
+      features[["lag"]] <- rep(c(1, 7, 14), times = 2)
     }else{
-      features[["lag"]] <- c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7)
+      features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
     }
     
     aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 0)

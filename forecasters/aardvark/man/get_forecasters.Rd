@@ -2,9 +2,9 @@
 % Please edit documentation in R/get_forecasters.R
 \name{get_forecasters}
 \alias{get_forecasters}
-\title{Return the desired Delphi Lab pandemic forecaster}
+\title{Return the desired Carnegie Mellon Delphi Lab pandemic forecaster}
 \usage{
-get_forecasters(geo_type = "state", signals, ahead)
+get_forecasters(geo_type, signals, ahead)
 }
 \arguments{
 \item{geo_type}{String indicating geographical type, such as "county", "state",
@@ -17,11 +17,10 @@ get_forecasters(geo_type = "state", signals, ahead)
 be used by forecaster. Each row of signals represents a separate signal, 
 and first row is taken to be the response.}
 
-\item{ahead}{The number of incidence periods ahead to forecast the response.
-For \code{incidence_period = "epiweek"}, one of 1, 2, 3, 4.}
+\item{ahead}{The number of epiweeks ahead to forecast the response. One of 1, 2, 3, 4.}
 }
 \value{
-The forecaster function. Unavailable forecasters return \code{NA}.
+The forecaster function.
 }
 \description{
 The \link[evalcast]{evalcast-package} production evaluator 
@@ -32,24 +31,27 @@ The \link[evalcast]{evalcast-package} production evaluator
     forecaster in that run.
 }
 \examples{
-    state_signals <- dplyr::tibble(data_source = "jhu-csse",
-                                   signal = c("deaths_incidence_num", "confirmed_incidence_num"), 
-                                   start_day = "2020-03-07")
-    ahead <- 1
-    state_forecaster <- aardvark::get_forecasters(geo_type = "state", 
-                                                  signals = state_signals, 
-                                                  ahead = ahead)
-   \dontrun{
-   preds <- get_predictions(forecaster = state_forecaster,
-                            name_of_forecaster = "aardvark",
-                            signals = state_signals,
-                            forecast_dates = "2021-02-22",
-                            incidence_period = "epiweek",
-                            ahead = ahead,
-                            geo_type = geo_type,
-                            apply_corrections = corrections,
-                            signal_aggregation = "list",
-                            as_of_override = function(forecast_date){return(as.Date("2021-02-22") + 7)}
-                            )
-   }
+state_signals <- dplyr::tibble(data_source = "jhu-csse",
+                               signal = c("deaths_incidence_num", "confirmed_incidence_num"),
+                               start_day = "2020-11-07")
+ahead <- 1
+state_forecaster <- aardvark::get_forecasters(geo_type = "state",
+                                              signals = state_signals,
+                                              ahead = ahead)
+                                              
+\dontrun{
+corrections <- zookeeper::make_aardvark_corrector()
+
+preds <- get_predictions(forecaster = state_forecaster,
+                         name_of_forecaster = "aardvark",
+                         signals = state_signals,
+                         forecast_dates = "2021-02-22",
+                         incidence_period = "epiweek",
+                         ahead = ahead,
+                         geo_type = geo_type,
+                         apply_corrections = corrections,
+                         signal_aggregation = "list",
+                         as_of_override = function(forecast_date){return(as.Date("2021-02-22") + 7)}
+                         )
+}
 }
