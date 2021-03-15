@@ -6,6 +6,10 @@
 #'     is not available for a given set of parameters, an \code{NA} should 
 #'     returned instead of a function. This tells the evaluator to ignore that
 #'     forecaster in that run.
+#' @param geo_type String indicating geographical type, such as "county", "state",
+#'                 or nation. See the 
+#' \href{https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html}{COVIDcast Geographic Coding documentation}
+#'                 for available options.
 #' @param signals Tibble with columns \code{data_source}, \code{signal}, 
 #'     \code{start_day} that specify which variables from the COVIDcast API will 
 #'     be used by forecaster. Each row of signals represents a separate signal, 

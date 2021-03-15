@@ -7,6 +7,11 @@
 get_forecasters(geo_type = "state", signals, ahead)
 }
 \arguments{
+\item{geo_type}{String indicating geographical type, such as "county", "state",
+                or nation. See the 
+\href{https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html}{COVIDcast Geographic Coding documentation}
+                for available options.}
+
 \item{signals}{Tibble with columns \code{data_source}, \code{signal}, 
 \code{start_day} that specify which variables from the COVIDcast API will 
 be used by forecaster. Each row of signals represents a separate signal, 

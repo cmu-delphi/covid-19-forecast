@@ -15,7 +15,7 @@ Description: This package produces the Carnegie Mellon Delphi Lab COVID-19
   state death forecaster.
 License: MIT + file LICENSE
 Encoding: UTF-8
-Imports: evalcast, covidcast, lubridate, tidyr, dplyr, utils, purrr, stats,
+Imports: evalcast, covidcast, lubridate, tidyr, dplyr, purrr, stats,
          Matrix, glmnet, zoo, magrittr
 Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards,
   cmu-delphi/covidcast/R-packages/covidcast@main
