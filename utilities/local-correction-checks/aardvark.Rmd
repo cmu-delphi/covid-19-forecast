@@ -28,7 +28,8 @@ corrected <- readRDS("aardvark-corrections.RDS") %>%
 ```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
 corrected %>% 
   ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
-  geom_point(data = filter(corrected, flag), aes(y = value), color="orange") +
+  geom_point(data = filter(corrected, flag, name=="value"), 
+             aes(y = value), color="orange") +
   facet_wrap(~signal + geo_value , scales = "free", ncol = 3) +
   theme_bw() + xlab("") + ylab("") +
   scale_color_viridis_d(begin=.25, end=.75) + 

@@ -176,7 +176,7 @@ zyzzyva_county_corrections_single_signal <- function(x, params) {
         .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
       corrected = corrections_multinom_roll(
         .data$corrected, .data$value, (.data$flag & !.data$flag_bad_RI),
-        .data$time_value, params$backfill_lag,
+        .data$time_value, params$backfill_lag, expectations = .data$fmedian,
         reweight = function(x) exp_w(x, params$backfill_lag)),
       corrected = .data$corrected +
         missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
