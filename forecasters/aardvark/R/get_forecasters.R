@@ -7,7 +7,7 @@
 #'     returned instead of a function. This tells the evaluator to ignore that
 #'     forecaster in that run.
 #' @param geo_type String indicating geographical type, such as "county", "state",
-#'                 or nation. See the 
+#'                 or "nation". See the 
 #' \href{https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html}{COVIDcast Geographic Coding documentation}
 #'                 for available options.
 #' @param signals Tibble with columns \code{data_source}, \code{signal}, 
@@ -40,7 +40,9 @@
 #'                             )
 #'    }
 
-get_forecasters <- function(geo_type = "state", signals, ahead){
+get_forecasters <- function(geo_type = "state", 
+                            signals, 
+                            ahead){
   
   if ( !(geo_type %in% c("county", "state", "nation")) ){
     aardvark_forecaster <- NA

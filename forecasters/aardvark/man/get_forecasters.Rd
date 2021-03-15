@@ -8,7 +8,7 @@ get_forecasters(geo_type = "state", signals, ahead)
 }
 \arguments{
 \item{geo_type}{String indicating geographical type, such as "county", "state",
-                or nation. See the 
+                or "nation". See the 
 \href{https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html}{COVIDcast Geographic Coding documentation}
                 for available options.}
 
