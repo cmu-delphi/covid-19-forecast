@@ -51,21 +51,7 @@ get_forecasters <- function(geo_type, signals, ahead){
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
-  if ( geo_type == "nation" ){
-    
-    features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
-    if ( ahead == 1 ){
-      features[["lag"]] <- rep(c(1, 7, 14), times = 2)
-    }else{
-      features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
-    }
-    
-    aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 0)
-    model_fitter <- make_fv_glmnet_by_geo_value(n_validation = 35)
-    model_predicter <- make_predict_glmnet_by_geo_value()
-  }
-  
-  if ( geo_type == "state" ){
+  if ( geo_type %in% c("nation", "state") ){
     
     features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
     if ( ahead == 1 ){
@@ -75,8 +61,6 @@ get_forecasters <- function(geo_type, signals, ahead){
     }
     
     aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 5000)
-    model_fitter <- make_cv_glmnet()
-    model_predicter <- make_predict_glmnet()
   }
   
   if ( geo_type == "county" ){
@@ -89,17 +73,11 @@ get_forecasters <- function(geo_type, signals, ahead){
     }
     
     aligner <- make_time_aligner(alignment_variable = response, ahead = ahead, threshold = 50)
-    model_fitter <- make_cv_glmnet()
-    model_predicter <- make_predict_glmnet()
   }
-  
-  modeler <- list(fitter = model_fitter, predicter = model_predicter)
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
                                                   aligner = aligner,
-                                                  modeler = modeler,
                                                   geo_type_override = geo_type)
-
   return(aardvark_forecaster)
 }

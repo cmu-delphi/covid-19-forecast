@@ -2,8 +2,7 @@
 
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
-                                     aligner = NULL, 
-                                     modeler = NULL,
+                                     aligner = NULL,
                                      geo_type_override = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
@@ -21,6 +20,10 @@ make_aardvark_forecaster <- function(response = NULL,
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     alignment_variable <- environment(aligner)$alignment_variable
     geo_type <- ifelse(geo_type_override == "nation", "nation", geo_type)
+    
+    model_fitter <- make_cv_glmnet()
+    model_predicter <- make_predict_glmnet()
+    modeler <- list(fitter = model_fitter, predicter = model_predicter)
 
     df <- df %>% aggregate_signals(format = "wide") 
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
@@ -43,7 +46,7 @@ make_aardvark_forecaster <- function(response = NULL,
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
-    if ( geo_type == "nation" ){
+    if ( geo_type == "nation" & FALSE ){
       df_train_smoothed <- df_train_smoothed %>%
         select(-geo_value) %>%
         group_by(variable_name, time_value) %>%
