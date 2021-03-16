@@ -41,6 +41,8 @@ make_aardvark_forecaster <- function(response = NULL,
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
 
+    saveRDS(df_train_smoothed, file = "~/Desktop/df_smoothed.rds")
+    
     bootstrap_bandwidth <- 14
     train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
     forecast_dates <- c(train_forecast_dates, forecast_date)
