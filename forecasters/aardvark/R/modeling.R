@@ -2,7 +2,6 @@
 
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
-                                     aligner = NULL,
                                      geo_type_override = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
@@ -15,9 +14,7 @@ make_aardvark_forecaster <- function(response = NULL,
                                   geo_type){
 
     forecast_date <- ymd(forecast_date)
-    incidence_period <- match.arg(incidence_period)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
-    alignment_variable <- environment(aligner)$alignment_variable
     geo_type <- ifelse(geo_type_override == "nation", "nation", geo_type)
 
     df <- df %>% aggregate_signals(format = "wide") 
@@ -50,7 +47,7 @@ make_aardvark_forecaster <- function(response = NULL,
     point_preds_list <- list()
     for ( itr in 1:length(forecast_dates) ){
       
-      df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
+      df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr])
       df_align <- aligner(df_train_use, forecast_dates[itr])
       df_train_use <- df_train_use %>% mutate(observed_value = value)
       df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 

@@ -50,6 +50,38 @@ kernel_smoother <- function(dat, h = 7, kern = "boxcar"){
   }
 }
 
+time_aligner <- function(df_use, 
+                         alignment_variable, 
+                         ahead, 
+                         threshold,
+                         forecast_date,
+                         geo_type){
+  
+  stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
+  df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)
+  
+  day0 <- df_alignment_variable %>% 
+    arrange(geo_value, time_value) %>%
+    group_by(geo_value, variable_name) %>%
+    mutate(cumul_value = cumsum(value)) %>%
+    arrange(variable_name, geo_value, time_value) %>%
+    filter(cumul_value >= threshold) %>%
+    group_by(geo_value) %>%
+    summarize(value = min(time_value), .groups = "drop")
+  
+  geo_values <- df_use %>% pull(geo_value) %>% unique
+  train_dates <- df_use %>% pull(time_value) %>% unique
+  target_dates <-  get_target_period(forecast_date, incidence_period = "epiweek", ahead) %$%
+    seq(start, end, by = "days")
+  dates <- unique(c(train_dates, target_dates))
+  df_align <- expand_grid(geo_value = geo_values, time_value = dates) %>% 
+    left_join(day0, by = "geo_value") %>%
+    mutate(align_date = ifelse(time_value - value >= 0, time_value - value, NA)) %>%
+    select(-value)
+  
+  return(df_align)
+}
+
 #' @importFrom evalcast get_target_period
 #' @import purrr
 make_data_with_lags <- function(df_use, forecast_date, incidence_period, ahead, response, features){
