@@ -77,7 +77,6 @@ get_forecasters <- function(geo_type, signals, ahead){
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
-                                                  aligner = aligner,
                                                   geo_type_override = geo_type)
   return(aardvark_forecaster)
 }
