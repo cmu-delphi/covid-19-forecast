@@ -48,7 +48,7 @@ make_aardvark_forecaster <- function(response = NULL,
     for ( itr in 1:length(forecast_dates) ){
       
       df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr])
-      df_align <- aligner(df_train_use, forecast_dates[itr])
+      df_align <- time_aligner(df_train_use, forecast_dates[itr])
       df_train_use <- df_train_use %>% mutate(observed_value = value)
       df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                           ahead, response, features) %>%
