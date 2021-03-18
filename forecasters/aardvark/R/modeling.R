@@ -1,6 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
-                                     aggregate_nation = NULL){
+                                     aggregate_nation = FALSE){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -89,7 +89,7 @@ make_aardvark_forecaster <- function(response = NULL,
       group_by(geo_value) %>% 
       group_modify(~ data.frame(probs = covidhub_probs, quantiles = round(quantile(.x$value,covidhub_probs))))
     
-    predictions <- expand_grid(unique(df_train_smoothed %>% select(geo_value)),
+    predictions <- expand_grid(unique(df_point_preds %>% select(geo_value)),
                                probs = covidhub_probs) %>% 
       left_join(df_preds, by = c("geo_value", "probs")) %>%
       mutate(quantiles = pmax(replace_na(quantiles, 0), 0), ahead = ahead) %>% 
