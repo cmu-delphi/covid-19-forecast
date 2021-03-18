@@ -53,15 +53,18 @@ make_aardvark_forecaster <- function(response = NULL,
     point_preds_list <- list()
     for ( itr in 1:length(forecast_dates) ){
       
-      df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr])
-      df_aligned_use <- df_train_aligned %>% filter(time_value <= forecast_dates[itr])
+      df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr] | is.na(time_value))
+      df_align <- df_train_use %>% time_aligner(forecast_dates[itr], 
+                                                alignment_variable = alignment_variable,
+                                                ahead = ahead,
+                                                threshold = threshold)
       df_train_use <- df_train_use %>% mutate(observed_value = value)
       df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                           ahead, response, features) %>%
-        left_join(df_aligned_use, by = c("geo_value", "time_value"))
+        left_join(df_align, by = c("geo_value", "time_value"))
       
       point_preds_list[[itr]] <- df_with_lags %>%
-        daily_point_forecast(response = response, 
+        point_forecast_daily(response = response, 
                              bandwidth = 7,
                              forecast_date = forecast_dates[itr], 
                              incidence_period = incidence_period, 
@@ -72,6 +75,8 @@ make_aardvark_forecaster <- function(response = NULL,
                   by = c("geo_value", "time_value")) %>%
         rename(observed_value = value)
     }
+    
+    ####
     
     df_point_preds <- bind_rows(point_preds_list)
     df_bootstrap_preds <- gaussian_bootstrap_by_geo_value(df_point_preds, forecast_date, incidence_period, ahead) %>%
@@ -96,7 +101,7 @@ make_aardvark_forecaster <- function(response = NULL,
 
 #' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
-daily_point_forecast <- function(df_use, 
+point_forecast_daily <- function(df_use, 
                                  response, 
                                  bandwidth, 
                                  forecast_date, 
