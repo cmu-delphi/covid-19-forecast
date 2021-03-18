@@ -1,6 +1,6 @@
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
-                                     geo_type_override = NULL){
+                                     aggregate_nation = NULL){
   
   covidhub_probs <- c(0.01, 0.025, seq(0.05, 0.95, by = 0.05), 0.975, 0.99)
   
@@ -71,7 +71,7 @@ make_aardvark_forecaster <- function(response = NULL,
     
     df_point_preds <- bind_rows(point_preds_list)
     
-    if ( geo_type_override == "nation" ){
+    if ( aggregate_nation ){
       df_point_preds <- df_point_preds %>%
         select(-geo_value) %>%
         group_by(time_value) %>%

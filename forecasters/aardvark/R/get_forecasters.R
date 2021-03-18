@@ -42,16 +42,16 @@
 #'                          )
 #' }
 
-get_forecasters <- function(geo_type, signals, ahead){
+get_forecasters <- function(geo_type, signals, ahead, aggregate_nation = FALSE){
   
-  if ( !(geo_type %in% c("county", "state", "nation")) ){
+  if ( !(geo_type %in% c("county", "state")) ){
     aardvark_forecaster <- NA
   }
 
   response <- paste(signals$data_source[1], signals$signal[1], sep = "_")
   cases <- paste(signals$data_source[1], "confirmed_incidence_num", sep = "_")
   
-  if ( geo_type %in% c("nation", "state") ){
+  if ( geo_type == "state" ){
     
     features <- tibble(variable_name = c(rep(response, 3), rep(cases, 3)))
     if ( ahead == 1 ){
@@ -73,6 +73,6 @@ get_forecasters <- function(geo_type, signals, ahead){
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
                                                   features = features,
-                                                  geo_type_override = geo_type)
+                                                  aggregate_nation = aggregate_nation)
   return(aardvark_forecaster)
 }
