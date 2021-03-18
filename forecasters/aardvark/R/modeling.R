@@ -40,12 +40,6 @@ make_aardvark_forecaster <- function(response = NULL,
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
-    df_train_aligned <- df_train_smoothed %>% 
-      time_aligner(forecast_date, 
-                   alignment_variable = alignment_variable,
-                   ahead = ahead,
-                   threshold = threshold)
-    
     bootstrap_bandwidth <- 14
     train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
     forecast_dates <- c(train_forecast_dates, forecast_date)
@@ -79,6 +73,9 @@ make_aardvark_forecaster <- function(response = NULL,
     ####
     
     df_point_preds <- bind_rows(point_preds_list)
+    
+    saveRDS(df_point_preds, file = "~/Desktop/df_point_preds.rds")
+    
     df_bootstrap_preds <- gaussian_bootstrap_by_geo_value(df_point_preds, forecast_date, incidence_period, ahead) %>%
       pivot_longer(-c(geo_value, time_value), names_to = "replicate", values_to = "value") %>% 
       group_by(geo_value, replicate) %>%
