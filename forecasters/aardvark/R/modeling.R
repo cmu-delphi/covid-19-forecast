@@ -13,7 +13,6 @@ make_aardvark_forecaster <- function(response = NULL,
 
     forecast_date <- ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
-    geo_type <- ifelse(geo_type_override == "nation", "nation", geo_type)
     alignment_variable <- features %>% 
       filter(grepl("confirmed_incidence_num", features %>% pull(variable_name))) %>% 
       pull(variable_name) %>% 
@@ -72,7 +71,7 @@ make_aardvark_forecaster <- function(response = NULL,
     
     df_point_preds <- bind_rows(point_preds_list)
     
-    if ( geo_type == "nation" ){
+    if ( geo_type_override == "nation" ){
       df_point_preds <- df_point_preds %>%
         select(-geo_value) %>%
         group_by(time_value) %>%
