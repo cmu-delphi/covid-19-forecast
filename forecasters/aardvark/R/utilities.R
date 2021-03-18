@@ -50,12 +50,12 @@ kernel_smoother <- function(dat, h = 7, kern = "boxcar"){
   }
 }
 
-time_aligner <- function(df_use, 
+#' @importFrom magrittr %$%
+time_aligner <- function(df_use,
+                         forecast_date,
                          alignment_variable, 
                          ahead, 
-                         threshold,
-                         forecast_date,
-                         geo_type){
+                         threshold){
   
   stopifnot(alignment_variable %in% unique(df_use %>% pull(variable_name)))
   df_alignment_variable <- df_use %>% filter(variable_name == alignment_variable)

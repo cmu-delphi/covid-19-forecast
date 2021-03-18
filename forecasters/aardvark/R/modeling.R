@@ -16,6 +16,11 @@ make_aardvark_forecaster <- function(response = NULL,
     forecast_date <- ymd(forecast_date)
     target_period <- get_target_period(forecast_date, incidence_period, ahead)
     geo_type <- ifelse(geo_type_override == "nation", "nation", geo_type)
+    alignment_variable <- features %>% 
+      filter(grepl("confirmed_incidence_num", features %>% pull(variable_name))) %>% 
+      pull(variable_name) %>% 
+      unique
+    threshold <- ifelse(geo_type == "county", 50, 5000)
 
     df <- df %>% aggregate_signals(format = "wide") 
     df_train <- lapply(X = 3:ncol(df), FUN = function(X) reformat_df(df, column = X)) %>% 
@@ -37,22 +42,28 @@ make_aardvark_forecaster <- function(response = NULL,
       group_modify(~ kernel_smoother(.x)) %>% 
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
-
-    saveRDS(df_train_smoothed, file = "~/Desktop/df_smoothed.rds")
     
     bootstrap_bandwidth <- 14
     train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
     forecast_dates <- c(train_forecast_dates, forecast_date)
     
+    df_train_aligned <- df_train_smoothed %>% 
+      time_aligner(max(forecast_dates), 
+                   alignment_variable = alignment_variable,
+                   ahead = ahead,
+                   threshold = threshold)
+
+    saveRDS(df_train_aligned, file = "~/Desktop/df_train_aligned.rds")
+    
     point_preds_list <- list()
     for ( itr in 1:length(forecast_dates) ){
       
       df_train_use <- df_train_smoothed %>% filter(time_value <= forecast_dates[itr])
-      df_align <- time_aligner(df_train_use, forecast_dates[itr])
+      df_aligned_use <- df_train_aligned %>% filter(time_value <= forecast_dates[itr])
       df_train_use <- df_train_use %>% mutate(observed_value = value)
       df_with_lags <- make_data_with_lags(df_train_use, forecast_dates[itr], incidence_period, 
                                           ahead, response, features) %>%
-        left_join(df_align, by = c("geo_value", "time_value"))
+        left_join(df_aligned_use, by = c("geo_value", "time_value"))
       
       point_preds_list[[itr]] <- df_with_lags %>%
         daily_forecast(response = response, 
@@ -61,7 +72,7 @@ make_aardvark_forecaster <- function(response = NULL,
                        incidence_period = incidence_period, 
                        ahead = ahead, 
                        features = features, 
-                       df_align = df_align) %>%
+                       df_align = df_aligned_use) %>%
         left_join(df_train_smoothed %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
                   by = c("geo_value", "time_value")) %>%
         rename(observed_value = value)

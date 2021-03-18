@@ -59,8 +59,6 @@ get_forecasters <- function(geo_type, signals, ahead){
     }else{
       features[["lag"]] <- rep(c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7), times = 2)
     }
-    
-    aligner <- make_time_aligner(alignment_variable = cases, ahead = ahead, threshold = 5000)
   }
   
   if ( geo_type == "county" ){
@@ -71,8 +69,6 @@ get_forecasters <- function(geo_type, signals, ahead){
     }else{
       features[["lag"]] <- c((ahead - 1) * 7, (ahead) * 7, (ahead + 1) * 7)
     }
-    
-    aligner <- make_time_aligner(alignment_variable = response, ahead = ahead, threshold = 50)
   }
   
   aardvark_forecaster <- make_aardvark_forecaster(response = response,
