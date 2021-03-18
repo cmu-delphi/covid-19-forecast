@@ -70,9 +70,15 @@ make_aardvark_forecaster <- function(response = NULL,
         rename(observed_value = value)
     }
     
-    ####
-    
     df_point_preds <- bind_rows(point_preds_list)
+    
+    if ( geo_type == "nation" ){
+      df_point_preds <- df_point_preds %>%
+        select(-geo_value) %>%
+        group_by(time_value) %>%
+        summarise(preds = sum(preds), observed_value = sum(observed_value), .groups = "drop") %>%
+        mutate(geo_value = "us")
+    }
     
     saveRDS(df_point_preds, file = "~/Desktop/df_point_preds.rds")
     
