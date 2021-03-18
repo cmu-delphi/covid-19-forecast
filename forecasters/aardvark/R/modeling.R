@@ -70,7 +70,7 @@ make_aardvark_forecaster <- function(response = NULL,
                              incidence_period = incidence_period, 
                              ahead = ahead, 
                              features = features, 
-                             df_align = df_aligned_use) %>%
+                             df_align = df_align) %>%
         left_join(df_train_smoothed %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
                   by = c("geo_value", "time_value")) %>%
         rename(observed_value = value)
