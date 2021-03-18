@@ -1,5 +1,3 @@
-#' @importFrom magrittr %$%
-
 make_aardvark_forecaster <- function(response = NULL, 
                                      features = NULL, 
                                      geo_type_override = NULL){
@@ -9,7 +7,7 @@ make_aardvark_forecaster <- function(response = NULL,
   aardvark_forecaster <- function(df, 
                                   forecast_date, 
                                   signals, 
-                                  incidence_period = c("epiweek","day"),
+                                  incidence_period = "epiweek",
                                   ahead, 
                                   geo_type){
 
@@ -29,8 +27,7 @@ make_aardvark_forecaster <- function(response = NULL,
       mutate(value = as.double(value))
     
     if ( geo_type == "county" ){
-      df_train <- df_train %>% 
-        filter(geo_value %in% get_top_n_locations(df_train, response, 200))
+      df_train <- df_train %>% filter(geo_value %in% get_top_n_locations(df_train, response, 200))
     }
     
     df_train_smoothed <- expand_grid(distinct(select(df_train, geo_value)),
@@ -43,17 +40,15 @@ make_aardvark_forecaster <- function(response = NULL,
       rename(original_value = value, value = smoothed_value) %>%
       ungroup() 
     
-    bootstrap_bandwidth <- 14
-    train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
-    forecast_dates <- c(train_forecast_dates, forecast_date)
-    
     df_train_aligned <- df_train_smoothed %>% 
-      time_aligner(max(forecast_dates), 
+      time_aligner(forecast_date, 
                    alignment_variable = alignment_variable,
                    ahead = ahead,
                    threshold = threshold)
-
-    saveRDS(df_train_aligned, file = "~/Desktop/df_train_aligned.rds")
+    
+    bootstrap_bandwidth <- 14
+    train_forecast_dates <- forecast_date - rev(seq(7, bootstrap_bandwidth, by = 7) + (ahead - 1) * 7)
+    forecast_dates <- c(train_forecast_dates, forecast_date)
     
     point_preds_list <- list()
     for ( itr in 1:length(forecast_dates) ){
@@ -66,13 +61,13 @@ make_aardvark_forecaster <- function(response = NULL,
         left_join(df_aligned_use, by = c("geo_value", "time_value"))
       
       point_preds_list[[itr]] <- df_with_lags %>%
-        daily_forecast(response = response, 
-                       bandwidth = 7,
-                       forecast_date = forecast_dates[itr], 
-                       incidence_period = incidence_period, 
-                       ahead = ahead, 
-                       features = features, 
-                       df_align = df_aligned_use) %>%
+        daily_point_forecast(response = response, 
+                             bandwidth = 7,
+                             forecast_date = forecast_dates[itr], 
+                             incidence_period = incidence_period, 
+                             ahead = ahead, 
+                             features = features, 
+                             df_align = df_aligned_use) %>%
         left_join(df_train_smoothed %>% filter(variable_name == response) %>% select(geo_value, time_value, value),
                   by = c("geo_value", "time_value")) %>%
         rename(observed_value = value)
@@ -101,14 +96,14 @@ make_aardvark_forecaster <- function(response = NULL,
 
 #' @importFrom magrittr %$%
 #' @importFrom evalcast get_target_period
-daily_forecast <- function(df_use, 
-                           response, 
-                           bandwidth, 
-                           forecast_date, 
-                           incidence_period, 
-                           ahead, 
-                           features, 
-                           df_align){
+daily_point_forecast <- function(df_use, 
+                                 response, 
+                                 bandwidth, 
+                                 forecast_date, 
+                                 incidence_period, 
+                                 ahead, 
+                                 features, 
+                                 df_align){
   
   model_fitter <- make_cv_glmnet()
   model_predicter <- make_predict_glmnet()
@@ -149,7 +144,6 @@ daily_forecast <- function(df_use,
     forecast_rows <- which(YX_use$date == dates[itr] & YX_time_values %in% target_dates)
     forecast_locs <- YX_use[forecast_rows,] %>% pull(geo_value)
     forecast_time_values <- YX_time_values[forecast_rows]
-    stopifnot(unique(forecast_locs) == forecast_locs)
     YX_use <- YX_use %>% select(-date)
     wts <- dnorm( YX_use$t  / bandwidth )
     t <- YX_use %>% pull(t)
