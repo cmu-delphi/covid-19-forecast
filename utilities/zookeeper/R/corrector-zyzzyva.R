@@ -18,7 +18,7 @@
 #' @examples
 #' default_state_params(window_size=21)
 default_county_params <- function(
-    data_source = "usa-facts",
+    data_source = "jhu-csse",
     signal = c("confirmed_incidence_num"),
     geo_type = "county",
     window_size = 14,
