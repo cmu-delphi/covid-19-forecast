@@ -2,10 +2,27 @@ Package: animalia
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Authors@R: c(
+    person("Daniel J.", "McDonald", email="daniel@stat.ubc.ca", role=c("aut","cre")),
+    person("Ryan J.", "Tibshirani", email="ryantibs@cmu.edu", role=c("aut")))
+Description: This package is a simple template for using standard prediction
+    algorithms for making COVID19 forecasts using the [covidcast] and [evalcast]
+    frameworks.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    assertthat,
+    covidcast,
+    dplyr,
+    evalcast,
+    lubridate,
+    magrittr,
+    quantgen,
+    RcppRoll,
+    rlang,
+    stats,
+    stringr,
+    tidyr,
+    zoo
+RoxygenNote: 7.1.1
