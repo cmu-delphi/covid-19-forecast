@@ -28,24 +28,26 @@
 #'   signal. lags are always specified in days.
 #' @param tau Vector of quantile levels for the probabilistic forecast. If not
 #'   specified, defaults to the levels required by the COVID Forecast Hub.
-#' @param transform,inv_transform Transformation and inverse transformations to use
+#' @param transform,inv_trans Transformation and inverse transformations to use
 #'   for the response/features. These are applied to the raw data before any
 #'   leads or lags. The former `transform` can be a function or a
 #'   list of functions, this list having the same length as the number of elements
 #'   in the `df` list, in order to apply the same transformation or a
 #'   different transformation to each signal. These transformations will be
-#'   applied before fitting the quantile model. The latter argument `inv_transform`
+#'   applied before fitting the quantile model. The latter argument `inv_trans`
 #'   specifies the inverse transformation to use on the response variable
 #'   (inverse of `transform` if this is a function, or of `transform[[1]]` if
 #'   `transform` is a list), which will be applied post prediction from the
 #'   quantile model. Several convenience functions for transformations exist as
 #'   part of the `quantgen` package. Default is `NULL` for both `transform` and
-#'   `inv_transform`, which means no transformations are applied.
+#'   `inv_trans`, which means no transformations are applied.
 #' @param featurize Function to construct custom features before the quantile
 #'   model is fit. As input, this function must take a data frame with columns
 #'   `geo_value`, `time_value`, then the transformed, lagged signal values. This
 #'   function must return a data frame with columns `geo_value`, `time_value`,
 #'   then any custom features. This function may add/remove rows if desired.
+#' @param sort do we sort the predicted quantiles to avoid quantile crossings?
+#' @param nonneg do we force the predicted quantiles to be nonnegative?
 #' @param noncross Should noncrossing constraints be applied? These force the
 #'   predicted quantiles to be properly ordered across all quantile levels being
 #'   considered. The default is `FALSE`. If `TRUE`, then noncrossing constraints
@@ -92,82 +94,73 @@
 #'   for use with `[evalcast::get_predictions()]`
 #'
 #' @importFrom dplyr filter select pull summarize bind_cols bind_rows matches
-#' @importFrom dplyr starts_with mutate
+#' @importFrom dplyr starts_with mutate relocate
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom assertthat assert_that
 #' @export
-quantgen_forecaster = function(df_list, 
-                               forecast_date,
-                               training_window_size = 28,
-                               incidence_period = c("epiweek", "day"),
-                               ahead = 1:4,
-                               lags = 0,
-                               tau = evalcast::covidhub_probs(),
-                               transform = NULL,
-                               inv_transform = NULL,
-                               featurize = NULL,
-                               noncross = TRUE,
-                               noncross_points = c("all", "test", "train"),
-                               cv_type = c("forward", "random"),
-                               verbose = FALSE,
-                               save_wide_data = NULL,
-                               save_trained_models = NULL,
-                               ...){
 
+production_forecaster <- function(df_list,
+                                  forecast_date,
+                                  training_window_size = 28,
+                                  incidence_period = c("epiweek", "day"),
+                                  ahead = 1:4,
+                                  lags = 0,
+                                  tau = evalcast::covidhub_probs(),
+                                  lambda = 0,
+                                  transform = NULL,
+                                  inv_trans = NULL,
+                                  featurize = NULL,
+                                  sort = TRUE,
+                                  nonneg = TRUE,
+                                  noncross = FALSE,
+                                  noncross_points = c("all", "test", "train"),
+                                  cv_type = c("forward", "random"),
+                                  verbose = FALSE,
+                                  save_wide_data = NULL,
+                                  save_trained_models = NULL,
+                                  ...){
   # ---------------------
   # 0. standard error checking, likely common to other fit/predict functions
   # we expect the data to be a list
   if (class(df_list)[1] != "list") df_list <- list(df_list)
-  
-  # Check lags vector or list
-  assert_that(all(unlist(lags) >= 0), msg = "All lags must be nonnegative.")
-  if (!is.list(lags)) lags <- rep(list(lags), length(df_list))
-  else assert_that(length(lags) == length(df_list),
-    msg = paste("If `lags` is a list, it must have length equal to the number",
-               "of signals."))
-  
-  # ---------------------
-  # 1. Data preparation steps
-  # apply transformations to signals individually.
-  df <- transformer(df_list, transform, inv_transform)
-
-  # Define dt by flipping the sign of lags, include dt = +ahead as a response
-  # shift, for each ahead value, for convenience later
-  dt <- lapply(lags, "-")
-  ahead_in_days <- evalcast::get_target_ahead(
-    forecast_date, incidence_period, ahead)
+  nsigs <- length(df_list)
+  incidence_period <- match.arg(incidence_period)
+  # make lags a list, perform checks
+  dt <- lag_processor(lags, nsigs)
+  ahead_in_days <- purrr::map_dbl(ahead,  ~evalcast::get_target_ahead(
+    forecast_date, incidence_period, .x))
   dt[[1]] <- c(dt[[1]], ahead_in_days) 
-
-  # Append shifts, and aggregate into wide format
-  df_wide <- covidcast::aggregate_signals(df, dt = dt, format = "wide")
-  # Separate out into feature data frame, featurize if we need to
-  # DJM: we are potentially "featurizing" the response too. So we do this
-  # before separating into features/response. This also allows for handling
-  # epiweek directly.
+  
+  # -------------------------------
+  # 1. data transformations, and saving
+  
+  # apply any transformations
+  df_list <- transformer(df_list, transform, inv_trans)
+  df_wide <- covidcast::aggregate_signals(df_list, dt = dt, format = "wide")
+  
+  if (!is.null(featurize)) df_wide <- featurize(df_wide)
   
   # rename response
   response_cols <- stringr::str_detect(names(df_wide), "value\\+[1-9]")
   names(df_wide)[response_cols] <- stringr::str_replace(
     names(df_wide)[response_cols], "value", "response")
-  
-  if (!is.null(featurize)) df_wide <- featurize(df_wide)
+  names(df_wide)[response_cols] <- stringr::str_replace(
+    names(df_wide)[response_cols], "[0-9]+", as.character(ahead))
   
   if (!is.null(save_wide_data)) 
     saveRDS(df_wide, 
             file = file.path(save_wide_data, 
-                             sprintf("quantgen_data_for_%s", forecast_date)))
-  df_features <- df_wide %>%
-    select(.data$geo_value, .data$time_value, matches("^value"))
-  
-  feature_end_date <- df_features %>%
-    summarize(max(.data$time_value)) %>% pull()
-  
+                             sprintf("quantgen_data_for_%s.RDS", forecast_date)))
   # ----------------------------
   # 2. Identify params for quantgen training and prediction functions
   params <- list(...)
   params$tau <- tau
   params$noncross <- noncross
-  cv <- is.null(params$lambda) || length(params$lambda) > 1
+  params$lambda <- lambda
+  params$sort <- sort
+  params$nonneg <- nonneg
+  cv <- is.null(lambda) || length(lambda) > 1
+  assert_that(!cv, msg = "cv is currently disabled")
   if (cv) {
     train_fun <- quantgen::cv_quantile_lasso
     predict_fun <- quantgen:::predict.cv_quantile_genlasso
@@ -179,100 +172,72 @@ quantgen_forecaster = function(df_list,
   predict_names <- names(as.list(args(predict_fun)))
   train_params <- params[names(params) %in% train_names]
   predict_params <- params[names(params) %in% predict_names]
-  
   if (noncross) noncross_points <- match.arg(noncross_points)
   if (cv) cv_type <- match.arg(cv_type)
   
-  # Test objects that remain invariant over ahead values
-  test_geo_value <- df_features %>%
-    filter(.data$time_value == max(.data$time_value)) %>%
-    select(.data$geo_value) %>% pull()
-  newx <- df_features %>%
-    filter(.data$time_value == max(.data$time_value)) %>%
-    select(-c(.data$geo_value, .data$time_value)) %>% 
-    as.matrix()
   
   # ----------------------
   # 3. Main loop over ahead values, fit model, make predictions
-  n_aheads <- length(ahead)
-  result <- vector(mode = "list", length = n_aheads)
-  if (!is.null(save_trained_models)) 
-    trained_models <- vector(mode = "list", length = n_aheads)
-  for (i in seq_along(ahead)) {
-    a <- ahead[i] 
-    if (verbose) cat(sprintf("%s%i", ifelse(i == 1, "\nahead = ", ", "), a))
+  result <- list()
+  if (!is.null(save_trained_models)) trained_models <- list()
+  for (a in ahead) {
+    if (verbose) cat(sprintf("%s%i", ifelse(a == ahead[1], "\nahead = ", ", "), a))
     
-    
-    response_end_date <- df_wide %>%
-      select(.data$time_value, 
-             starts_with(sprintf("response+%i:", ahead_in_days[i]))) %>%
-      drop_na() %>%
-      summarize(max(.data$time_value)) %>% 
-      pull()
-    train_end_date <- min(feature_end_date, response_end_date)
-    
-    x <- df_features %>%
-      filter(between(.data$time_value,
-                     train_end_date - training_window_size + 1,
-                     train_end_date)) %>%
-      select(-c(.data$geo_value, .data$time_value)) %>% 
-      as.matrix()
-    y <- df_wide %>%
-      filter(between(.data$time_value,
-                     train_end_date - training_window_size + 1,
-                     train_end_date)) %>%
-      select(starts_with(sprintf("value+%i:", a))) %>% 
-      pull()
+    mats <- modeltools:::create_train_and_predict_matrices(
+      df_wide, a, training_window_size)
     
     if (noncross) {
-      if (noncross_points == "all") x0 <- rbind(x, newx)
-      else if (noncross_points == "test") x0 <- newx
-      else if (noncross_points == "train") x0 <- x
+      if (noncross_points == "all") x0 <- rbind(mats$train_x, mats$predict_x)
+      else if (noncross_points == "test") x0 <- mats$predict_x
+      else if (noncross_points == "train") x0 <- mats$train_x
       x0 <- stats::na.omit(x0) # Just in case, since quantgen won't check this
       train_params$x0 <- x0
     }
     
     # Define forward-validation folds, if we need to
     # Note: There's a possible error here. Get code from Alden
-    if (cv && cv_type == "forward") 
-      train_params$train_test_inds <- forward_cv_idx(
-        df_wide$time_value,
-        train_end_date,
-        training_window_size,
-        a,
-        params$nfolds,
-        params$ntrain)
-
-    # Fit model
-    train_params$x <- x
-    train_params$y <- y;
+    # if (cv && cv_type == "forward") 
+    #   train_params$train_test_inds <- forward_cv_idx(
+    #     df_wide$time_value,
+    #     mats$train_end_date, # needs to come out of modeltools::create_*
+    #     training_window_size,
+    #     a,
+    #     params$nfolds,
+    #     params$ntrain)
+    
+    # fit model
+    train_params$x <- mats$train_x
+    train_params$y <- mats$train_y;
     train_obj <- do.call(train_fun, train_params)
     
     # Make predictions
     predict_params$object <- train_obj
-    predict_params$object$inv_trans <- inv_transform # Let quantgen handle this
-    predict_params$newx <- newx
+    predict_params$object$inv_trans <- inv_trans # Let quantgen handle this
+    predict_params$newx <- mats$predict_x
     predict_mat <- do.call(predict_fun, predict_params)
     
     # Do some wrangling to get it into evalcast "long" format
     colnames(predict_mat) <- tau
-    predict_df <- bind_cols(geo_value = test_geo_value, predict_mat) %>%
+    predict_df <- bind_cols(geo_value = mats$predict_geo_values, predict_mat) %>%
       pivot_longer(-.data$geo_value, names_to = "quantile", values_to = "value") %>%
-      mutate(ahead = a)
+      mutate(ahead = a, quantile = as.numeric(quantile)) %>%
+      relocate(ahead)
     
     # save off the objects
-    if (!is.null(save_trained_models)) trained_models[[i]] <- train_obj
-    result[[i]] = predict_df
+    if (!is.null(save_trained_models)) trained_models[[a]] <- train_obj
+    result[[a]] = predict_df
   }
   
   if (verbose) cat("\n")
   if (!is.null(save_trained_models)) {
+    trained_models <- Filter(function(x) !is.null(x), trained_models)
     names(trained_models) = paste("ahead", "=", ahead)
     saveRDS(trained_models, 
             file = file.path(save_trained_models, 
-                             sprintf("quantgen_models_for_%s", forecast_date)))
+                             sprintf("quantgen_models_for_%s.RDS", forecast_date)))
   }
-    
+  
   # Collapse predictions into one big data frame, and return
   return(bind_rows(result))
+  
 }

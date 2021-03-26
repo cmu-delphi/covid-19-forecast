@@ -8,6 +8,7 @@ grab_start_day(
   ahead,
   training_window_size,
   lags,
+  incidence_period,
   roll_sum_len = 7,
   cv = FALSE,
   cv_type = c("forward", "random"),
@@ -15,11 +16,14 @@ grab_start_day(
 )
 }
 \arguments{
-\item{ahead}{vector of aheads (in days)}
+\item{ahead}{vector of aheads}
 
 \item{training_window_size}{desired size of the training set}
 
 \item{lags}{vector (or list) of lags for features}
+
+\item{incidence_period}{String indicating the incidence period, either
+"epiweek" or "day".}
 
 \item{roll_sum_len}{if features need trailing sums, how far back do we need?
 Default is 7}

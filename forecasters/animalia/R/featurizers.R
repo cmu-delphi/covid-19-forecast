@@ -8,7 +8,7 @@
 #' @export
 #' @importFrom dplyr group_by arrange slice_max ungroup summarise across
 #' @importFrom rlang .data
-anteater_featurizer <- function(df) {
+states_featurizer <- function(df) {
   df %>% 
     group_by(.data$geo_value) %>% # maybe easier with modeltools::slide_by_geo
     arrange(.data$time_value) %>%
@@ -19,8 +19,9 @@ anteater_featurizer <- function(df) {
     ungroup()
 }
 
-#' @describeIn anteater_featurizer Selects top 200 locations by total cases before averaging
-zebra_featurizer <- function(df) {
+#' @describeIn states_featurizer Selects top 200 locations by total cases before averaging
+#' @export
+counties_featurizer <- function(df) {
   locs <- df %>% 
     group_by(.data$geo_value) %>%
     summarise(tot = sum(.data$`value+0:jhu-csse_confirmed_incidence_num`)) %>%
