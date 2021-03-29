@@ -127,8 +127,8 @@ production_forecaster <- function(df_list,
   incidence_period <- match.arg(incidence_period)
   # make lags a list, perform checks
   dt <- lag_processor(lags, nsigs)
-  ahead_in_days <- purrr::map_dbl(ahead,  ~evalcast::get_target_ahead(
-    forecast_date, incidence_period, .x))
+  ahead_in_days <- purrr::map_dbl(
+    ahead,  ~evalcast::get_target_ahead(forecast_date, incidence_period, .x))
   dt[[1]] <- c(dt[[1]], ahead_in_days) 
   
   # -------------------------------
