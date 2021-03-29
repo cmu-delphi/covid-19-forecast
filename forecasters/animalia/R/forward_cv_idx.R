@@ -1,7 +1,12 @@
-# Determines train/validation splits for forward cross validation
+# Helper script to determine train/validation splits for forward cross validation
 #' @importFrom dplyr between
 #' 
+#' currently unimplemented
 #' 
+#' the first 4 inputs are internal to the production_forecaster
+#' nfolds / ntrain are possibly additional named params in ...
+#' Together, these determine the validation sets for forward validation
+#' before being passed along to cv_quantile_lasso
 forward_cv_idx <- function(time_value, 
                            train_end_date, 
                            training_window_size,
