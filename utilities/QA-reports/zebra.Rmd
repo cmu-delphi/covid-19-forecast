@@ -36,13 +36,14 @@ simple_labs <- function(geo_value) {
 
 ```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE, message=FALSE}
 # Grab corrected data
-zyz <- zookeeper::make_zyzzyva_corrector()
+zyz <- zookeeper::make_zyzzyva_corrector(
+  params = zookeeper::default_county_params(data_source = "jhu-csse"))
 corrected <- suppressMessages(covidcast::covidcast_signal(
   "jhu-csse","confirmed_incidence_num", 
   start_day = ymd(params$today) - days(x = 90), 
   geo_type = "county")) %>% 
   zyz()  # make corrections
-corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
+corrected <- corrected[[1]] %>% evalcast::sum_to_epiweek()
 
 # setup the plot and join corrections to the truth
 pd <- evalcast:::setup_plot_trajectory(
