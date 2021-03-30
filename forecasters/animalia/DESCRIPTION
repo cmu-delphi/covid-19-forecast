@@ -1,0 +1,34 @@
+Package: animalia
+Type: Package
+Title: Template Quantile Regression Forecaster
+Version: 0.1.0
+Authors@R: c(
+    person("Daniel J.", "McDonald", email="daniel@stat.ubc.ca", role=c("aut","cre")),
+    person("Ryan J.", "Tibshirani", email="ryantibs@cmu.edu", role=c("aut")))
+Description: This package is a simple template for using standard prediction
+    algorithms for making COVID19 forecasts using the [covidcast] and [evalcast]
+    frameworks.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Remotes:
+    ryantibs/quantgen/R-package/quantgen@master,
+    cmu-delphi/covidcast/R-packages/covidcast@main,
+    cmu-delphi/covidcast/R-packages/evalcast@evalcast,
+    cmu-delphi/covidcast/R-packages/modeltools@modeltools,
+Imports: 
+    assertthat,
+    covidcast,
+    dplyr,
+    evalcast,
+    lubridate,
+    magrittr,
+    purrr,
+    quantgen,
+    RcppRoll,
+    rlang,
+    stats,
+    stringr,
+    tidyr,
+    zoo
+RoxygenNote: 7.1.1
