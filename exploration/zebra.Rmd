@@ -38,8 +38,9 @@ data_source <- c("jhu-csse","fb-survey","doctor-visits")
 data_signals <- c("confirmed_incidence_num", "smoothed_hh_cmnty_cli",
                   "smoothed_cli")
 our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
-forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
-# 6 forecast dates, always on 2nd day of the epiweek
+forecast_dates <- our_pred_dates[seq(7, 32)] 
+# forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
+# # 6 forecast dates, always on 2nd day of the epiweek
 incidence_period <- "day"
 ahead <- c(7, 14, 21, 28) - 2 # minus 2 because we predict the current week
 geo_type <- "county" 
