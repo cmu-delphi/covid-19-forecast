@@ -81,15 +81,19 @@ dav_maker_zebra <- function(df) {
 
 ## Produce forecasts
 
-Current model is quantile regression with all the same lags/covariates as zyzzyva
+Current model is quantile regression with all the same lags/covariates as zyzzyva.
 
+* Signals:
+  * "jhu-csse-confirmed_incidence_num": lags 0, 1, 2, 3, 6, 9, ..., 21.
+  * "fb-survey-smoothed_hh_cmnty_cli": lags 3, 10, 17, 24.
+  * "doctor-visits-smoothed_cli": lags 3, 10, 17, 24.
 * We always have the forecast date as the second day of the epiweek (Monday). 
 * So we forecast 5, 12, 19, and 26 days ahead. 
 * No constraints on the predicted quantiles. But we sort after.
 * No regularization. No CV.
 * 1 model for the whole country.
 * We use 28 days of training data.
-* On each forecast date, we look at the most recent `r as.numeric(forecast_dates[1] - start_day_zebra(forecast_dates[1]))` and keep the top 200 counties by total cases
+* On each forecast date, we look at the most recent `r as.numeric(forecast_dates[1] - start_day_zebra(forecast_dates[1]))` days (`as.numeric(forecast_dates[1] - start_day_zebra(forecast_dates[1]))`) and keep the top 200 counties by total cases
 over the period.
 * We apply corrections as in production.
 
@@ -163,7 +167,8 @@ results %>% group_by(forecast_date) %>% summarise(n_distinct(geo_value))
 ```
 
 
-We compare the new forecaster to
+We compare the new forecaster to: 
+
 * COVIDhub-baseline
 * COVIDhub-ensemble
 * Our submission
