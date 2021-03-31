@@ -38,7 +38,8 @@ data_source <- c("jhu-csse","jhu-csse","safegraph")
 data_signals <- c("deaths_incidence_num", "confirmed_incidence_num",
                   "restaurants_visit_prop")
 our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
-forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
+forecast_dates <- our_pred_dates[seq(7, 32)] 
+# forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
 # 6 forecast dates, always on 2nd day of the epiweek
 incidence_period <- "day"
 ahead <- c(7, 14, 21, 28) - 2 # minus 2 because we predict the current week
@@ -56,11 +57,11 @@ nonneg <- TRUE
 # enough training data so that 1. we actually have the response (defined by some
 # number of days ahead into the future) and 2. we have the lagged features 
 start_day_mob <- function(forecast_date) {
-  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) + 1)
+  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) - 6 + 1)
 }
 
 start_day_nomob <- function(forecast_date) {
-  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) + 1)
+  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) - 6 + 1)
 }
 
 # Now we use all the data
