@@ -7,18 +7,16 @@ output:
     code_folding: hide
 ---
 
-
-
 **Package installation**
 
 Note: my local `evalcast` and `covidcast` installations may be slightly ahead of the remote versions due to outstanding PRs.
 
 ```{r package-install, eval=FALSE}
-remotes::install_github("cmu-delphi/covidcast", ref="main",
-                        subdir = "R-packages/covidcast")
-remotes::install_github("cmu-delphi/covidcast", ref = "evalcast-killcards",
-                         subdir = "R-packages/evalcast")
-remotes::install_github(repo="ryantibs/quantgen", subdir="R-package/quantgen")
+# remotes::install_github("cmu-delphi/covidcast", ref="main",
+#                         subdir = "R-packages/covidcast")
+# remotes::install_github("cmu-delphi/covidcast", ref = "evalcast-killcards",
+#                          subdir = "R-packages/evalcast")
+# remotes::install_github(repo="ryantibs/quantgen", subdir="R-package/quantgen")
 # remotes::install_github("cmu-delphi/covidcast", ref = "main",
 #                         subdir = "R-packages/modeltools")
 ```
@@ -26,7 +24,7 @@ remotes::install_github(repo="ryantibs/quantgen", subdir="R-package/quantgen")
 
 ```{r common-stuff, echo=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, fig.align = "center",
-                      message = FALSE, warning = FALSE)
+                      fig.width = 12, message = FALSE, warning = FALSE)
 library(covidcast)
 library(evalcast)
 #library(modeltools)
@@ -59,7 +57,7 @@ nonneg <- TRUE
 # enough training data so that 1. we actually have the response (defined by some
 # number of days ahead into the future) and 2. we have the lagged features 
 start_day_zebra <- function(forecast_date) {
-  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) + 1)
+  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) - 6 + 1)
 }
 
 
@@ -126,9 +124,6 @@ zeb <- get_predictions(
 ```
 
 
-
-
-
 ```{r grab-the-competition, message = FALSE, warning = FALSE}
 library(tidyr)
 library(purrr)
@@ -179,10 +174,10 @@ Top line conclusions:
 1. By WIS, we are the top model for 1 weeks ahead, still good at 2-4 weeks ahead
 1. Coverage is very good.
 
-```{r overall, message = FALSE, warning = FALSE, fig.width = 7, fig.height = 5}
+```{r overall, message = FALSE, warning = FALSE, fig.height = 5}
 subtitle = sprintf("Forecasts made over %s to %s",
-                   format(min(forecast_dates), "%B %d"),
-                   format(max(forecast_dates), "%B %d"))
+                   format(min(forecast_dates), "%B %d, %Y"),
+                   format(max(forecast_dates), "%B %d, %Y"))
 
 plot_canonical(results, x = "ahead", y = "ae", aggr = mean) +
   labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean AE") +
@@ -209,22 +204,22 @@ Top line conclusions:
 2. Quite a bit worse in Dec/January, though better than aardvark.
 3. Coverage is generally good at all aheads.
 
-```{r by-forecast-date, message = FALSE, warning = FALSE, fig.width = 7, fig.height = 5}
+```{r by-forecast-date, message = FALSE, warning = FALSE, fig.height = 5}
 theme_set(theme_bw())
 plot_canonical(results, x = "forecast_date", y = "ae", aggr = mean,
-               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
   labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean AE") +
   theme(legend.position = "bottom") + 
   scale_y_log10()
 
 plot_canonical(results, x = "forecast_date", y = "wis", aggr = mean,
-               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
   labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean WIS") +
   theme(legend.position = "bottom") + 
   scale_y_log10()
 
 plot_canonical(results, x = "forecast_date", y = "coverage_80", aggr = mean,
-               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
   labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean Coverage") +
   theme(legend.position = "bottom") + 
   coord_cartesian(ylim=c(0,1)) + geom_hline(yintercept = .8, color="black")
@@ -239,7 +234,7 @@ Relative to baseline; scale first then take the median.
 * Our November/December performance is the biggest issue. Though this is uncorrected data.
 
 
-```{r, message = FALSE, warning = FALSE, fig.width = 7, fig.height = 5}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 plot_canonical(results, x = "ahead", y = "wis", aggr = median,
                base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
   labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Median relative WIS") +
@@ -247,7 +242,7 @@ plot_canonical(results, x = "ahead", y = "wis", aggr = median,
   geom_hline(yintercept = 1)
 
 plot_canonical(results, x = "forecast_date", y = "wis", aggr = median,
-               grp_vars = c("forecaster", "ahead"), facet_rows = "ahead",
+               grp_vars = c("forecaster", "ahead"), facet_cols = "ahead",
                base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
   labs(subtitle = subtitle, xlab = "Forecast date", ylab = "Median relative WIS") +
   theme(legend.position = "bottom") + 
@@ -258,7 +253,7 @@ plot_canonical(results, x = "forecast_date", y = "wis", aggr = median,
 
 Relative to baseline; scale first then take the geometric mean, ignoring a few 0's. I think this is potentially more useful than the median/mean for relative WIS (or relative AE), but I haven't completely thought it through. Putting the results here to be provocative.
 
-```{r, message = FALSE, warning = FALSE, fig.width = 7, fig.height = 5}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 geom_mean <- function(x) prod(x)^(1/length(x))
 plot_canonical(results %>% filter(wis > 0), x = "ahead", y = "wis", 
                aggr = geom_mean,
@@ -269,7 +264,7 @@ plot_canonical(results %>% filter(wis > 0), x = "ahead", y = "wis",
   geom_hline(yintercept = 1)
 
 plot_canonical(results %>% filter(wis > 0), x = "forecast_date", y = "wis", 
-               aggr = geom_mean, facet_rows = "ahead",
+               aggr = geom_mean, facet_cols = "ahead",
                grp_vars = c("forecaster", "ahead"),
                base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
   theme(legend.position = "bottom") + 
@@ -284,7 +279,7 @@ plot_canonical(results %>% filter(wis > 0), x = "forecast_date", y = "wis",
 
 * Again, our Achilles heel is November/December, but we're using uncorrected data.
 
-```{r, message = FALSE, warning = FALSE, fig.width = 7, fig.height = 5}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 
 plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
                dots = TRUE, grp_vars = "forecaster") + 
@@ -294,7 +289,7 @@ plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
 
 plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
                dots = TRUE, grp_vars = c("forecaster", "ahead"), 
-               facet_rows = "ahead") +
+               facet_cols = "ahead") +
   labs(subtitle = subtitle, xlab = "Target date", ylab = "Mean WIS") +
   theme(legend.position = "bottom") + 
   scale_y_log10()
