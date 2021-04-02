@@ -129,7 +129,7 @@ aardvark_state_corrections_single_signal <- function(x, params) {
   # actually perform the corrections
   x <- x %>% group_by(.data$geo_value) %>%
     dplyr::mutate(
-      fmean = roll_meanr(.data$value, params$window_size),
+      fmean = roll_meanr(.data$value, params$window_size, na.rm = TRUE),
       smean = roll_mean(.data$value, params$window_size, fill = NA),
       fmedian = roll_medianr(.data$value, params$window_size, na.rm = TRUE),
       smedian = roll_median(.data$value, params$window_size, fill = NA),
