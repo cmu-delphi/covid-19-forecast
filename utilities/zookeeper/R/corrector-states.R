@@ -61,14 +61,14 @@ default_state_params <- function(
 #' @export
 #'
 #' @examples
-#' make_aardvark_corrector(default_state_params(window_size=21))
+#' make_state_corrector(default_state_params(window_size=21))
 make_state_corrector <- function(
   params = default_state_params(),
   corrections_db_path = NULL,
   dump_locations = c("as","gu","mp","vi")) {
 
 
-  aardvark_state_corrections <- function(df) {
+  function(df) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
@@ -92,8 +92,7 @@ make_state_corrector <- function(
     }
     corrected <- list()
     for (i in seq_along(df)) {
-      corrected[[i]] <- aardvark_state_corrections_single_signal(
-        df[[i]], params[i,])
+      corrected[[i]] <- state_corrections_single_signal(df[[i]], params[i,])
       df[[i]] <- corrected[[i]] %>%
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
@@ -113,14 +112,12 @@ make_state_corrector <- function(
     }
     return(df)
   }
-
-  return(aardvark_state_corrections)
 }
 
 
 
 #' @importFrom lubridate ymd
-aardvark_state_corrections_single_signal <- function(x, params) {
+state_corrections_single_signal <- function(x, params) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)

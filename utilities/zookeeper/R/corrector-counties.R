@@ -62,14 +62,14 @@ default_county_params <- function(
 #' @export
 #'
 #' @examples
-#' make_zyzzyva_corrector(default_state_params(window_size=21))
+#' make_county_corrector(default_state_params(window_size=21))
 make_county_corrector <- function(
   params = default_county_params(),
   corrections_db_path = NULL,
   dump_locations = NULL) {
 
 
-  zyzzyva_county_corrections <- function(df) {
+  function(df) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
@@ -93,8 +93,7 @@ make_county_corrector <- function(
     }
     corrected <- list()
     for (i in seq_along(df)) {
-      corrected[[i]] <- zyzzyva_county_corrections_single_signal(
-        df[[i]], params[i,])
+      corrected[[i]] <- county_corrections_single_signal(df[[i]], params[i,])
       df[[i]] <- corrected[[i]] %>%
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
@@ -115,13 +114,12 @@ make_county_corrector <- function(
     return(df)
   }
 
-  return(zyzzyva_county_corrections)
 }
 
 
 
 #' @importFrom lubridate ymd
-zyzzyva_county_corrections_single_signal <- function(x, params) {
+county_corrections_single_signal <- function(x, params) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)
