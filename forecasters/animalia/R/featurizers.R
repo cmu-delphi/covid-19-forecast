@@ -36,15 +36,14 @@ make_state_7dav_featurizer <- function() {
 #' @rdname featurizers
 #' @export
 make_county_7dav_featurizer <- function(response_data_source = "jhu-csse",
-                                      response_signal = "confirmed_incidence_num",
-                                      n_locations = 200) {
+                                        response_signal = "confirmed_incidence_num",
+                                        n_locations = 200) {
   response_name = rlang::sym(
     paste0("value+0:", response_data_source, "_", response_signal))
   function(df) {
     locs <- df %>% 
       group_by(.data$geo_value) %>%
-      summarise(tot = sum(!!response_name, 
-                          na.rm = TRUE)) %>%
+      summarise(tot = sum(!!response_name, na.rm = TRUE)) %>%
       slice_max(order_by = .data$tot, n = n_locations) %>%
       select(.data$geo_value) %>%
       pull()
