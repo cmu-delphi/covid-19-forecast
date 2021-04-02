@@ -160,6 +160,7 @@ production_forecaster <- function(df_list,
   params$sort <- sort
   params$nonneg <- nonneg
   cv <- is.null(lambda) || length(lambda) > 1
+  assert_that(!cv, msg = "cv is currently disabled")
   if (cv) {
     train_fun <- quantgen::cv_quantile_lasso
     predict_fun <- quantgen:::predict.cv_quantile_genlasso
@@ -194,14 +195,15 @@ production_forecaster <- function(df_list,
     }
     
     # Define forward-validation folds, if we need to
-    if (cv && cv_type == "forward")
-      train_params$train_test_inds <- forward_cv_idx(
-        df_wide$time_value,
-        mats$train_end_date, # needs to come out of modeltools::create_*
-        training_window_size,
-        a,
-        params$nfolds,
-        params$ntrain_cv)
+    # Note: There's a possible error here. Get code from Alden
+    # if (cv && cv_type == "forward") 
+    #   train_params$train_test_inds <- forward_cv_idx(
+    #     df_wide$time_value,
+    #     mats$train_end_date, # needs to come out of modeltools::create_*
+    #     training_window_size,
+    #     a,
+    #     params$nfolds,
+    #     params$ntrain)
     
     # fit model
     train_params$x <- mats$train_x
