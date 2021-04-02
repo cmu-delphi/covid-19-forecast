@@ -62,7 +62,7 @@ default_state_params <- function(
 #'
 #' @examples
 #' make_aardvark_corrector(default_state_params(window_size=21))
-make_aardvark_corrector <- function(
+make_state_corrector <- function(
   params = default_state_params(),
   corrections_db_path = NULL,
   dump_locations = c("as","gu","mp","vi")) {
@@ -131,7 +131,7 @@ aardvark_state_corrections_single_signal <- function(x, params) {
     dplyr::mutate(
       fmean = roll_meanr(.data$value, params$window_size),
       smean = roll_mean(.data$value, params$window_size, fill = NA),
-      fmedian = roll_medianr(.data$value, params$window_size),
+      fmedian = roll_medianr(.data$value, params$window_size, na.rm = TRUE),
       smedian = roll_median(.data$value, params$window_size, fill = NA),
       fsd = roll_sdr(.data$value, params$window_size),
       ssd = roll_sd(.data$value, params$window_size, fill = NA),
@@ -167,25 +167,25 @@ aardvark_state_corrections_single_signal <- function(x, params) {
                                      "2020-12-29"))),
       #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
       flag_bad_OH = (.data$geo_value == "oh" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value %in% seq(ymd("2021-02-12"),
-                                   ymd("2021-02-14"), length.out = 3)),
+        (.data$time_value %in% seq(ymd("2021-02-11"),
+                                   ymd("2021-02-13"), length.out = 3)),
       flag_bad_VA = (.data$geo_value == "va" & .data$signal == "deaths_incidence_num") &
         (.data$time_value > ymd("2021-02-20")) & (.data$time_value < ymd("2021-03-04")),
       flag_ky = (.data$geo_value == "ky" & .data$signal == "deaths_incidence_num") &
         (.data$time_value %in% ymd(c("2021-03-18","2021-03-19"))),
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
+        .data$value, .data$value - .data$fmedian, .data$flag_bad_RI, .data$time_value, 7),
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_WA, .data$time_value, 14),
+        .data$value, .data$value - .data$fmedian, .data$flag_bad_WA, .data$time_value, 14),
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_OH, .data$time_value, 60),
+        .data$value, .data$value - .data$fmedian, .data$flag_bad_OH, .data$time_value, 60),
       corrected = corrections_multinom_roll(
-        .data$value, pmax(.data$value-50,0), .data$flag_bad_VA, .data$time_value, 60),
+        .data$value, .data$value - .data$fmedian, .data$flag_bad_VA, .data$time_value, 60),
       corrected = corrections_multinom_roll(
-        .data$value, pmax(.data$value - .data$fmedian,0), .data$flag_ky,
+        .data$value, .data$value - .data$fmedian, .data$flag_ky,
         .data$time_value, 60),
       corrected = corrections_multinom_roll( # for everywhere else
-        .data$corrected, .data$value,
+        .data$corrected, .data$value - .data$fmedian,
         (.data$flag &
            !.data$flag_bad_RI & !.data$flag_bad_WA &
            !.data$flag_bad_OH & !.data$flag_bad_VA & !.data$flag_ky),

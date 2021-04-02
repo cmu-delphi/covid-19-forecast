@@ -63,7 +63,7 @@ default_county_params <- function(
 #'
 #' @examples
 #' make_zyzzyva_corrector(default_state_params(window_size=21))
-make_zyzzyva_corrector <- function(
+make_county_corrector <- function(
   params = default_county_params(),
   corrections_db_path = NULL,
   dump_locations = NULL) {
@@ -175,7 +175,7 @@ zyzzyva_county_corrections_single_signal <- function(x, params) {
       corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
       corrected = corrections_multinom_roll(
-        .data$corrected, .data$value, (.data$flag & !.data$flag_bad_RI),
+        .data$corrected, .data$value - .data$fmedian, (.data$flag & !.data$flag_bad_RI),
         .data$time_value, params$backfill_lag, expectations = .data$fmedian,
         reweight = function(x) exp_w(x, params$backfill_lag)),
       corrected = .data$corrected +

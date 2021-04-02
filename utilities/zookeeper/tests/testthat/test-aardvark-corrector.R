@@ -1,5 +1,5 @@
-test_that("aardvark state corrector works", {
-  aad <- make_aardvark_corrector()
+test_that("state corrector works", {
+  aad <- make_state_corrector()
 
   sigs <- suppressMessages(covidcast::covidcast_signals(
     "jhu-csse",
