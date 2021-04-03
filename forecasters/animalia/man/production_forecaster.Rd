@@ -65,6 +65,9 @@ signal. lags are always specified in days.}
 \item{tau}{Vector of quantile levels for the probabilistic forecast. If not
 specified, defaults to the levels required by the COVID Forecast Hub.}
 
+\item{lambda}{vector of values to use for the regularization parameter
+in quantile lasso}
+
 \item{transform, inv_trans}{Transformation and inverse transformations to use
 for the response/features. These are applied to the raw data before any
 leads or lags. The former `transform` can be a function or a

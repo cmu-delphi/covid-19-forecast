@@ -28,6 +28,8 @@
 #'   signal. lags are always specified in days.
 #' @param tau Vector of quantile levels for the probabilistic forecast. If not
 #'   specified, defaults to the levels required by the COVID Forecast Hub.
+#' @param lambda vector of values to use for the regularization parameter
+#'   in quantile lasso
 #' @param transform,inv_trans Transformation and inverse transformations to use
 #'   for the response/features. These are applied to the raw data before any
 #'   leads or lags. The former `transform` can be a function or a
@@ -218,7 +220,7 @@ production_forecaster <- function(df_list,
     colnames(predict_mat) <- tau
     predict_df <- bind_cols(geo_value = mats$predict_geo_values, predict_mat) %>%
       pivot_longer(-.data$geo_value, names_to = "quantile", values_to = "value") %>%
-      mutate(ahead = a, quantile = as.numeric(quantile)) %>%
+      mutate(ahead = a, quantile = as.numeric(.data$quantile)) %>%
       relocate(ahead)
     
     # save off the objects

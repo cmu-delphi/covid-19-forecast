@@ -43,13 +43,13 @@ signals <- dplyr::tibble(
 
 
 
-aa_corrector  <- zookeeper::make_aardvark_corrector()
+aa_corrector  <- zookeeper::make_state_corrector()
 state_forecaster_args <- list(
   ahead = aheads,
   lags = c(0,7,14),
   tau = evalcast::covidhub_probs(),
   lambda = 0,
-  featurize = animalia::states_featurizer,
+  featurize = animalia::make_state_7dav_featurizer(),
   verbose = TRUE,
   save_wide_data = file.path(output_dir, "state-output"),
   save_trained_models = file.path(output_dir, "state-output")
@@ -82,8 +82,7 @@ cat("Running Counties\n")
 
 
 start_day <- animalia::grab_start_day(aheads, 28, 28, "epiweek")(forecast_date)
-zz_corrector  <- zookeeper::make_zyzzyva_corrector(
-  zookeeper::default_county_params(data_source = "jhu-csse"))
+zz_corrector  <- zookeeper::make_county_corrector()
 signals <- tibble(
   data_source = c(
     ## "usa-facts",
@@ -104,13 +103,13 @@ county_forecaster_args <- list(
   lags = list(c(0, 1, 2, seq(3, 21, 3)), seq(3,28,7), seq(3,28,7)), # Lags
   tau = evalcast::covidhub_probs(type = "inc_case"),
   lambda = 0,
-  featurize = animalia::counties_featurizer,
+  featurize = animalia::make_county_7dav_featurizer(),
   verbose = TRUE,
   save_wide_data = file.path(output_dir, "county-output"),
   save_trained_models = file.path(output_dir, "county-output")
 )
 county_predictions <- evalcast::get_predictions(
-  forecaster = production_forecaster,
+  forecaster = animalia::production_forecaster,
   name_of_forecaster = "zebra",
   signals = signals,
   forecast_dates = forecast_date,

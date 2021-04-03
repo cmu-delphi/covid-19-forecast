@@ -41,7 +41,3 @@ grab_start_day <- function(ahead,
     )
   }
 }
-
-start_day_ar <- function(forecast_date){
-  return(as.Date(forecast_date) - (max(ahead) + nfolds + max(ahead) + n + max(lags) + hotspot_lag) + 1)
-}
