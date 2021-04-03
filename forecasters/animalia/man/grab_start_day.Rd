@@ -12,8 +12,7 @@ grab_start_day(
   roll_sum_len = 7,
   cv = FALSE,
   cv_type = c("forward", "random"),
-  nfolds = 5,
-  ntrain_cv = training_window_size
+  nfolds = 5
 )
 }
 \arguments{
@@ -29,21 +28,17 @@ grab_start_day(
 \item{roll_sum_len}{if features need trailing sums, how far back do we need?
 Default is 7}
 
-\item{cv}{will we be performing cv?}
+\item{cv}{will we be performing cv? (currently ignored)}
 
-\item{cv_type}{forward cv or random, forward, requires more historical data}
+\item{cv_type}{forward cv or random, forward, requires more historical data
+(currently ignored)}
 
-\item{nfolds}{how many folds to use for CV}
-
-\item{ntrain_cv}{how much data do we train CV with? default is 
-`training_window_size` (different from iid CV)}
+\item{nfolds}{how many folds to use for CV (currently ignored)}
 }
 \value{
 returns a function with a single argument: the forecast_date as a 
   string or Date object
 }
 \description{
-This closure can be used to determine the earliest date data needs to be 
-pulled in order to have sufficient available data at prediction time.
-It can potentially cut down the fitting time.
+Produce start_day function
 }
