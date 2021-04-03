@@ -196,3 +196,8 @@ state_corrections_single_signal <- function(x, params) {
   }
   return(x)
 }
+
+
+#' @describeIn make_state_corrector alias to avoid destroying production
+#' @export
+make_aardvark_corrector <- make_state_corrector

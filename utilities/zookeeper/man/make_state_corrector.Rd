@@ -2,9 +2,16 @@
 % Please edit documentation in R/corrector-states.R
 \name{make_state_corrector}
 \alias{make_state_corrector}
+\alias{make_aardvark_corrector}
 \title{Corrector for state forecasts}
 \usage{
 make_state_corrector(
+  params = default_state_params(),
+  corrections_db_path = NULL,
+  dump_locations = c("as", "gu", "mp", "vi")
+)
+
+make_aardvark_corrector(
   params = default_state_params(),
   corrections_db_path = NULL,
   dump_locations = c("as", "gu", "mp", "vi")
@@ -27,6 +34,11 @@ A function that takes a list of covidcast signals as the only
 This function produces another function to create corrections. It expects
 the signals from covidcast to be a list (or a single signal).
 }
+\section{Functions}{
+\itemize{
+\item \code{make_aardvark_corrector}: alias to avoid destroying production
+}}
+
 \examples{
-make_aardvark_corrector(default_state_params(window_size=21))
+make_state_corrector(default_state_params(window_size=21))
 }

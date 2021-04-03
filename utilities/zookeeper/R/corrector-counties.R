@@ -184,3 +184,7 @@ county_corrections_single_signal <- function(x, params) {
   }
   return(x)
 }
+
+#' @describeIn make_county_corrector alias to avoid destroying production
+#' @export
+make_zyzzyva_corrector <- make_county_corrector

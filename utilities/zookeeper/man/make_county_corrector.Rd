@@ -2,9 +2,16 @@
 % Please edit documentation in R/corrector-counties.R
 \name{make_county_corrector}
 \alias{make_county_corrector}
+\alias{make_zyzzyva_corrector}
 \title{Corrector for county forecasts}
 \usage{
 make_county_corrector(
+  params = default_county_params(),
+  corrections_db_path = NULL,
+  dump_locations = NULL
+)
+
+make_zyzzyva_corrector(
   params = default_county_params(),
   corrections_db_path = NULL,
   dump_locations = NULL
@@ -27,6 +34,11 @@ A function that takes a list of covidcast signals as the only
 This function produces another function to create corrections. It expects
 the signals from covidcast to be a list (or a single signal).
 }
+\section{Functions}{
+\itemize{
+\item \code{make_zyzzyva_corrector}: alias to avoid destroying production
+}}
+
 \examples{
-make_zyzzyva_corrector(default_state_params(window_size=21))
+make_county_corrector(default_state_params(window_size=21))
 }
