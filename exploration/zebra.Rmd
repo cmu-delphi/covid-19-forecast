@@ -112,7 +112,6 @@ zeb <- get_predictions(
                       signal = data_signals,
                       start_day = list(start_day_zebra)),
   forecast_dates = forecast_dates, 
-  as_of_override = function(x) lubridate::ymd(Sys.Date()),
   incidence_period = incidence_period, 
   ahead = ahead, 
   geo_type = "county", 
