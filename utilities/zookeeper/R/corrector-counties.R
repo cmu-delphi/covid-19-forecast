@@ -62,14 +62,14 @@ default_county_params <- function(
 #' @export
 #'
 #' @examples
-#' make_zyzzyva_corrector(default_state_params(window_size=21))
-make_zyzzyva_corrector <- function(
+#' make_county_corrector(default_state_params(window_size=21))
+make_county_corrector <- function(
   params = default_county_params(),
   corrections_db_path = NULL,
   dump_locations = NULL) {
 
 
-  zyzzyva_county_corrections <- function(df) {
+  function(df) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
@@ -93,8 +93,7 @@ make_zyzzyva_corrector <- function(
     }
     corrected <- list()
     for (i in seq_along(df)) {
-      corrected[[i]] <- zyzzyva_county_corrections_single_signal(
-        df[[i]], params[i,])
+      corrected[[i]] <- county_corrections_single_signal(df[[i]], params[i,])
       df[[i]] <- corrected[[i]] %>%
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
@@ -115,13 +114,12 @@ make_zyzzyva_corrector <- function(
     return(df)
   }
 
-  return(zyzzyva_county_corrections)
 }
 
 
 
 #' @importFrom lubridate ymd
-zyzzyva_county_corrections_single_signal <- function(x, params) {
+county_corrections_single_signal <- function(x, params) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)
@@ -175,7 +173,7 @@ zyzzyva_county_corrections_single_signal <- function(x, params) {
       corrected = corrections_multinom_roll(
         .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
       corrected = corrections_multinom_roll(
-        .data$corrected, .data$value, (.data$flag & !.data$flag_bad_RI),
+        .data$corrected, .data$value - .data$fmedian, (.data$flag & !.data$flag_bad_RI),
         .data$time_value, params$backfill_lag, expectations = .data$fmedian,
         reweight = function(x) exp_w(x, params$backfill_lag)),
       corrected = .data$corrected +
@@ -186,3 +184,7 @@ zyzzyva_county_corrections_single_signal <- function(x, params) {
   }
   return(x)
 }
+
+#' @describeIn make_county_corrector alias to avoid destroying production
+#' @export
+make_zyzzyva_corrector <- make_county_corrector

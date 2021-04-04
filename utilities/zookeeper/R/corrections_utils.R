@@ -44,10 +44,16 @@ corrections_multinom_roll <- function(
   if (length(locs) == 0) return(x)
   if (is.null(expectations)) expectations <- rep(1, length(x))
 
+  excess[is.na(excess)] <- 0
+  bad_excess <- abs(excess %% 1) > 1e-10
+  if (any(bad_excess)) {
+    excess[bad_excess] <- floor(excess[bad_excess]) +
+      rbinom(sum(bad_excess), 1, .5)
+  }
 
   for (ii in locs) {
     if (ii <= max_lag) {
-      ii_lag <- 1:(ii -1 + inc_out_time)
+      ii_lag <- 1:(ii - 1 + inc_out_time)
     } else {
       ii_lag <- seq(ii - max_lag + 1, ii - 1 + inc_out_time)
     }
