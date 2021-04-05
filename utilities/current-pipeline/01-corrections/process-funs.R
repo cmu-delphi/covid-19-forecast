@@ -24,6 +24,7 @@ exp_w <- function(x, std_decay=30, b0=8, a=exp(1)/2){
 }
 
 missing_future <- function(selector, time_value, excess, preds){
+  if (length((which(excess>0))) == 0) return(0L)
   local_tail = (selector & time_value > time_value[max(which(excess>0))])
   if(!any(local_tail)) return(0L)
   tot = round(sum(preds[local_tail]))
