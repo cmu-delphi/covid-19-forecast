@@ -13,7 +13,6 @@ forward_cv_idx <- function(time_value,
                            ahead,
                            nfolds = NULL,
                            ntrain_cv = NULL){
-
   nfolds <- ifelse(is.null(nfolds), 5, nfolds)
   ntrain_cv <- ifelse(is.null(ntrain_cv), training_window_size, ntrain_cv)
   assert_that(nfolds > 0, msg = "nfolds must be NULL or non-negative.")
