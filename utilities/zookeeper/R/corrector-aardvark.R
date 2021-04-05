@@ -103,7 +103,7 @@ make_manual_flags <- function(df,special_flags){
 #' 
 #' @param df 
 #' @param special_flags 
- <- function(df,special_flags){
+make_special_correction <- function(df,special_flags){
   for (i in 1:nrow(special_flags)){
     varname <- paste0('flag_bad_',special_flags$geo_value[i])
     df <- df %>% mutate(corrected = corrections_multinom_roll(
@@ -254,7 +254,7 @@ aardvark_state_corrections_single_signal <- function(x, params, special_flags) {
       .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7))
     
     # Correction on states that require special correction
-    x <- (x,special_flags) 
+    x <- make_special_correction(x,special_flags) 
   }
   
   
