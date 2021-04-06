@@ -157,6 +157,11 @@ results <- evaluate_predictions(bind_rows(qar_dc, submitted),
   intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
 ```
 
+```{r save-predictions, include = FALSE}
+# save predictions
+#saveRDS(bind_rows(qar_dc, submitted), "zebra_predictions_2021-04-05.rds")
+```
+
 
 ## Overall AE, WIS, Coverage 80
 
