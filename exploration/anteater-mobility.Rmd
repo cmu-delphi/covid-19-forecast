@@ -38,7 +38,7 @@ data_source <- c("jhu-csse","jhu-csse","safegraph")
 data_signals <- c("deaths_incidence_num", "confirmed_incidence_num",
                   "restaurants_visit_prop")
 our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
-forecast_dates <- our_pred_dates[seq(7, 32)] 
+forecast_dates <- our_pred_dates[seq(20, 32)] 
 # forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
 # 6 forecast dates, always on 2nd day of the epiweek
 incidence_period <- "day"
@@ -101,6 +101,10 @@ Current model is quantile regression at the state level
 * We use 28 days of training data.
 * We apply the same corrections as in production.
 
+It appears that the signal "safegraph-restaurants_visit_prop" is only available
+from 2020-11-30 onwards. Hence, the evaluation of anteater can only start from
+that date.
+
 ```{r produce-forecasts-mob}
 # Quantile autoregression with 3 lags, or QAR3
  
@@ -118,7 +122,6 @@ for (a in seq_along(ahead)){
       signal = data_signals,
       start_day = list(start_day_mob)),
     forecast_dates = forecast_dates, 
-    as_of_override = function(x) lubridate::ymd(Sys.Date()),
     incidence_period = incidence_period, 
     ahead = ah, 
     geo_type = "state", 
@@ -144,7 +147,6 @@ nomob <- get_predictions(
                       signal = data_signals[1:2],
                       start_day = list(start_day_nomob)),
   forecast_dates = forecast_dates, 
-  as_of_override = function(x) lubridate::ymd(Sys.Date()),
   incidence_period = incidence_period, 
   ahead = ahead, 
   geo_type = "state", 
@@ -189,6 +191,10 @@ results <- evaluate_predictions(bind_rows(qar_dc, submitted),
   intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
 ```
 
+```{r save-predictions, include = FALSE}
+# save predictions
+saveRDS(bind_rows(qar_dc, submitted), "anteater_predictions_2021-04-07.rds")
+```
 
 ## Overall AE, WIS, Coverage 80
 
