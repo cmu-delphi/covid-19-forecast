@@ -76,3 +76,46 @@ corrections_multinom_roll <- function(
   x
 }
 
+
+#'  Two helper functions
+#'  (1) Add manually flagged columns, this function will create columns like
+#'  "flag_bad_va", "flag_bad_wa", etc.
+#'
+#'
+#' @importFrom rlang :=
+#'
+make_manual_flags <- function(df, special_flags) {
+  ds <- df$data_source[1]
+  sig <- df$signal[1]
+  special_flags <- dplyr::filter(special_flags,
+                                 .data$data_source == ds, .data$signal == sig)
+  if (nrow(special_flags) < 1) return(df)
+  for (i in seq_len(nrow(special_flags))) {
+    varname <- paste0('flag_bad_', special_flags$geo_value[i])
+    df <- dplyr::mutate(df,
+                        {{varname}} := (
+                          .data$geo_value == special_flags$geo_value[i] &
+                            as.Date(.data$time_value) %in% unlist(special_flags$time_value[i])
+                        ))
+  }
+  return(df)
+}
+
+
+#' (2) This function makes corrections on manually flagged columns
+#' This function will return the original dataframe with two additional columns:
+#' `corrected` and `special_flag`, in which the latter one is used to avoid duplicate corrections
+#'
+make_manual_corrections <- function(df, special_flags){
+  for (i in 1:nrow(special_flags)) {
+    varname <- paste0('flag_bad_', special_flags$geo_value[i])
+    df <- df %>%
+      dplyr::mutate(
+        corrected = corrections_multinom_roll(
+          .data$corrected, .data$corrected - .data$fmedian, .data[[varname]], .data$time_value,
+          as.numeric(special_flags$max_lag[i])),
+        special_flag = .data$special_flag | .data[[varname]]
+      )
+  }
+  return(df)
+}

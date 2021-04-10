@@ -1,5 +1,5 @@
 ---
-title: "zyzzyva-corrections"
+title: "County corrections"
 output: html_document
 ---
 
@@ -10,7 +10,7 @@ library(tidyverse)
 library(lubridate)
 df <- suppressMessages(
   covidcast_signal(
-    "usa-facts",
+    "jhu-csse",
     "confirmed_incidence_num",
     start_day = Sys.Date() - 180,
     geo_type = "county"
@@ -26,9 +26,9 @@ big_locs <- df %>%
 
 df <- df %>% filter(geo_value %in% big_locs)
 
-aad <- make_zyzzyva_corrector(corrections_db_path = "zyzzyva-corrections.RDS")
+aad <- make_county_corrector(corrections_db_path = "county-corrections.RDS")
 corrected <- aad(df)
-corrected <- readRDS("zyzzyva-corrections.RDS") %>%
+corrected <- readRDS("county-corrections.RDS") %>%
   filter(time_value > Sys.Date() - duration(3, "months")) %>%
   select(-data_source) %>%
   pivot_longer(value:corrected)
@@ -44,7 +44,8 @@ simple_labs <- function(geo_value) {
 ```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
 corrected %>% 
   ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
-  geom_point(data = filter(corrected, flag), aes(y = value), color="orange") +
+  geom_point(data = filter(corrected, flag | special_flag, name == "value"), 
+             aes(y = value), color="orange") +
   facet_wrap(~geo_value , scales = "free", ncol = 3, 
              labeller = labeller(geo_value = simple_labs)) +
   theme_bw() + xlab("") + ylab("") +
