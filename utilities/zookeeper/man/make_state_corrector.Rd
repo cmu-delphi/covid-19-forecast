@@ -8,13 +8,15 @@
 make_state_corrector(
   params = default_state_params(),
   corrections_db_path = NULL,
-  dump_locations = c("as", "gu", "mp", "vi")
+  dump_locations = c("as", "gu", "mp", "vi"),
+  manual_flags = NULL
 )
 
 make_aardvark_corrector(
   params = default_state_params(),
   corrections_db_path = NULL,
-  dump_locations = c("as", "gu", "mp", "vi")
+  dump_locations = c("as", "gu", "mp", "vi"),
+  manual_flags = NULL
 )
 }
 \arguments{
@@ -25,6 +27,12 @@ tibble is most easily generated with [default_state_params()].}
 \item{corrections_db_path}{path to store results, NULL by default}
 
 \item{dump_locations}{character vector of locations to ignore}
+
+\item{manual_flags}{tibble with five columns: `geo_value`, `time_value`,
+`data_source`, `signal`, and `max_lag` indicating combinations of
+of dates, locations, etc to manually flag and back distribute. `max_lag`
+determines how far to backfill. For multiple times at one location,
+`time_value` may be a list column.}
 }
 \value{
 A function that takes a list of covidcast signals as the only

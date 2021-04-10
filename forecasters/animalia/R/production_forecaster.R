@@ -199,7 +199,7 @@ production_forecaster <- function(df_list,
     if (cv && cv_type == "forward")
       train_params$train_test_inds <- forward_cv_idx(
         df_wide$time_value,
-        mats$train_end_date, # needs to come out of modeltools::create_*
+        mats$predict_time_value, # needs to come out of modeltools::create_*
         training_window_size,
         a,
         params$nfolds,

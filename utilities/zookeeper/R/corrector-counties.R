@@ -56,6 +56,11 @@ default_county_params <- function(
 #'   tibble is most easily generated with [default_state_params()].
 #' @param corrections_db_path path to store results, NULL by default
 #' @param dump_locations character vector of locations to ignore
+#' @param manual_flags tibble with five columns: `geo_value`, `time_value`,
+#'   `data_source`, `signal`, and `max_lag` indicating combinations of
+#'   of dates, locations, etc to manually flag and back distribute. `max_lag`
+#'   determines how far to backfill. For multiple times at one location,
+#'   `time_value` may be a list column.
 #'
 #' @return A function that takes a list of covidcast signals as the only
 #'   argument
@@ -66,7 +71,8 @@ default_county_params <- function(
 make_county_corrector <- function(
   params = default_county_params(),
   corrections_db_path = NULL,
-  dump_locations = NULL) {
+  dump_locations = NULL,
+  manual_flags = NULL) {
 
 
   function(df) {
@@ -93,7 +99,8 @@ make_county_corrector <- function(
     }
     corrected <- list()
     for (i in seq_along(df)) {
-      corrected[[i]] <- county_corrections_single_signal(df[[i]], params[i,])
+      corrected[[i]] <- county_corrections_single_signal(
+        df[[i]], params[i,], manual_flags)
       df[[i]] <- corrected[[i]] %>%
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
@@ -108,7 +115,7 @@ make_county_corrector <- function(
       corrected_df <- bind_rows(corrected) %>%
         select(.data$data_source, .data$signal, .data$geo_value,
                .data$time_value,
-               .data$value, .data$corrected, .data$flag)
+               .data$value, .data$corrected, .data$flag, .data$special_flag)
       write_rds(corrected_df, file = corrections_db_path)
     }
     return(df)
@@ -119,7 +126,7 @@ make_county_corrector <- function(
 
 
 #' @importFrom lubridate ymd
-county_corrections_single_signal <- function(x, params) {
+county_corrections_single_signal <- function(x, params, manual_flags) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)
@@ -155,7 +162,7 @@ county_corrections_single_signal <- function(x, params) {
         # use filter if smoother is missing
         (.data$value < -params$size_cut & !is.na(.data$ststat) &
            !is.na(.data$ftstat)), # big negative
-      flag = .data$flag | # these allow smaller values to also be outliers if they are consecutive
+      flag = .data$flag | # allow smaller values to also be outliers if consecutive
         (dplyr::lead(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
         (dplyr::lag(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
         (dplyr::lead(.data$flag) & is.na(.data$ststat) & .data$ftstat > params$sig_consec) |
@@ -170,12 +177,41 @@ county_corrections_single_signal <- function(x, params) {
     relocate(.data$state, .after = .data$geo_value) %>%
     mutate(
       flag_bad_RI = (.data$state == "ri"  & .data$value > 10 & dplyr::lag(.data$value) == 0),
+      corrected = .data$value,
+      special_flag = FALSE
+    )
+
+
+  ds <- x$data_source[1]
+  sig <- x$signal[1]
+  if (is.null(manual_flags)) {
+    manual_flags = tibble::tibble()
+  } else {
+    manual_flags <- dplyr::filter(manual_flags,
+                                  .data$data_source == ds, .data$signal == sig)
+  }
+  if (nrow(manual_flags) > 0) {
+    x <- make_manual_flags(x, manual_flags)
+    x <- make_manual_corrections(x, manual_flags)
+  }
+
+  x <- x %>%
+    dplyr::mutate(
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
+        .data$corrected, .data$corrected, .data$flag_bad_RI, .data$time_value, 7)
+      )
+
+   # General corrections
+  x <- x %>%
+    dplyr::mutate(
+           special_flag = .data$special_flag | .data$flag_bad_RI,
       corrected = corrections_multinom_roll(
-        .data$corrected, .data$value - .data$fmedian, (.data$flag & !.data$flag_bad_RI),
-        .data$time_value, params$backfill_lag, expectations = .data$fmedian,
+        .data$corrected, .data$value - .data$fmedian,
+        (.data$flag & !.data$special_flag),
+        .data$time_value, params$backfill_lag,
+        expectations = .data$fmedian,
         reweight = function(x) exp_w(x, params$backfill_lag)),
+      fmean = roll_meanr(.data$corrected, params$window_size, na.rm = TRUE),
       corrected = .data$corrected +
         missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
     )

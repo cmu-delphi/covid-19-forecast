@@ -1,5 +1,5 @@
 ---
-title: "aardvark-corrections"
+title: "State corrections"
 output: html_document
 ---
 
@@ -17,9 +17,20 @@ df <- suppressMessages(
   )
 )
 
-aad <- make_aardvark_corrector(corrections_db_path = "aardvark-corrections.RDS")
+aad <- make_state_corrector(
+  manual_flags = tibble(data_source = "jhu-csse", 
+                        signal = c(rep("deaths_incidence_num", 3),
+                                   "confirmed_incidence_num"),
+                        geo_value = c("va","ky","ok","ok"),
+                        time_value = list(
+                          seq(ymd("2021-02-21"), ymd("2021-03-04"), by = 1),
+                          ymd(c("2021-03-18","2021-03-19")),
+                          ymd("2021-04-07"), 
+                          ymd("2021-04-07")),
+                        max_lag = rep(90, 4)),
+  corrections_db_path = "state-corrections.RDS")
 corrected <- aad(df)
-corrected <- readRDS("aardvark-corrections.RDS") %>%
+corrected <- readRDS("state-corrections.RDS") %>%
   filter(time_value > Sys.Date() - duration(3, "months")) %>%
   select(-data_source) %>%
   pivot_longer(value:corrected)
@@ -28,7 +39,7 @@ corrected <- readRDS("aardvark-corrections.RDS") %>%
 ```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
 corrected %>% 
   ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
-  geom_point(data = filter(corrected, flag, name=="value"), 
+  geom_point(data = filter(corrected, flag | special_flag, name == "value"), 
              aes(y = value), color="orange") +
   facet_wrap(~signal + geo_value , scales = "free", ncol = 3) +
   theme_bw() + xlab("") + ylab("") +
