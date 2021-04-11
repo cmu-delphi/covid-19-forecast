@@ -57,10 +57,5 @@ make_county_7dav_featurizer <- function(response_data_source = "jhu-csse",
              across(starts_with("value"),
                     ~ zoo::na.locf(.x, na.rm = FALSE))) %>%
       ungroup()
-    df <- df %>%
-      left_join(county_population, by = "geo_value") %>%
-      mutate(across(contains(response_signal), 
-                    .x - log(.data$population))) %>%
-      select(-.data$population)
   }
 }
