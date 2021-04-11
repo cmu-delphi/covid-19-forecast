@@ -32,7 +32,7 @@ aardvark  <- readRDS(file.path(
 aad <- make_aardvark_corrector()
 corrected <- suppressMessages(covidcast::covidcast_signal(
   "jhu-csse","deaths_incidence_num", 
-  start_day = ymd(params$today) - days(x = 90), 
+  start_day = lubridate::ymd(params$today) - lubridate::days(x = 90), 
   geo_type = "state")) %>% 
   aad()  # make corrections
 corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
