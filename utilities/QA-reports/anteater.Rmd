@@ -33,7 +33,21 @@ anteater  <- readRDS(file.path(
 state_params <- zookeeper::default_state_params(data_source = anteater_signals$data_source,
                                                 signal = anteater_signals$signal,
                                                 geo_type = anteater_signals$geo_type)
-aad <- zookeeper::make_aardvark_corrector(params = state_params)
+
+##aad <- zookeeper::make_aardvark_corrector(params = state_params)
+
+aad <- zookeeper::make_state_corrector(
+  manual_flags = tibble(data_source = "jhu-csse",
+                        signal = c(rep("deaths_incidence_num", 3),
+                                   "confirmed_incidence_num"),
+                        geo_value = c("va","ky","ok","ok"),
+                        time_value = list(
+                          seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
+                          lubridate::ymd(c("2021-03-18","2021-03-19")),
+                          lubridate::ymd("2021-04-07"),
+                          lubridate::ymd("2021-04-07")),
+                        max_lag = rep(90, 4)))
+
 corrected <- suppressMessages(covidcast::covidcast_signal(
   ##anteater_signals$data_source, anteater_signals$signal[1],
   "jhu-csse", "deaths_incidence_num", 
