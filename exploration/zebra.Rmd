@@ -112,7 +112,6 @@ zeb <- get_predictions(
                       signal = data_signals,
                       start_day = list(start_day_zebra)),
   forecast_dates = forecast_dates, 
-  as_of_override = function(x) lubridate::ymd(Sys.Date()),
   incidence_period = incidence_period, 
   ahead = ahead, 
   geo_type = "county", 
@@ -156,6 +155,11 @@ results <- evaluate_predictions(bind_rows(qar_dc, submitted),
                                 backfill_buffer = 0,
                                 geo_type = "county") %>%
   intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
+```
+
+```{r save-predictions, include = FALSE}
+# save predictions
+#saveRDS(bind_rows(qar_dc, submitted), "zebra_predictions_2021-04-05.rds")
 ```
 
 
