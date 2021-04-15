@@ -38,7 +38,7 @@ corrected <- suppressMessages(covidcast::covidcast_signal(
   zebra_signals$data_source[1], zebra_signals$signal[1],
   start_day = lubridate::ymd(today) - lubridate::days(x = qa_lookback), 
   geo_type = "county")) %>% 
-  zyz()  # make corrections
+  county_corrector()  # make corrections
 corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 
 # setup the plot and join corrections to the truth
