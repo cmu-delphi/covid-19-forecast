@@ -3,10 +3,6 @@ title: "Anteater Trajectory Plots"
 author: "Delphi County Cases, Forecast on:"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: html_document
-params:
-  forecast_date: !r Sys.getenv("FORECAST_DATE")
-  today: !r Sys.getenv("TODAY")
-  output_dir: "/mnt"
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -17,8 +13,8 @@ library(tidyverse)
 source("production_params.R")
 
 anteater  <- readRDS(file.path(
-  params$output_dir, state_output_subdir,
-  sprintf("predictions_for_%s.RDS", params$forecast_date)))
+  output_dir, state_output_subdir,
+  sprintf("predictions_for_%s.RDS", forecast_date)))
 ```
 
 ## Trajectory plots
@@ -30,36 +26,21 @@ anteater  <- readRDS(file.path(
 
 ```{r, fig.height = 80, fig.width = 30, dev="CairoSVG", echo=FALSE}
 # Grab corrected data
-state_params <- zookeeper::default_state_params(data_source = anteater_signals$data_source,
-                                                signal = anteater_signals$signal,
-                                                geo_type = anteater_signals$geo_type)
-
-##aad <- zookeeper::make_aardvark_corrector(params = state_params)
-
-aad <- zookeeper::make_state_corrector(
-  manual_flags = tibble(data_source = "jhu-csse",
-                        signal = c(rep("deaths_incidence_num", 3),
-                                   "confirmed_incidence_num"),
-                        geo_value = c("va","ky","ok","ok"),
-                        time_value = list(
-                          seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
-                          lubridate::ymd(c("2021-03-18","2021-03-19")),
-                          lubridate::ymd("2021-04-07"),
-                          lubridate::ymd("2021-04-07")),
-                        max_lag = rep(90, 4)))
-
-corrected <- suppressMessages(covidcast::covidcast_signal(
-  ##anteater_signals$data_source, anteater_signals$signal[1],
-  "jhu-csse", "deaths_incidence_num", 
-  start_day = ymd(params$today) - days(x = 90), 
+corrected <- suppressMessages(
+  covidcast::covidcast_signal(
+    anteater_signals$data_source, 
+    anteater_signals$signal[1],
+    start_day = ymd(today) - days(x = qa_lookback), 
   geo_type = "state")) %>% 
-  aad()  # make corrections
+  state_corrector()
+
 corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 
 # setup the plot and join corrections to the truth
 pd <- evalcast:::setup_plot_trajectory(
   anteater, geo_type = "state",
-  start_day = lubridate::ymd(params$today) - lubridate::days(x = 90))
+  start_day = lubridate::ymd(today) - lubridate::days(x = qa_lookback)
+  
 pd$truth_df <- left_join(
   pd$truth_df, corrected, 
   by = c("geo_value" = "geo_value", "target_end_date" = "time_value"))
