@@ -108,12 +108,12 @@ state_forecaster_args <- list(
 
 county_corrections_params  <- zookeeper::default_county_params(
   data_source = county_forecaster_signals$data_source,
-  signal = county_forecaster_signals$signals[1] # only correct cases
+  signal = county_forecaster_signals$signal[1] # only correct cases
 )
 
 county_corrector  <- zookeeper::make_zyzzyva_corrector(params = county_corrections_params)
 
-prob_type <- ifelse(county_forecaster_signals$signals[1] == "confirmed_incidence_num",
+prob_type <- ifelse(county_forecaster_signals$signal[1] == "confirmed_incidence_num",
                     "inc_case", "standard")
 
 county_forecaster_args <- list(
