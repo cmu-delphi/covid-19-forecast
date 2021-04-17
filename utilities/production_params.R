@@ -36,7 +36,7 @@ forecaster_details  <- list(
   ),
 
   zebra = list(
-    dplyr::tibble( # county case forecaster
+    signals = dplyr::tibble( # county case forecaster
       data_source = c("jhu-csse",
                       ## "usa-facts",
                       "fb-survey",
