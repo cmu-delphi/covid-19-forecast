@@ -32,14 +32,14 @@ source("production_params.R")
 
 ## Ensure that state and county output directories specified in production_params.R
 ## exist in the working directory
-if (!fs::dir_exists(county_output_dir)) {
-  message(sprintf("Creating non-existent county output directory %s", county_output_dir))
-  fs::dir_create(path = county_output_dir)
+if (!fs::dir_exists(county_output_subdir)) {
+  message(sprintf("Creating non-existent county output directory %s", county_output_subdir))
+  fs::dir_create(path = county_output_subdir)
 }
 
-if (!fs::dir_exists(state_output_dir)) {
-  message(sprintf("Creating non-existent state output directory %s", state_output_dir))
-  fs::dir_create(path = state_output_dir)
+if (!fs::dir_exists(state_output_subdir)) {
+  message(sprintf("Creating non-existent state output directory %s", state_output_subdir))
+  fs::dir_create(path = state_output_subdir)
 }
 
 cat(sprintf("Forecast date: %s\n", forecast_date))
