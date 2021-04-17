@@ -35,7 +35,7 @@ simple_labs <- function(geo_value) {
 # Grab corrected data
 
 corrected <- suppressMessages(covidcast::covidcast_signal(
-  zebra_signals$data_source[1], zebra_signals$signal[1],
+  county_forecaster_signals$data_source[1], county_forecaster_signals$signal[1],
   start_day = lubridate::ymd(today) - lubridate::days(x = qa_lookback), 
   geo_type = "county")) %>% 
   county_corrector()  # make corrections

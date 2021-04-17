@@ -8,38 +8,52 @@
 ## ## We can fix this at /mnt
 ## output_dir  <- "/mnt"
 
+## These are usually not changed except by those know what is going on.
+## Volatile packages are those that go frequent development and are
+## therefore installed just-in-time from repos before running forecasts
 
-## Install evalcast from the evalcast branch
-devtools::install_github("cmu-delphi/covidcast", ref = "evalcast",
-                         subdir = "R-packages/evalcast", upgrade = "never")
+volatile_pkgs <- list(
+  covidcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
+                   subdir = "R-packages/evalcast"),
+  evalcast = list(repo = "cmu-delphi/covidcast", ref = "modeltools",
+                  subdir = "R-packages/modeltools"),
+  zookeeper = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
+                   subdir = "utilities/zookeeper"),
+  animalia = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
+                  subdir = "forecasters/animalia")
+)
 
-## Install evalcast from the evalcast branch
-devtools::install_github("cmu-delphi/covidcast", ref = "modeltools",
-                         subdir = "R-packages/modeltools", upgrade = "never")
-
-## Install the latest zookeeper
-devtools::install_github("cmu-delphi/covid-19-forecast", ref = "develop",
-                         subdir = "utilities/zookeeper", upgrade = "never")
-
-## Install the latest animalia
-devtools::install_github("cmu-delphi/covid-19-forecast", ref = "develop",
-                         subdir = "forecasters/animalia", upgrade = "never")
+for (pkg in volatile_pkgs) {
+  devtools::install_github(repo = pkg$repo, ref = pkg$ref,
+                           subdir = pkg$subdir, upgrade = "never")
+}
 
 source("production_params.R")
 
-cat(sprintf("Forecast date: %s, Output dir: %s\n", forecast_date, output_dir))
+## Ensure that state and county output directories specified in production_params.R
+## exist in the working directory
+if (!fs::dir_exists(county_output_dir)) {
+  message(sprintf("Creating non-existent county output directory %s", county_output_dir))
+  fs::dir_create(path = county_output_dir)
+}
+
+if (!fs::dir_exists(state_output_dir)) {
+  message(sprintf("Creating non-existent state output directory %s", state_output_dir))
+  fs::dir_create(path = state_output_dir)
+}
+
+cat(sprintf("Forecast date: %s\n", forecast_date))
 
 library(tidyverse)
 
 cat("Running States\n")
 
-
 ## make_aardvark_corrector below uses the signals defaults. Arrange to use the parameter
 
 state_predictions <- evalcast::get_predictions(
   forecaster = animalia::production_forecaster,
-  name_of_forecaster = "anteater",
-  signals = anteater_signals,
+  name_of_forecaster = state_forecaster_name,
+  signals = state_forecaster_signals,
   forecast_dates = forecast_date,
   incidence_period = "epiweek",
   apply_corrections = state_corrector,
@@ -52,7 +66,7 @@ cat("Writing State results\n")
 ## Write result
 saveRDS(state_predictions,
         file = file.path(
-          output_dir, 
+          output_dir,
           state_output_subdir,
           sprintf("predictions_for_%s.RDS", forecast_date)
         ))
@@ -62,8 +76,8 @@ cat("Running Counties\n")
 
 county_predictions <- evalcast::get_predictions(
   forecaster = animalia::production_forecaster,
-  name_of_forecaster = "zebra",
-  signals = zebra_signals,
+  name_of_forecaster = county_forecaster_name,
+  signals = county_forecaster_signals,
   forecast_dates = forecast_date,
   incidence_period = "epiweek",
   apply_corrections = county_corrector,
@@ -81,16 +95,18 @@ saveRDS(county_predictions,
 cat("Running QA for States\n")
 
 ## Render the QA report
-rmarkdown::render(input = "anteater.Rmd", 
-                  output_file = sprintf("anteater_%s.html", forecast_date),
+state_qc_md  <- forecaster_signals[[state_forecaster_name]][["qc_markdown"]]
+rmarkdown::render(input = state_qc_md,
+                  output_file = sprintf("%s_%s.html", state_forecaster_name, forecast_date),
                   output_dir = file.path(output_dir, state_output_subdir))
 
 cat("Done with States\n")
 cat("Running QA for Counties\n")
 
 ## Render the QA report
-rmarkdown::render(input = "zebra.Rmd", 
-                  output_file = sprintf("zebra_%s.html", forecast_date),
+county_qc_md  <- forecaster_signals[[county_forecaster_name]][["qc_markdown"]]
+rmarkdown::render(input = county_qc_md,
+                  output_file = sprintf("%s_%s.html", county_forecaster_name, forecast_date),
                   output_dir = file.path(output_dir, county_output_subdir))
 
 cat("Done with Counties\n")
