@@ -28,7 +28,7 @@ anteater  <- readRDS(file.path(
 # Grab corrected data
 corrected <- suppressMessages(
   covidcast::covidcast_signal(
-    state_forecaster_signals$data_source, 
+    state_forecaster_signals$data_source[1], 
     state_forecaster_signals$signal[1],
     start_day = ymd(today) - days(x = qa_lookback), 
     geo_type = "state")) %>% 
