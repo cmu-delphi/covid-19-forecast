@@ -95,7 +95,7 @@ saveRDS(county_predictions,
 cat("Running QA for States\n")
 
 ## Render the QA report
-state_qc_md  <- forecaster_signals[[state_forecaster_name]][["qc_markdown"]]
+state_qc_md  <- forecaster_details[[state_forecaster_name]][["qc_markdown"]]
 rmarkdown::render(input = state_qc_md,
                   output_file = sprintf("%s_%s.html", state_forecaster_name, forecast_date),
                   output_dir = file.path(output_dir, state_output_subdir))
@@ -104,7 +104,7 @@ cat("Done with States\n")
 cat("Running QA for Counties\n")
 
 ## Render the QA report
-county_qc_md  <- forecaster_signals[[county_forecaster_name]][["qc_markdown"]]
+county_qc_md  <- forecaster_details[[county_forecaster_name]][["qc_markdown"]]
 rmarkdown::render(input = county_qc_md,
                   output_file = sprintf("%s_%s.html", county_forecaster_name, forecast_date),
                   output_dir = file.path(output_dir, county_output_subdir))
