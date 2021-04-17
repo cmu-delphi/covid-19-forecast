@@ -44,7 +44,7 @@ corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 # setup the plot and join corrections to the truth
 pd <- evalcast:::setup_plot_trajectory(
   zebra, geo_type = "county",
-  start_day = lubridate::ymd(params$today) - lubridate::days(x = 90))
+  start_day = lubridate::ymd(today) - lubridate::days(x = 90))
 
 pd$truth_df <- left_join(
   pd$truth_df, corrected, 
