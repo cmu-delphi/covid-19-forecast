@@ -6,8 +6,9 @@
 2. `Dockerfile`: the docker file for creating containers. Note the
    dependence on the [`gurobi`](https://www.gurobi.com) solver, which
    requires the downloading of the `tar.gz` file for Linux X86_64 and
-   its placement in the working directory. The command `docker build
-   -t covidcast -f <path_to_Dockerfile>` will then create a docker
+   its placement in the working directory and uses a license token
+   server in the `cmu.edu` realm. The command `docker build -t
+   covidcast -f <path_to_Dockerfile>` will then create a docker
    container tagged `covidcast` on any machine.
 
 3. `zookeeper`: R package containing code to run our forecast
