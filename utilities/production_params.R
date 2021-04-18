@@ -14,6 +14,7 @@ aheads  <- 1:4
 state_output_subdir  <- "state-output"
 county_output_subdir <- "county-output"
 qa_lookback <- 60 # how far back do we show actual data on the QA report?
+correction_lookback <- 90 # how far back do we look on the daily corrections report?
 n_counties <- 200 # we predict the top 200 counties
 
 # Signals used by the various forecasters ---------------------------------
@@ -111,7 +112,7 @@ county_corrections_params  <- zookeeper::default_county_params(
   signal = county_forecaster_signals$signal[1] # only correct cases
 )
 
-county_corrector  <- zookeeper::make_zyzzyva_corrector(params = county_corrections_params)
+county_corrector  <- zookeeper::make_county_corrector(params = county_corrections_params)
 
 prob_type <- ifelse(county_forecaster_signals$signal[1] == "confirmed_incidence_num",
                     "inc_case", "standard")

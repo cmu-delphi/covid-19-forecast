@@ -10,29 +10,16 @@ library(tidyverse)
 library(lubridate)
 df <- suppressMessages(
   covidcast_signals(
-    "jhu-csse",
-    c("deaths_incidence_num","confirmed_incidence_num"),
-    start_day = Sys.Date() - duration(6, "months"),
+    state_forecaster_signals$data_source,
+    state_forecaster_signals$signal,
+    start_day = today - lubridate::days(x = correction_lookback - 30), 
     geo_type = "state"
   )
 )
 
-aad <- make_state_corrector(
-  manual_flags = tibble(data_source = "jhu-csse", 
-                        signal = c(rep("deaths_incidence_num", 3),
-                                   "confirmed_incidence_num"),
-                        geo_value = c("va","ky","ok","ok"),
-                        time_value = list(
-                          seq(ymd("2021-02-21"), ymd("2021-03-04"), by = 1),
-                          ymd(c("2021-03-18","2021-03-19")),
-                          ymd("2021-04-07"), 
-                          ymd("2021-04-07")),
-                        max_lag = rep(90, 4)),
-  corrections_db_path = "state-corrections.RDS")
-corrected <- aad(df)
-corrected <- readRDS("state-corrections.RDS") %>%
-  filter(time_value > Sys.Date() - duration(3, "months")) %>%
-  select(-data_source) %>%
+corrected <- df %>% 
+  state_corrector(return_all = TRUE) %>% 
+  filter(time_value > today - duration(correction_lookback, "days") %>%
   pivot_longer(value:corrected)
 ```
 

@@ -9,27 +9,24 @@ library(covidcast)
 library(tidyverse)
 library(lubridate)
 source("production_params.R")
-df <- suppressMessages(
-  covidcast_signal(
-    "jhu-csse",
-    "confirmed_incidence_num",
-    start_day = Sys.Date() - 180,
-    geo_type = "county"
-  )
-)
+df <- suppressMessages(covidcast::covidcast_signal(
+  county_forecaster_signals$data_source[1],
+  county_forecaster_signals$signal[1],
+  start_day = today - lubridate::days(x = correction_lookback - 30), 
+  geo_type = "county")) 
 
-big_locs <- df %>% 
+big_locs <-  df %>% 
   group_by(geo_value) %>%
   summarise(total = sum(value)) %>%
   slice_max(total, n = n_counties + 50) %>% 
   select(geo_value) %>%
   pull()
 
-df <- df %>% filter(geo_value %in% big_locs)
-
-corrected <- df %>% county_corrector() %>%
-  filter(time_value > Sys.Date() - duration(qa_lookback, "days")) %>%
-  select(-data_source) %>%
+corrected <- df %>% 
+  county_corrector(return_all = TRUE) %>% 
+  filter(
+    time_value > today - duration(correction_lookback, "days"),
+    geo_value %in% big_locs) %>%
   pivot_longer(value:corrected)
 
 simple_labs <- function(geo_value) {
