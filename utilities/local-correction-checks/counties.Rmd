@@ -8,6 +8,7 @@ library(zookeeper)
 library(covidcast)
 library(tidyverse)
 library(lubridate)
+source("production_params.R")
 df <- suppressMessages(
   covidcast_signal(
     "jhu-csse",
@@ -20,16 +21,14 @@ df <- suppressMessages(
 big_locs <- df %>% 
   group_by(geo_value) %>%
   summarise(total = sum(value)) %>%
-  slice_max(total, n = 250) %>% 
+  slice_max(total, n = n_counties + 50) %>% 
   select(geo_value) %>%
   pull()
 
 df <- df %>% filter(geo_value %in% big_locs)
 
-aad <- make_county_corrector(corrections_db_path = "county-corrections.RDS")
-corrected <- aad(df)
-corrected <- readRDS("county-corrections.RDS") %>%
-  filter(time_value > Sys.Date() - duration(3, "months")) %>%
+corrected <- df %>% county_corrector() %>%
+  filter(time_value > Sys.Date() - duration(qa_lookback, "days")) %>%
   select(-data_source) %>%
   pivot_longer(value:corrected)
 
