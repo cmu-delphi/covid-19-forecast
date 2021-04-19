@@ -28,7 +28,7 @@ forecaster_details  <- list(
       signal = c("deaths_incidence_num",
                  "confirmed_incidence_num"
                  ),
-      start_day = animalia::grab_start_day(aheads, 28, 14, "epiweek")(forecast_date),
+      start_day = lubridate::ymd("2020-06-01"),
       geo_type = "state"
     ),
     ## The corresponding QC markdown file
@@ -43,7 +43,7 @@ forecaster_details  <- list(
                       "doctor-visits"
                       ),
       signal = c("confirmed_incidence_num", "smoothed_hh_cmnty_cli", "smoothed_cli"),
-      start_day = animalia::grab_start_day(aheads, 28, 28, "epiweek")(forecast_date),
+      start_day = lubridate::ymd("2020-06-01"),
       geo_type = "county"
     ),
     ## The corresponding QC markdown file
@@ -138,11 +138,12 @@ county_corrector  <- zookeeper::make_zyzzyva_corrector(
     geo_value = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       "29077", "29095", "29183", "29189",
-      "01097"
+      "01097", "
     ),
     time_value = list(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"),
+      lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
+      lubridate::ymd("2021-04-17"),
       lubridate::ymd("2021-04-13")
     ),
     max_lag = c(
