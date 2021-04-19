@@ -26,8 +26,8 @@ big_locs <- df %>%
 
 df <- df %>% filter(geo_value %in% big_locs)
 
-aad <- make_county_corrector(
-  manual_flags = tibble(
+aad <- zookeeper::make_county_corrector(
+  manual_flags = tibble::tibble(
     data_source = "jhu-csse",
     signal = "confirmed_incidence_num",
     geo_value = c(
@@ -37,8 +37,8 @@ aad <- make_county_corrector(
     ),
     time_value = list(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      ymd("2021-04-17"), ymd("2021-04-17"), ymd("2021-04-17"), ymd("2021-04-17"),
-      ymd("2021-04-13")
+      lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"), lubridate::ymd("2021-04-17"),
+      lubridate::ymd("2021-04-13")
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
