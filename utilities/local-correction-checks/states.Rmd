@@ -20,14 +20,32 @@ df <- suppressMessages(
 aad <- make_state_corrector(
   manual_flags = tibble(data_source = "jhu-csse", 
                         signal = c(rep("deaths_incidence_num", 3),
-                                   "confirmed_incidence_num"),
-                        geo_value = c("va","ky","ok","ok"),
+                                   "confirmed_incidence_num",
+                                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                                   "deaths_incidence_num",
+                                   "deaths_incidence_num",
+                                   "confirmed_incidence_num",
+                                   "confirmed_incidence_num"
+                                   ),
+                        geo_value = c("va","ky","ok","ok",
+                                      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                                      "ak","mi","mo","al"),
                         time_value = list(
                           seq(ymd("2021-02-21"), ymd("2021-03-04"), by = 1),
                           ymd(c("2021-03-18","2021-03-19")),
                           ymd("2021-04-07"), 
-                          ymd("2021-04-07")),
-                        max_lag = rep(90, 4)),
+                          ymd("2021-04-07"),
+                          ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                          ymd("2021-04-15"),
+                          ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17")),
+                          ymd("2021-04-17"),
+                          ymd("2021-04-13")
+                          ),
+                        max_lag = c(rep(90, 4),
+                                    ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                                    75, 150, 150, 180
+                          )
+                        ),
   corrections_db_path = "state-corrections.RDS")
 corrected <- aad(df)
 corrected <- readRDS("state-corrections.RDS") %>%

@@ -26,7 +26,28 @@ big_locs <- df %>%
 
 df <- df %>% filter(geo_value %in% big_locs)
 
-aad <- make_county_corrector(corrections_db_path = "county-corrections.RDS")
+aad <- make_county_corrector(
+  manual_flags = tibble(
+    data_source = "jhu-csse",
+    signal = "confirmed_incidence_num",
+    geo_value = c(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      "29077", "29095", "29183", "29189",
+      "01097"
+    ),
+    time_value = list(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      ymd("2021-04-17"), ymd("2021-04-17"), ymd("2021-04-17"), ymd("2021-04-17"),
+      ymd("2021-04-13")
+    ),
+    max_lag = c(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      rep_len(150, 4L),
+      180
+    )
+  ),
+  corrections_db_path = "county-corrections.RDS"
+)
 corrected <- aad(df)
 corrected <- readRDS("county-corrections.RDS") %>%
   filter(time_value > Sys.Date() - duration(3, "months")) %>%
@@ -53,6 +74,5 @@ corrected %>%
   theme(legend.position = "none") +
   scale_x_date(date_breaks = "months" , date_labels = "%b")
 ```
-
 
 
