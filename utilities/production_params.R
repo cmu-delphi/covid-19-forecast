@@ -138,7 +138,7 @@ county_corrector  <- zookeeper::make_zyzzyva_corrector(
     geo_value = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       "29077", "29095", "29183", "29189",
-      "01097", "
+      "01097"
     ),
     time_value = list(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
