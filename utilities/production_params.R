@@ -29,7 +29,7 @@ forecaster_details  <- list(
       signal = c("deaths_incidence_num",
                  "confirmed_incidence_num"
                  ),
-      start_day = animalia::grab_start_day(aheads, 28, 14, "epiweek")(forecast_date),
+      start_day = lubridate::ymd("2020-06-01"),
       geo_type = "state"
     ),
     ## The corresponding QC markdown file
@@ -44,7 +44,7 @@ forecaster_details  <- list(
                       "doctor-visits"
                       ),
       signal = c("confirmed_incidence_num", "smoothed_hh_cmnty_cli", "smoothed_cli"),
-      start_day = animalia::grab_start_day(aheads, 28, 28, "epiweek")(forecast_date),
+      start_day = lubridate::ymd("2020-06-01"),
       geo_type = "county"
     ),
     ## The corresponding QC markdown file
@@ -81,15 +81,34 @@ state_corrector <- zookeeper::make_state_corrector(
   # data, locations, times to do special correction processing
   manual_flags = tibble::tibble(
     data_source = "jhu-csse",
-    signal = c(rep("deaths_incidence_num", 3), "confirmed_incidence_num"),
-    geo_value = c("va","ky","ok","ok"),
+    signal = c(rep("deaths_incidence_num", 3),
+               "confirmed_incidence_num",
+               ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+               "deaths_incidence_num",
+               "deaths_incidence_num",
+               "confirmed_incidence_num",
+               "confirmed_incidence_num"
+               ),
+    geo_value = c("va","ky","ok","ok",
+                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                  "ak","mi","mo","al"),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
       lubridate::ymd(c("2021-03-18","2021-03-19")),
       lubridate::ymd("2021-04-07"),
-      lubridate::ymd("2021-04-07")),
-    max_lag = rep(90, 4)) # how far do we back distribute these spikes?
+      lubridate::ymd("2021-04-07"),
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      lubridate::ymd("2021-04-15"),
+      lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17")),
+      lubridate::ymd("2021-04-17"),
+      lubridate::ymd("2021-04-13")
+    ),
+    max_lag = c(rep(90, 4),
+                ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                75, 150, 150, 180
+                )
   )
+)
 
 state_forecaster_args <- list(
   ahead = aheads,
@@ -112,7 +131,29 @@ county_corrections_params  <- zookeeper::default_county_params(
   signal = county_forecaster_signals$signal[1] # only correct cases
 )
 
-county_corrector  <- zookeeper::make_county_corrector(params = county_corrections_params)
+county_corrector  <- zookeeper::make_county_corrector(
+  params = county_corrections_params,
+  manual_flags = tibble::tibble(
+    data_source = "jhu-csse",
+    signal = "confirmed_incidence_num",
+    geo_value = c(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      "29077", "29095", "29183", "29189",
+      "01097"
+    ),
+    time_value = list(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
+      lubridate::ymd("2021-04-17"),
+      lubridate::ymd("2021-04-13")
+    ),
+    max_lag = c(
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      rep_len(150, 4L),
+      180
+    )
+  )
+)
 
 prob_type <- ifelse(county_forecaster_signals$signal[1] == "confirmed_incidence_num",
                     "inc_case", "standard")
