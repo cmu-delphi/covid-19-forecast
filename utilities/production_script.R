@@ -13,9 +13,9 @@
 ## therefore installed just-in-time from repos before running forecasts
 
 volatile_pkgs <- list(
-  covidcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
+  evalcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
                    subdir = "R-packages/evalcast"),
-  evalcast = list(repo = "cmu-delphi/covidcast", ref = "modeltools",
+  modeltools = list(repo = "cmu-delphi/covidcast", ref = "modeltools",
                   subdir = "R-packages/modeltools"),
   zookeeper = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
                    subdir = "utilities/zookeeper"),
