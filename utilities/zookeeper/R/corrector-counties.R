@@ -75,7 +75,7 @@ make_county_corrector <- function(
   manual_flags = NULL) {
 
 
-  function(df) {
+  function(df, return_all = FALSE) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
@@ -111,14 +111,19 @@ make_county_corrector <- function(
         geo_type = params$geo_type[1])
     }
 
-    if (!is.null(corrections_db_path)) {
+    if (!is.null(corrections_db_path) || return_all) {
       corrected_df <- bind_rows(corrected) %>%
         select(.data$data_source, .data$signal, .data$geo_value,
                .data$time_value,
                .data$value, .data$corrected, .data$flag, .data$special_flag)
-      write_rds(corrected_df, file = corrections_db_path)
+      if (!is.null(corrections_db_path)) 
+        write_rds(corrected_df, file = corrections_db_path)
     }
-    return(df)
+    if (return_all) {
+      return(corrected_df)
+    } else {
+      return(df)
+    }
   }
 
 }
