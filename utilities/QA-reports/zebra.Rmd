@@ -36,7 +36,7 @@ simple_labs <- function(geo_value) {
 
 corrected <- suppressMessages(covidcast::covidcast_signal(
   county_forecaster_signals$data_source[1], county_forecaster_signals$signal[1],
-  start_day = lubridate::ymd(today) - lubridate::days(x = qa_lookback), 
+  start_day = lubridate::ymd(today) - lubridate::days(x = 200), 
   geo_type = "county")) %>% 
   county_corrector()  # make corrections
 corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
@@ -44,11 +44,12 @@ corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 # setup the plot and join corrections to the truth
 pd <- evalcast:::setup_plot_trajectory(
   zebra, geo_type = "county",
-  start_day = lubridate::ymd(today) - lubridate::days(x = 90))
+  start_day = lubridate::ymd(today) - lubridate::days(x = 200))
 
 pd$truth_df <- left_join(
   pd$truth_df, corrected, 
-  by = c("geo_value" = "geo_value", "target_end_date" = "time_value"))
+  by = c("geo_value" = "geo_value", "target_end_date" = "time_value")) %>%
+  filter(target_end_date >= ymd(today) - days(x = qa_lookback))
 
 g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
 
