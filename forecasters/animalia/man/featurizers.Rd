@@ -11,7 +11,9 @@ make_state_7dav_featurizer()
 make_county_7dav_featurizer(
   response_data_source = "jhu-csse",
   response_signal = "confirmed_incidence_num",
-  n_locations = 200
+  n_locations = 200,
+  location_size_filter_lookback = NULL,
+  forecast_date = NULL
 )
 }
 \arguments{
@@ -20,6 +22,13 @@ make_county_7dav_featurizer(
 \item{response_signal}{the name of the response signal}
 
 \item{n_locations}{the number of locations to predict}
+
+\item{location_size_filter_lookback}{when summing county totals, how many
+days back should we sum over? Defaults to all available. If you specify
+this argument, you must also pass the forecast date.}
+
+\item{forecast_date}{required for non null `lovation_size_filter_lookback`
+otherwise ignored}
 }
 \value{
 a function that takes in a data frame with the same columns, 
