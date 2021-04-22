@@ -8,11 +8,11 @@ library(zookeeper)
 library(covidcast)
 library(tidyverse)
 library(lubridate)
-source("production_params.R")
+source("../production_params.R")
 df <- suppressMessages(covidcast::covidcast_signal(
   county_forecaster_signals$data_source[1],
   county_forecaster_signals$signal[1],
-  start_day = today - lubridate::days(x = correction_lookback - 30), 
+  start_day = county_forecaster_signals$start_day[1], 
   geo_type = "county")) 
 
 big_locs <-  df %>% 
