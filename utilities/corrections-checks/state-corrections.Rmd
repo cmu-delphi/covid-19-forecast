@@ -8,6 +8,7 @@ library(zookeeper)
 library(covidcast)
 library(tidyverse)
 library(lubridate)
+source("production_params.R")
 df <- suppressMessages(
   covidcast_signals(
     state_forecaster_signals$data_source,
