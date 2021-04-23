@@ -13,6 +13,7 @@ production_forecaster(
   lags = 0,
   tau = evalcast::covidhub_probs(),
   lambda = 0,
+  signals_to_normalize = FALSE,
   transform = NULL,
   inv_trans = NULL,
   featurize = NULL,
@@ -67,6 +68,13 @@ specified, defaults to the levels required by the COVID Forecast Hub.}
 
 \item{lambda}{vector of values to use for the regularization parameter
 in quantile lasso}
+
+\item{signals_to_normalize}{Should the response/features be normalized by population?
+This can be a single boolean value or a list of boolean values having the
+same length as the number of elements in the `df` list, which tells us
+which signals in `df` should be normalized by population and which
+should not. This normalization is performed before `transform` or 
+`featurize` are applied. Default is `FALSE`, i.e. no normalization.}
 
 \item{transform, inv_trans}{Transformation and inverse transformations to use
 for the response/features. These are applied to the raw data before any
