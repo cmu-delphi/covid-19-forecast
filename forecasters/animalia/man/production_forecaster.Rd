@@ -13,7 +13,7 @@ production_forecaster(
   lags = 0,
   tau = evalcast::covidhub_probs(),
   lambda = 0,
-  norm_by_popn = FALSE,
+  signals_to_normalize = FALSE,
   transform = NULL,
   inv_trans = NULL,
   featurize = NULL,
@@ -69,7 +69,7 @@ specified, defaults to the levels required by the COVID Forecast Hub.}
 \item{lambda}{vector of values to use for the regularization parameter
 in quantile lasso}
 
-\item{norm_by_popn}{Should the response/features be normalized by population?
+\item{signals_to_normalize}{Should the response/features be normalized by population?
 This can be a single boolean value or a list of boolean values having the
 same length as the number of elements in the `df` list, which tells us
 which signals in `df` should be normalized by population and which

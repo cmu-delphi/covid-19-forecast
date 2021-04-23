@@ -30,7 +30,7 @@
 #'   specified, defaults to the levels required by the COVID Forecast Hub.
 #' @param lambda vector of values to use for the regularization parameter
 #'   in quantile lasso
-#' @param norm_by_popn Should the response/features be normalized by population?
+#' @param signals_to_normalize Should the response/features be normalized by population?
 #'   This can be a single boolean value or a list of boolean values having the
 #'   same length as the number of elements in the `df` list, which tells us
 #'   which signals in `df` should be normalized by population and which
@@ -115,7 +115,7 @@ production_forecaster <- function(df_list,
                                   lags = 0,
                                   tau = evalcast::covidhub_probs(),
                                   lambda = 0,
-                                  norm_by_popn = FALSE,
+                                  signals_to_normalize = FALSE,
                                   transform = NULL,
                                   inv_trans = NULL,
                                   featurize = NULL,
@@ -144,7 +144,8 @@ production_forecaster <- function(df_list,
   # 1. data transformations, and saving
   
   # apply any transformations (incl. normalizing by population)
-  df_list <- normalize_by_population(df_list, norm_by_popn)
+  geo_type <- unlist(lapply(df_list, function(x) attr(x, "metadata")$geo_type))
+  df_list <- normalize_by_population(df_list, geo_type, signals_to_normalize)
   df_list <- transformer(df_list, transform, inv_trans)
   df_wide <- covidcast::aggregate_signals(df_list, dt = dt, format = "wide")
   
@@ -233,13 +234,10 @@ production_forecaster <- function(df_list,
     
     # if we normalized by population, we have to return predictions to the
     # original scale
-    # if condition works whether norm_by_popn is single boolean or list
-    # no clean way to get geo_type at the moment
-    if (norm_by_popn[[1]]) {
-      predict_df <- invnorm_by_population(
-        predict_df, 
-        geo_type = attr(df_list[[i]], "metadata")$geo_type)
-    }
+    predict_df <- normalize_by_population(predict_df, 
+                                          geo_type[1],
+                                          signals_to_normalize[1],
+                                          invert = TRUE)
     
     # save off the objects
     if (!is.null(save_trained_models)) trained_models[[a]] <- train_obj

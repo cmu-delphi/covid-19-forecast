@@ -4,27 +4,52 @@
 \alias{normalize_by_population}
 \title{Helper function for normalizing COVIDcast signals by population}
 \usage{
-normalize_by_population(df_list, norm_by_popn, base = 1e+05)
+normalize_by_population(
+  df_list,
+  geo_type,
+  signals_to_normalize = FALSE,
+  base = 1e+05,
+  invert = FALSE
+)
 }
 \arguments{
-\item{df_list}{List of signal values to use for forecasting, of the format
-that is returned by [covidcast::covidcast_signals()].}
+\item{df_list}{List of data frames, or a single data frame.
+All that is required is for each data frame in the list to have the 
+`geo_value` and `value` columns. (For example, the object returned from
+[covidcast::covidcast_signals()] satisfies this.)}
 
-\item{norm_by_popn}{Should the response/features be normalized by population?
-This can be a single boolean value or a list of boolean values having the
+\item{geo_type}{The geography type associated with the data, either 
+"county" or "state". This should be a vector of values having the
+same length as the number of elements in the `df` list, indicating the
+`geo_type` associated with each signal. Alternatively, it can be a single
+character string if all the signals have the same `geo_type`.}
+
+\item{signals_to_normalize}{Should the values be normalized by population?
+This can be a single boolean value or a vector of boolean values having the
 same length as the number of elements in the `df` list, which tells us
 which signals in `df` should be normalized by population and which
 should not. Default is `FALSE`, i.e. no normalization.}
 
 \item{base}{The base for the normalization, i.e. the resulting values 
 should be interpreted as `value` per `base`. Default is `1e5`.}
+
+\item{invert}{If `FALSE` (default), we normalize by population. If `TRUE`,
+we unnormalize (i.e. undo the normalization by population).}
 }
 \value{
-`df_list` but with the `value` column appropriately normalized.
+`df_list` but with the `value` column appropriately normalized
+(or unnormalized).
 }
 \description{
-Helper function to normalize COVIDcast signals by population. This replaces
-the `value` column in each signal with the appropriately normalized
-value. The user can choose which signals to normalize. Currently works with
+Helper function to either normalize or undo normalization of values by 
+population. This replaces the `value` column in each data frame with the 
+appropriately normalized (or unnormalized) value. The user can choose 
+which data frames in the list to normalize. Currently works with
 "state" and "county" `geo_type` only.
+}
+\details{
+There are two main use cases for this function: (i) normalizing signals 
+obtained from [covidcast::covidcast_signals()] by population, and
+(ii) predictions for a response were made on a population-normalized basis
+and we want to convert them to predictions for the unnormalized response.
 }
