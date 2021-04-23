@@ -71,7 +71,7 @@ cat("Running Corrections report for states\n")
 ## Render the corrections report
 
 rmarkdown::render(input = state_corrections_md,
-                  output_file = sprintf(("%s_%s.html", tools::file_path_sans_ext(state_corrections_md), forecast_date),
+                  output_file = sprintf("%s_%s.html", tools::file_path_sans_ext(state_corrections_md), forecast_date),
                   output_dir = file.path(output_dir, state_output_subdir))
 
 cat("Running QA for States\n")
@@ -88,7 +88,7 @@ cat("Running Corrections report for counties\n")
 
 ## Render the corrections report
 rmarkdown::render(input = county_corrections_md,
-                  output_file = sprintf(("%s_%s.html", tools::file_path_sans_ext(county_corrections_md), forecast_date),
+                  output_file = sprintf("%s_%s.html", tools::file_path_sans_ext(county_corrections_md), forecast_date),
                   output_dir = file.path(output_dir, county_output_subdir))
 
 cat("Running QA for Counties\n")
