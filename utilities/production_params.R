@@ -1,23 +1,59 @@
-## Obtain environment variables
+## Start of prologue
+## These are usually not changed except by those know what is going
+## on.  Volatile packages are those that undergo frequent development
+## and are therefore installed just-in-time from repos before running
+## forecasts
 
-## One place for all parameters used by all production scripts (production_script.R) and
-## and also markdowns (anteater.Rmd zebra.Rmd)
+## Install a package if not already installed from github
+install_from_github_if_needed <- function(pkgs, ...) {
+  installed_pkgs <- installed.packages()[, 1]
+  pkg_names <- names(pkgs)
+  to_install <- pkgs[setdiff(pkg_names, installed_pkgs)]
+  for (pkg in to_install) {
+    devtools::install_github(repo = pkg$repo, ref = pkg$ref,
+                             subdir = pkg$subdir, ...)
+  }
+}
 
-# Common parameters -------------------------------------------------------
+volatile_pkgs <- list(
+  evalcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
+                   subdir = "R-packages/evalcast"),
+  modeltools = list(repo = "cmu-delphi/covidcast", ref = "modeltools",
+                  subdir = "R-packages/modeltools"),
+  zookeeper = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
+                   subdir = "utilities/zookeeper"),
+  animalia = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
+                  subdir = "forecasters/animalia")
+)
+
+install_from_github_if_needed(volatile_pkgs, upgrade = "never")
+
+## End of prologue
+
+## Parameters section proper
+
+## Obtain environment variables One place for all parameters used by
+## all production scripts (production_script.R) and also markdowns
+## (anteater.Rmd zebra.Rmd state-corrections.Rmd
+## county-corrections.Rmd)
 
 forecast_date <- lubridate::ymd(Sys.getenv("FORECAST_DATE"))
 today  <- lubridate::ymd(Sys.getenv("TODAY"))
+
 ##output_dir  <- Sys.getenv("OUTPUT_DIR")
 ## We can fix this at /mnt
 output_dir  <- "/mnt"
+
 aheads  <- 1:4
-state_output_subdir  <- "state-output"
-county_output_subdir <- "county-output"
 qa_lookback <- 60 # how far back do we show actual data on the QA report?
 correction_lookback <- 90 # how far back do we look on the daily corrections report?
 n_counties <- 200 # we predict the top 200 counties
 
-# Signals used by the various forecasters ---------------------------------
+
+## Subdirectories for states and counties
+
+state_output_subdir  <- "state-output"
+county_output_subdir <- "county-output"
 
 ## Here is where you change the signals if one or the other is not available,
 ## or even add other replacement forecasters
@@ -52,9 +88,11 @@ forecaster_details  <- list(
   )
 )
 
-## These should ideally be grouped
+state_corrections_md <- "state-corrections.Rmd"
+county_corrections_md <- "county-corrections.Rmd"
 
-# State specific sets -----------------------------------------------------
+
+## These should ideally be grouped
 
 ## Here is where you choose the forecasters you use for state and counties
 state_forecaster_name  <- "anteater"
@@ -69,6 +107,7 @@ if (is.null(state_forecaster_signals) || is.null(county_forecaster_signals)) {
 }
 ## End of DO NOT MODIFY
 
+# State specific sets -----------------------------------------------------
 
 state_corrections_params <- zookeeper::default_state_params(
   # many other options, see the function documentation
