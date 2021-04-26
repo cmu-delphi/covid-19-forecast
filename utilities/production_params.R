@@ -126,11 +126,16 @@ state_corrector <- zookeeper::make_state_corrector(
                "deaths_incidence_num",
                "deaths_incidence_num",
                "confirmed_incidence_num",
-               "confirmed_incidence_num"
+               "confirmed_incidence_num"#,
+               ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
+               ## "confirmed_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                  "ak","mi","mo","al"),
+                  "ak","mi","mo","al"#,
+                  ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
+                  ## "al"
+                  ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
       lubridate::ymd(c("2021-03-18","2021-03-19")),
@@ -138,13 +143,20 @@ state_corrector <- zookeeper::make_state_corrector(
       lubridate::ymd("2021-04-07"),
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       lubridate::ymd("2021-04-15"),
-      lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17")),
+      lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
+                       ## ongoing as of 2021-04-24
+                       "2021-04-20", "2021-04-22", "2021-04-24"
+                       )),
       lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13")
+      lubridate::ymd("2021-04-13","2021-04-20")#,
+      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
+      ## lubridate::ymd("2021-04-20")
     ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                75, 150, 150, 180
+                75, 150, 150, 180#,
+                ## from JHU-CSSE notes 2021-04-24, 2021-04-25
+                ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
                 )
   )
 )
@@ -178,18 +190,27 @@ county_corrector  <- zookeeper::make_county_corrector(
     geo_value = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       "29077", "29095", "29183", "29189",
-      "01097"
+      "01097"#,
+      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
+      ## "01097"
     ),
     time_value = list(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
       lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13")
+      lubridate::ymd("2021-04-13",
+                     ## partially resolve conflict
+                     "2021-04-20"
+                     )#,
+      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
+      ## lubridate::ymd("2021-04-20")
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       rep_len(150, 4L),
-      180
+      180#,
+      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
+      ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
     )
   )
 )
