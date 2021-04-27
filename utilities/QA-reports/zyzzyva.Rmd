@@ -36,9 +36,9 @@ simple_labs <- function(geo_value) {
 
 ```{r, fig.height = 120, fig.width = 30, dev="CairoSVG", echo=FALSE, message=FALSE}
 # Grab corrected data
-zyz <- make_zyzzyva_corrector()
+zyz <- make_zyzzyva_corrector(default_county_params(data_source = "jhu-csse"))
 corrected <- suppressMessages(covidcast::covidcast_signal(
-  "usa-facts","confirmed_incidence_num", 
+  "jhu-csse","confirmed_incidence_num", 
   start_day = ymd(params$today) - days(x = 90), 
   geo_type = "county")) %>% 
   zyz()  # make corrections

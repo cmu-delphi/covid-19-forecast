@@ -1,4 +1,4 @@
-#' Default parameters for state death corrections
+#' Default parameters for  county case corrections
 #'
 #' @param data_source covidcast data_source for corrections
 #' @param signal vector of covidcast signals to correct
@@ -10,17 +10,17 @@
 #' @param sig_cut t-statistic cut off for marking outliers
 #' @param sig_consec slightly smaller t-statistic if consecutive
 #' @param time_value_flag_date no corrections after this date
-#' @param multinomial_preprocessor logical, do we run the preporcessor
+#' @param multinomial_preprocessor logical, do we run the preprocessor
 #'
-#' @return A list of paramter values
+#' @return A list of parameter values
 #' @export
 #'
 #' @examples
 #' default_state_params(window_size=21)
-default_state_params <- function(
+default_county_params <- function(
     data_source = "jhu-csse",
-    signal = c("deaths_incidence_num", "confirmed_incidence_num"),
-    geo_type = "state",
+    signal = c("confirmed_incidence_num"),
+    geo_type = "county",
     window_size = 14,
     backfill_lag = 30,
     excess_cut = 0,
@@ -33,6 +33,7 @@ default_state_params <- function(
   tibble::tibble(
     data_source = data_source,
     signal = signal,
+    geo_type = geo_type,
     window_size = window_size,
     backfill_lag = backfill_lag,
     excess_cut = excess_cut,
@@ -45,7 +46,7 @@ default_state_params <- function(
 }
 
 
-#' Corrector for state forecasts
+#' Corrector for county forecasts
 #'
 #' This function produces another function to create corrections. It expects
 #' the signals from covidcast to be a list (or a single signal).
@@ -55,20 +56,26 @@ default_state_params <- function(
 #'   tibble is most easily generated with [default_state_params()].
 #' @param corrections_db_path path to store results, NULL by default
 #' @param dump_locations character vector of locations to ignore
+#' @param manual_flags tibble with five columns: `geo_value`, `time_value`,
+#'   `data_source`, `signal`, and `max_lag` indicating combinations of
+#'   of dates, locations, etc to manually flag and back distribute. `max_lag`
+#'   determines how far to backfill. For multiple times at one location,
+#'   `time_value` may be a list column.
 #'
 #' @return A function that takes a list of covidcast signals as the only
 #'   argument
 #' @export
 #'
 #' @examples
-#' make_aardvark_corrector(default_state_params(window_size=21))
-make_aardvark_corrector <- function(
-  params = default_state_params(),
+#' make_county_corrector(default_state_params(window_size=21))
+make_county_corrector <- function(
+  params = default_county_params(),
   corrections_db_path = NULL,
-  dump_locations = c("as","gu","mp","vi")) {
+  dump_locations = NULL,
+  manual_flags = NULL) {
 
 
-  aardvark_state_corrections <- function(df) {
+  function(df, return_all = FALSE) {
     if (class(df)[1] == "covidcast_signal") {
       # in case there's only one signal
       df <- list(df)
@@ -81,7 +88,7 @@ make_aardvark_corrector <- function(
     in_names <- names(df[[1]])
     all_signals <- df %>%
       purrr::map_dfr(~.x %>%
-                       select(.data$data_source, .data$signal) %>%
+                       dplyr::select(.data$data_source, .data$signal) %>%
                        head(1))
     params <- dplyr::left_join(all_signals, params)
     if (all(is.na(params$to_correct))) {
@@ -92,8 +99,8 @@ make_aardvark_corrector <- function(
     }
     corrected <- list()
     for (i in seq_along(df)) {
-      corrected[[i]] <- aardvark_state_corrections_single_signal(
-        df[[i]], params[i,])
+      corrected[[i]] <- county_corrections_single_signal(
+        df[[i]], params[i,], manual_flags)
       df[[i]] <- corrected[[i]] %>%
         mutate(value = .data$corrected) %>%
         select(all_of(in_names)) %>%
@@ -104,33 +111,45 @@ make_aardvark_corrector <- function(
         geo_type = params$geo_type[1])
     }
 
-    if (!is.null(corrections_db_path)) {
+    if (!is.null(corrections_db_path) || return_all) {
       corrected_df <- bind_rows(corrected) %>%
         select(.data$data_source, .data$signal, .data$geo_value,
                .data$time_value,
-               .data$value, .data$corrected, .data$flag)
-      write_rds(corrected_df, file = corrections_db_path)
+               .data$value, .data$corrected, .data$flag, .data$special_flag)
+      if (!is.null(corrections_db_path)) 
+        write_rds(corrected_df, file = corrections_db_path)
     }
-    return(df)
+    if (return_all) {
+      return(corrected_df)
+    } else {
+      return(df)
+    }
   }
 
-  return(aardvark_state_corrections)
 }
 
 
 
 #' @importFrom lubridate ymd
-aardvark_state_corrections_single_signal <- function(x, params) {
+county_corrections_single_signal <- function(x, params, manual_flags) {
   if (is.na(params$to_correct)) {
     # no corrections for this signal
     x <- x %>% mutate(corrected = .data$value)
     return(x)
   }
+  if (x$signal[1] == "confirmed_incidence_num" &&
+      attr(x, "metadata")$geo_type == "county") {
+    x <- x %>% mutate(value = as.integer(round(.data$value)))
+  }
+  if (params$geo_type == "county") {
+    # remove mega-counties
+    x <- x %>% filter(as.numeric(.data$geo_value) %% 1000 > 0)
+  }
   # actually perform the corrections
-  x <- x %>% group_by(.data$geo_value) %>%
+  x <- x %>%
+    group_by(.data$geo_value) %>%
     dplyr::mutate(
-      fmean = roll_meanr(.data$value, params$window_size),
-      smean = roll_mean(.data$value, params$window_size, fill = NA),
+      fmean = roll_meanr(.data$value, params$window_size, na.rm = TRUE),
       fmedian = roll_medianr(.data$value, params$window_size),
       smedian = roll_median(.data$value, params$window_size, fill = NA),
       fsd = roll_sdr(.data$value, params$window_size),
@@ -140,53 +159,65 @@ aardvark_state_corrections_single_signal <- function(x, params) {
         # basically results in all the data flagged
       ststat = abs(.data$value - .data$smedian) / .data$ssd,
       flag =
-        # best case, use the smoother, helps with big upticks in noise
         (abs(.data$value) > params$size_cut &
            !is.na(.data$ststat) &
-           .data$ststat > params$sig_cut) |
-        # use filter if smoother is missing
+           .data$ststat > params$sig_cut ) | # best case
         (is.na(.data$ststat) & abs(.data$value) > params$size_cut &
            !is.na(.data$ftstat) & .data$ftstat > params$sig_cut) |
-        # find big negatives
-        (.data$value < -params$size_cut &
-           (!is.na(.data$ststat) | !is.na(.data$ftstat))),
-      flag = .data$flag | # allow smaller values to be outliers if consecutive
-        (lead(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
-        (lag(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
-        (lead(.data$flag) & is.na(.data$ststat) & .data$ftstat > params$sig_consec) |
-        (lag(.data$flag) & is.na(.data$ststat) & .data$ftstat > params$sig_consec),
-      flag = .data$flag & # no corrections after some date
-        (.data$time_value < ymd(params$time_value_flag_date) |
-           .data$value < -params$size_cut),
-      flag_bad_RI = (.data$geo_value == "ri" &
-                       .data$value > 0 &
-                       abs(lag(.data$value) < 1e-6)),
-      flag_bad_WA = (.data$geo_value == "wa" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value %in% ymd(c("2020-12-16", "2020-12-17",
-                                     "2020-12-23", "2020-12-24",
-                                     "2020-12-29"))),
-      #flag_bad_NC = (state == "NC" & time_value > ymd("2020-10-22")),
-      flag_bad_OH = (.data$geo_value == "oh" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value %in% seq(ymd("2021-02-12"),
-                                   ymd("2021-02-14"), length.out = 3)),
-      flag_bad_VA = (.data$geo_value == "va" & .data$signal == "deaths_incidence_num") &
-        (.data$time_value > ymd("2021-02-20")) & (.data$time_value < ymd("2021-03-04")),
+        # use filter if smoother is missing
+        (.data$value < -params$size_cut & !is.na(.data$ststat) &
+           !is.na(.data$ftstat)), # big negative
+      flag = .data$flag | # allow smaller values to also be outliers if consecutive
+        (dplyr::lead(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
+        (dplyr::lag(.data$flag) & !is.na(.data$ststat) & .data$ststat > params$sig_consec) |
+        (dplyr::lead(.data$flag) & is.na(.data$ststat) & .data$ftstat > params$sig_consec) |
+        (dplyr::lag(.data$flag) & is.na(.data$ststat) & .data$ftstat > params$sig_consec),
+      flag = .data$flag &
+        (.data$time_value < ymd(params$time_value_flag_date) | .data$value < -params$size_cut),
+      flag = .data$flag |
+        #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
+        (.data$time_value == "2020-11-20" & as.numeric(.data$geo_value) %/% 1000 == 22),
+      state = covidcast::fips_to_abbr(paste0(substr(.data$geo_value,1,2),"000"))
+    ) %>%
+    relocate(.data$state, .after = .data$geo_value) %>%
+    mutate(
+      flag_bad_RI = (.data$state == "ri"  & .data$value > 10 & dplyr::lag(.data$value) == 0),
+      corrected = .data$value,
+      special_flag = FALSE
+    )
+
+
+  ds <- x$data_source[1]
+  sig <- x$signal[1]
+  if (is.null(manual_flags)) {
+    manual_flags = tibble::tibble()
+  } else {
+    manual_flags <- dplyr::filter(manual_flags,
+                                  .data$data_source == ds, .data$signal == sig)
+  }
+  if (nrow(manual_flags) > 0) {
+    x <- make_manual_flags(x, manual_flags)
+    x <- make_manual_corrections(x, manual_flags)
+  }
+
+  x <- x %>%
+    dplyr::mutate(
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_RI, .data$time_value, 7),
+        .data$corrected, .data$corrected, .data$flag_bad_RI, .data$time_value, 7)
+      )
+
+   # General corrections
+  x <- x %>%
+    dplyr::mutate(
+           special_flag = .data$special_flag | .data$flag_bad_RI,
       corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_WA, .data$time_value, 14),
-      corrected = corrections_multinom_roll(
-        .data$value, .data$value, .data$flag_bad_OH, .data$time_value, 60),
-      corrected = corrections_multinom_roll(
-        .data$value, pmax(.data$value-50,0), .data$flag_bad_VA, .data$time_value, 60),
-      corrected = corrections_multinom_roll( # for everywhere else
-        .data$corrected, .data$value,
-        (.data$flag &
-           !.data$flag_bad_RI & !.data$flag_bad_WA &
-           !.data$flag_bad_OH & !.data$flag_bad_VA),
-        .data$time_value, params$backfill_lag, expectations = .data$fmedian,
+        .data$corrected, .data$value - .data$fmedian,
+        (.data$flag & !.data$special_flag),
+        .data$time_value, params$backfill_lag,
+        expectations = .data$fmedian,
         reweight = function(x) exp_w(x, params$backfill_lag)),
-      corrected = .data$corrected + # imputes forward if necessary
+      fmean = roll_meanr(.data$corrected, params$window_size, na.rm = TRUE),
+      corrected = .data$corrected +
         missing_future(TRUE, .data$time_value, .data$value, .data$fmean)
     )
   if (params$multinomial_preprocessor) {
@@ -194,3 +225,7 @@ aardvark_state_corrections_single_signal <- function(x, params) {
   }
   return(x)
 }
+
+#' @describeIn make_county_corrector alias to avoid destroying production
+#' @export
+make_zyzzyva_corrector <- make_county_corrector

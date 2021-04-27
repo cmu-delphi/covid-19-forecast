@@ -1,5 +1,5 @@
 ---
-title: "aardvark-corrections"
+title: "State corrections"
 output: html_document
 ---
 
@@ -8,27 +8,25 @@ library(zookeeper)
 library(covidcast)
 library(tidyverse)
 library(lubridate)
+source("production_params.R")
 df <- suppressMessages(
   covidcast_signals(
-    "jhu-csse",
-    c("deaths_incidence_num","confirmed_incidence_num"),
-    start_day = Sys.Date() - duration(6, "months"),
+    state_forecaster_signals$data_source,
+    state_forecaster_signals$signal,
+    start_day = state_forecaster_signals$start_day, 
     geo_type = "state"
   )
 )
 
-aad <- make_aardvark_corrector(corrections_db_path = "aardvark-corrections.RDS")
-corrected <- aad(df)
-corrected <- readRDS("aardvark-corrections.RDS") %>%
-  filter(time_value > Sys.Date() - duration(3, "months")) %>%
-  select(-data_source) %>%
+corrected <- state_corrector(df, return_all = TRUE) %>%
+  filter(time_value > today - duration(correction_lookback, "days")) %>%
   pivot_longer(value:corrected)
 ```
 
 ```{r, echo = FALSE, fig.height = 120, fig.width = 10, dev="CairoSVG"}
 corrected %>% 
   ggplot(aes(time_value)) + geom_line(aes(y=value, color=name)) +
-  geom_point(data = filter(corrected, flag, name=="value"), 
+  geom_point(data = filter(corrected, flag | special_flag, name == "value"), 
              aes(y = value), color="orange") +
   facet_wrap(~signal + geo_value , scales = "free", ncol = 3) +
   theme_bw() + xlab("") + ylab("") +

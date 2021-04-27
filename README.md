@@ -52,3 +52,22 @@ When adding a new forecaster or other package, take the following steps BEFORE y
 
 If the check fails, revisit your package. Run R CMD Check locally and fix the problems. Make sure any dependencies are included as necessary. See the DESCRIPTION for `{aardvark}` as an example. If that all fails, get help on Slack.
 
+# Current forecasting structure
+
+* All forecasts are run off a script in the `/utilities` folder. There is a more "operations" oriented description of the pipeline there.
+
+Our main "production" forecaster lives in the `animalia` package under `/utilities`. The goal is for this single
+forecasting framework to be sufficiently generalizable that any forecaster we wish to implement can take
+advantage of its flexibility. That said, it shouldn't be so complicated that it's challenging to maintain.
+More details can be found in the documentation for that package. As of 4/20/21, we produce county case and state
+death forecasts using this package, respectively named `zebra` and `anteater`.
+
+The production forecaster uses [`covidcast/modeltools`](https://cmu-delphi.github.io/covidcast/modeltoolsR/index.html)
+to implement some preprocessing steps, but the core
+estimation method uses [`ryantibs/quantgen`](https://ryantibs.github.io/quantgen/index.html) 
+to produce the full set of quantile forecasts. It's structure
+is based on `modeltools/quantile_forecaster()` and the related 
+[vignette](https://cmu-delphi.github.io/covidcast/modeltoolsR/articles/quantgen-forecast.html) provides background. The 
+version here allows for more general handling of cross validation and "featurization" in order to do the
+necessary preprocessing required in production. The featurization steps are the main difference between the two 
+porduction forecasters. These functions also reside within `animalia`.

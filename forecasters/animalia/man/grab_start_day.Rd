@@ -8,33 +8,42 @@ grab_start_day(
   ahead,
   training_window_size,
   lags,
+  incidence_period,
   roll_sum_len = 7,
   cv = FALSE,
   cv_type = c("forward", "random"),
-  nfolds = 5
+  nfolds = 5,
+  ntrain_cv = training_window_size
 )
 }
 \arguments{
-\item{ahead}{vector of aheads (in days)}
+\item{ahead}{vector of aheads}
 
 \item{training_window_size}{desired size of the training set}
 
 \item{lags}{vector (or list) of lags for features}
 
+\item{incidence_period}{String indicating the incidence period, either
+"epiweek" or "day".}
+
 \item{roll_sum_len}{if features need trailing sums, how far back do we need?
 Default is 7}
 
-\item{cv}{will we be performing cv? (currently ignored)}
+\item{cv}{will we be performing cv?}
 
-\item{cv_type}{forward cv or random, forward, requires more historical data
-(currently ignored)}
+\item{cv_type}{forward cv or random, forward, requires more historical data}
 
-\item{nfolds}{how many folds to use for CV (currently ignored)}
+\item{nfolds}{how many folds to use for CV}
+
+\item{ntrain_cv}{how much data do we train CV with? default is 
+`training_window_size` (different from iid CV)}
 }
 \value{
 returns a function with a single argument: the forecast_date as a 
   string or Date object
 }
 \description{
-Produce start_day function
+This closure can be used to determine the earliest date data needs to be 
+pulled in order to have sufficient available data at prediction time.
+It can potentially cut down the fitting time.
 }
