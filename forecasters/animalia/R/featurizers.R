@@ -1,3 +1,4 @@
+
 #' Functions to create "featurizers" 
 #' 
 #' Essentially, these both create functions that compute

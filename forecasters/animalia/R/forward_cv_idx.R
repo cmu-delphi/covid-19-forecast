@@ -1,4 +1,3 @@
-
 # Helper script to determine train/validation splits for forward cross validation
 #
 #

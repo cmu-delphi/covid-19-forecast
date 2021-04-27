@@ -1,0 +1,413 @@
+---
+title: "State cheaters"
+author: "DJM"
+date: "24 March 2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+
+
+**Package installation**
+
+
+```{r package-install, eval=FALSE}
+remotes::install_github("cmu-delphi/covidcast", ref="main",
+                        subdir = "R-packages/covidcast")
+remotes::install_github("cmu-delphi/covidcast", ref = "evalcast-killcards",
+                         subdir = "R-packages/evalcast")
+remotes::install_github(repo="ryantibs/quantgen", subdir="R-package/quantgen")
+remotes::install_github("cmu-delphi/covid-19-forecast", ref = "develop",
+                         subdir = "utilities/zookeeper", upgrade = "never")
+remotes::install_github("cmu-delphi/covid-19-forecast", ref = "develop",
+                         subdir = "forecasters/aardvark", upgrade = "never")
+```
+
+
+```{r common-stuff, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, fig.align = "center",
+                      message = FALSE, warning = FALSE)
+library(covidcast)
+library(evalcast)
+#library(modeltools)
+source("my_quantgen.R")
+library(tidyverse)
+
+## Setup 
+
+# What are we forecasting?
+data_source <- c("jhu-csse","fb-survey","doctor-visits")
+data_signals <- c("confirmed_incidence_num", "smoothed_hh_cmnty_cli",
+                  "smoothed_cli")
+our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
+forecast_dates <- our_pred_dates[seq(7, 28, by=4)] 
+# 6 forecast dates, always on 2nd day of the epiweek
+incidence_period <- "day"
+ahead <- c(7, 14, 21, 28) - 2 # minus 2 because we predict the current week
+geo_type <- "county" 
+
+
+# Some quantgen parameters 
+n <- 28               # Training set size (in days) 
+lags <- list(c(0, 1, 2, seq(3, 21, 3)), seq(3,28,7), seq(3,28,7)) # Lags (in days) for features
+# lp_solver <- "gurobi"
+sort <- TRUE
+nonneg <- TRUE
+
+
+# For the autoregressive models fit by quantgen, we need to ensure that we pull
+# enough training data so that 1. we actually have the response (defined by some
+# number of days ahead into the future) and 2. we have the lagged features 
+start_day_zebra <- function(forecast_date) {
+  return(as.Date(forecast_date) - max(ahead) - n - max(unlist(lags)) + 1)
+}
+
+
+dav_maker_zebra <- function(df) {
+  locs <- df %>% group_by(geo_value) %>%
+    summarise(tot = sum(`value+0:jhu-csse_confirmed_incidence_num`)) %>%
+    slice_max(order_by = tot, n = 200) %>%
+    select(geo_value) %>%
+    pull()
+  df <- df %>% 
+    filter(geo_value %in% locs) %>%
+    group_by(geo_value) %>% # maybe easier with modeltools::slide_by_geo
+    arrange(time_value) %>%
+    mutate(across(starts_with("value"), 
+                  ~ RcppRoll::roll_meanr(.x, n = 7, na.rm = TRUE) * 7),
+           across(starts_with("value"),
+                  ~ zoo::na.locf(.x, na.rm = FALSE))) %>%
+    ungroup()
+}
+```
+
+## Produce forecasts
+
+Current model is quantile regression with 3 lags of the response (deaths) and 3 lags of 
+cases. This is at the state level. The mobility model has a 28 day lag from
+the forecast date (should probably be from the target date)
+
+* We always have the forecast date as the second day of the epiweek. 
+* So we forecast 5, 12, 19, and 26 days ahead. 
+* No constraints on the predicted quantiles. But we sort after.
+* No regularization. No CV.
+* 1 model for the whole country.
+* We use 28 days of training data.
+* We apply the same corrections as in production.
+
+```{r produce-forecasts-mob}
+# Quantile autoregression with 3 lags, or QAR3
+ 
+corrector <- zookeeper::make_zyzzyva_corrector(
+  zookeeper::default_county_params(data_source = "jhu-csse"))
+zeb <- get_predictions(
+  forecaster = quantgen_forecaster, 
+  name_of_forecaster = "zebra",
+  signals = tibble::tibble(
+                      data_source = data_source, 
+                      signal = data_signals,
+                      start_day = list(start_day_zebra)),
+  forecast_dates = forecast_dates, 
+  as_of_override = function(x) lubridate::ymd(Sys.Date()),
+  incidence_period = incidence_period, 
+  ahead = ahead, 
+  geo_type = "county", 
+  signal_aggregation = "list", 
+  geo_values = "*",
+  apply_corrections = corrector,
+  featurize = dav_maker_zebra,
+  n = n, 
+  tau = c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975),
+  lags = lags, 
+  lambda = 0, # Just do quantile regression 
+  sort = sort, 
+  nonneg = nonneg)
+```
+
+```{r predictions-cheater}
+zz <- zyzzyva::get_forecasters(n_locations = 200, weeks_back = 4)$zyzzyva_covidcast$forecaster
+
+signals_cheater <- tibble(
+  data_source = c(## "usa-facts",
+    "jhu-csse",
+    "fb-survey",
+    "doctor-visits"),
+  signal = c("confirmed_incidence_num",
+             ## "deaths_incidence_num",
+             "smoothed_hh_cmnty_cli",
+             "smoothed_cli")
+)
+
+aheads_cheater  <- 1:4
+cheater  <- vector("list", length = length(aheads))
+
+for (a in aheads_cheater) {
+    cat(sprintf("Ahead = %d\n", ahead))
+    cheater[[a]] <- evalcast::get_predictions(
+      forecaster = zz,
+      name_of_forecaster = "zyzzyva-cheater",
+      signals = signals_cheater,
+      forecast_dates = forecast_date,
+      incidence_period = "epiweek",
+      ahead = ahead,
+      geo_type = "county",
+      geo_values = "*",
+      apply_corrections = corrector)
+}
+cheater  <- dplyr::bind_rows(cheater)
+
+```
+
+
+
+
+
+```{r grab-the-competition, message = FALSE, warning = FALSE}
+library(tidyr)
+library(purrr)
+library(ggplot2)
+theme_set(theme_bw())
+competition <- c("COVIDhub-ensemble","COVIDhub-baseline",
+                 "CMU-TimeSeries", "Karlen-pypm")
+submitted <- lapply(competition[1:3], get_covidhub_predictions, 
+                    forecast_dates = forecast_dates, 
+                    signal = "deaths_incidence_num")
+# submitted[[4]] <- get_covidhub_predictions("Karlen-pypm", 
+#                                            forecast_dates = forecast_dates - 1,
+#                                            signal = "deaths_incidence_num") %>%
+#   mutate(forecast_date = forecast_date + 1)
+submitted <- bind_rows(submitted) %>% filter(ahead < 5)
+
+
+# Some fixes to make comparable
+zeb <- zeb %>% 
+  mutate(quantile = as.numeric(quantile),
+         incidence_period = "epiweek",
+         ahead = ahead %/% 7 + 1) 
+cheater <- cheater %>%
+  mutate(quantile = as.numeric(quantile))
+
+qar_dc <- bind_rows(zeb, cheater)
+
+results <- evaluate_predictions(bind_rows(qar_dc, submitted),
+                                backfill_buffer = 0,
+                                geo_type = "state") %>%
+  intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
+```
+
+
+## Overall AE, WIS, Coverage 80
+
+We compare the new forecaster to
+
+* COVIDhub-baseline
+* COVIDhub-ensemble
+* Our submission
+* Karlen pypm (the top model over the last 3 months)
+
+NOTE: Results are based on the following numbers of common locations
+
+```{r common-locs}
+results %>% group_by(forecast_date) %>% summarise(n_distinct(geo_value))
+```
+
+Top line conclusions:
+
+1. Overall performance approaches the ensemble.
+1. By WIS, we are the top model for 1 weeks ahead, still good at 2-4 weeks ahead
+1. Coverage is very good.
+
+```{r overall, message = FALSE, warning = FALSE}
+subtitle = sprintf("Forecasts made over %s to %s",
+                   format(min(forecast_dates), "%B %d"),
+                   format(max(forecast_dates), "%B %d"))
+
+plot_canonical(results, x = "ahead", y = "ae", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean AE") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+  
+
+plot_canonical(results, x = "ahead", y = "wis", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "ahead", y = "coverage_80", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean Coverage") +
+  theme(legend.position = "bottom") + 
+  coord_cartesian(ylim=c(0,1)) + geom_hline(yintercept = .8, color="black")
+```
+
+## AE, WIS, and coverage by forecast date
+
+Top line conclusions:
+
+1. We crush it until December.
+2. Quite a bit worse in Dec/January, though better than aardvark.
+3. Coverage is generally good at all aheads.
+
+```{r by-forecast-date, message = FALSE, warning = FALSE}
+theme_set(theme_bw())
+plot_canonical(results, x = "forecast_date", y = "ae", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean AE") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "forecast_date", y = "wis", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "forecast_date", y = "coverage_80", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_rows = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean Coverage") +
+  theme(legend.position = "bottom") + 
+  coord_cartesian(ylim=c(0,1)) + geom_hline(yintercept = .8, color="black")
+```
+
+
+
+## Median relative WIS 
+
+Relative to baseline; scale first then take the median. 
+
+* Our November/December performance is the biggest issue. Though this is uncorrected data.
+
+
+```{r, message = FALSE, warning = FALSE}
+plot_canonical(results, x = "ahead", y = "wis", aggr = median,
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Median relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+
+plot_canonical(results, x = "forecast_date", y = "wis", aggr = median,
+               grp_vars = c("forecaster", "ahead"), facet_rows = "ahead",
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  labs(subtitle = subtitle, xlab = "Forecast date", ylab = "Median relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+```
+
+## (Geometric) Mean relative WIS 
+
+Relative to baseline; scale first then take the geometric mean, ignoring a few 0's. I think this is potentially more useful than the median/mean for relative WIS (or relative AE), but I haven't completely thought it through. Putting the results here to be provocative.
+
+```{r, message = FALSE, warning = FALSE}
+geom_mean <- function(x) prod(x)^(1/length(x))
+plot_canonical(results %>% filter(wis > 0), x = "ahead", y = "wis", 
+               aggr = geom_mean,
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) + 
+  labs(subtitle = subtitle, 
+       xlab = "Weeks ahead", ylab = "Mean (geometric) relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+
+plot_canonical(results %>% filter(wis > 0), x = "forecast_date", y = "wis", 
+               aggr = geom_mean, facet_rows = "ahead",
+               grp_vars = c("forecaster", "ahead"),
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  theme(legend.position = "bottom") + 
+  labs(subtitle = subtitle, 
+       xlab = "Forecast date", ylab = "Mean (geometric) relative WIS") +
+  geom_hline(yintercept = 1)
+
+```
+
+
+## Scores by target date (not forecast date)
+
+* Again, our Achilles heel is November/December, but we're using uncorrected data.
+
+```{r, message = FALSE, warning = FALSE}
+
+plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
+               dots = TRUE, grp_vars = "forecaster") + 
+  labs(subtitle = subtitle, xlab = "Target date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
+               dots = TRUE, grp_vars = c("forecaster", "ahead"), 
+               facet_rows = "ahead") +
+  labs(subtitle = subtitle, xlab = "Target date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+```
+
+## Maps (mean score over forecast dates and aheads)
+
+```{r maps-processing}
+maps <- results %>%
+  group_by(geo_value, forecaster) %>%
+  summarise(across(wis:ae, mean)) %>%
+  pivot_longer(wis:ae, names_to = "score") %>%
+  group_by(score) %>%
+  mutate(time_value = Sys.Date(),
+         r = max(value)) %>%
+  group_by(forecaster, .add = TRUE) %>%
+  group_split()
+
+
+maps <- purrr::map(maps, ~as.covidcast_signal(
+  .x, signal = .x$score[1], data_source = .x$forecaster[1], geo_type = "state"))
+maps <- purrr::map(maps, 
+                   ~plot(.x, choro_col = scales::viridis_pal()(3), 
+                         range = c(0,.x$r[1])))
+nfcasts <- length(unique(results$forecaster))
+```
+
+### Mean AE
+
+```{r map-ae, fig.width=12, fig.height=8}
+cowplot::plot_grid(plotlist = maps[1:nfcasts], ncol = 3)
+```
+
+### Mean WIS
+
+```{r map-wis, fig.width=12, fig.height=8}
+cowplot::plot_grid(plotlist = maps[(nfcasts+1):length(maps)], ncol = 3)
+```
+
+
+## Trajectory plots
+
+```{r trajectories, fig.height = 60, fig.width = 20, dev="CairoSVG"}
+pd <- evalcast:::setup_plot_trajectory(
+  bind_rows(qar_dc, submitted %>% filter(forecaster == "CMU-TimeSeries")),
+  intervals = 0.8,
+  geo_type = "state", 
+  start_day = min(forecast_dates) - 60)
+
+g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
+
+# build the fan
+g <- g + geom_ribbon(
+  data = pd$quantiles_df,
+  mapping = aes(ymin = lower, ymax = upper, fill = forecaster, 
+                group = interaction(forecaster,forecast_date)),
+  alpha = .1) +
+  scale_fill_viridis_d(begin=.15, end=.85)
+
+# line layer
+g <- g +
+  #geom_line(aes(y = .data$value.y), color = "#3182BD") + # corrected
+  geom_line(aes(y = value)) + # reported
+  geom_line(data = pd$points_df, 
+            mapping = aes(y = value, color = forecaster, 
+                          group = interaction(forecaster,forecast_date)),
+            size = 1) +
+  geom_point(aes(y = value)) + # reported gets dots
+  geom_point(data = pd$points_df, 
+             mapping = aes(y = value, color = forecaster),
+             size = 3) +
+  scale_color_viridis_d(begin=.15, end=.85)
+
+g + theme_bw(base_size = 20) + 
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5) +
+  theme(legend.position = "top") + ylab("") + xlab("")
+```
