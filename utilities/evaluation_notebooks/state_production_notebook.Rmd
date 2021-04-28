@@ -7,6 +7,9 @@ output:
     code_folding: hide
 ---
 
+This is a template for comparing the states production forecaster against 
+submissions to COVIDhub.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, fig.align = "center",
                       fig.width = 12, message = FALSE, warning = FALSE)
@@ -21,6 +24,8 @@ Get the dates we want forecasts for:
 ```{r get-forecast-dates}
 our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
 n_dates <- length(our_pred_dates)
+
+# n_dates - 4 is often the most recent date with ground truth for 4 weeks ahead
 forecast_dates <- our_pred_dates[(n_dates - 5):(n_dates - 4)]
 ```
 
@@ -36,6 +41,7 @@ for (i in seq_along(forecast_dates)) {
   state_forecaster_args$save_trained_models <- NULL
   state_forecaster_signals$as_of <- forecast_date
 
+  set.seed(i)  # corrections are random, for reproducibility
   current_predictions <- evalcast::get_predictions(
     forecaster = animalia::production_forecaster,
     name_of_forecaster = state_forecaster_name,
