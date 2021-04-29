@@ -143,7 +143,7 @@ production_forecaster <- function(df_list,
   # 1. data transformations, and saving
   
   # apply any transformations (incl. normalizing by population)
-  geo_type <- unlist(lapply(df_list, function(x) attr(x, "metadata")$geo_type))
+  geo_type <- unlist(lapply(df_list, get_geo_type))
   df_list <- normalize_by_population(df_list, geo_type, signals_to_normalize)
   df_list <- transformer(df_list, transform, inv_trans)
   df_wide <- covidcast::aggregate_signals(df_list, dt = dt, format = "wide")
