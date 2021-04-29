@@ -29,7 +29,8 @@ our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
 n_dates <- length(our_pred_dates)
 
 # n_dates - 4 is often the most recent date with ground truth for 4 weeks ahead
-forecast_dates <- our_pred_dates[(n_dates - 7):(n_dates - 4)]
+# dates spaced out 4 weeks ahead to see different behaviors
+forecast_dates <- our_pred_dates[n_dates - 4 * 6:1]
 ```
 
 Get the predictions for our production forecaster:
