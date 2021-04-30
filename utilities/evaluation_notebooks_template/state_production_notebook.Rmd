@@ -1,11 +1,14 @@
 ---
-title: "Counties Production Forecaster"
+title: "States Production Forecaster"
 author: "Kenneth Tay"
 date: "4/19/2021"
 output: 
   html_document:
     code_folding: hide
 ---
+
+This is a template for comparing the states production forecaster against 
+submissions to COVIDhub.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, fig.align = "center",
@@ -21,32 +24,35 @@ Get the dates we want forecasts for:
 ```{r get-forecast-dates}
 our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
 n_dates <- length(our_pred_dates)
+
+# n_dates - 4 is often the most recent date with ground truth for 4 weeks ahead
 forecast_dates <- our_pred_dates[(n_dates - 5):(n_dates - 4)]
 ```
 
 Get the predictions for our production forecaster:
 
-```{r county-predictions, results="hide"}
-county_predictions <- NULL
+```{r state-predictions, results="hide"}
+state_predictions <- NULL
 for (i in seq_along(forecast_dates)) {
   # set parameters correctly for each forecast date
   Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
   source("../production_params.R")
-  county_forecaster_args$save_wide_data <- NULL
-  county_forecaster_args$save_trained_models <- NULL
-  county_forecaster_signals$as_of <- forecast_date
+  state_forecaster_args$save_wide_data <- NULL
+  state_forecaster_args$save_trained_models <- NULL
+  state_forecaster_signals$as_of <- forecast_date
 
+  set.seed(i)  # corrections are random, for reproducibility
   current_predictions <- evalcast::get_predictions(
     forecaster = animalia::production_forecaster,
-    name_of_forecaster = county_forecaster_name,
-    signals = county_forecaster_signals,
+    name_of_forecaster = state_forecaster_name,
+    signals = state_forecaster_signals,
     forecast_dates = forecast_date,
     incidence_period = "epiweek",
-    apply_corrections = county_corrector,
-    forecaster_args = county_forecaster_args
+    apply_corrections = state_corrector,
+    forecaster_args = state_forecaster_args
   )
 
-  county_predictions <- bind_rows(county_predictions, current_predictions)
+  state_predictions <- bind_rows(state_predictions, current_predictions)
 }
 ```
 
@@ -54,21 +60,25 @@ Get the competition and evaluate the predictions on the error metrics:
 
 ```{r grab-the-competition}
 competition <- c("COVIDhub-ensemble", "COVIDhub-baseline",
-                 "CMU-TimeSeries")
-submitted <- lapply(competition, get_covidhub_predictions, 
+                 "CMU-TimeSeries", "Karlen-pypm")
+submitted <- lapply(competition[1:3], get_covidhub_predictions, 
                     forecast_dates = forecast_dates, 
-                    signal = "confirmed_incidence_num")
+                    signal = "deaths_incidence_num")
+submitted[[4]] <- get_covidhub_predictions("Karlen-pypm", 
+                                           forecast_dates = forecast_dates - 1,
+                                           signal = "deaths_incidence_num") %>%
+  mutate(forecast_date = forecast_date + 1)
 ```
 
 ```{r combine-predictions}
 submitted <- bind_rows(submitted) %>% filter(ahead < 5)
-all_predictions <- bind_rows(county_predictions, submitted)
+all_predictions <- bind_rows(state_predictions, submitted)
 ```
 
 ```{r evaluate-predictions}
 results <- evaluate_covid_predictions(all_predictions,
                                       backfill_buffer = 0,
-                                      geo_type = "county") %>%
+                                      geo_type = "state") %>%
   intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
 ```
 
@@ -79,6 +89,7 @@ We compare the new forecaster to
 * COVIDhub-baseline
 * COVIDhub-ensemble
 * Our submission
+* Karlen pypm
 
 NOTE: Results are based on the following numbers of common locations
 
@@ -206,7 +217,7 @@ maps <- results %>%
   group_by(forecaster, .add = TRUE) %>%
   group_split()
 maps <- purrr::map(maps, ~as.covidcast_signal(
-  .x, signal = .x$score[1], data_source = .x$forecaster[1], geo_type = "county"))
+  .x, signal = .x$score[1], data_source = .x$forecaster[1], geo_type = "state"))
 maps <- purrr::map(maps,
                    ~plot(.x, choro_col = scales::viridis_pal()(3),
                          range = c(0,.x$r[1])))
@@ -228,11 +239,11 @@ cowplot::plot_grid(plotlist = maps[(nfcasts+1):length(maps)], ncol = 3)
 
 ## Trajectory plots
 
-```{r trajectories, fig.height = 120, fig.width = 30, dev="CairoSVG"}
+```{r trajectories, fig.height = 60, fig.width = 20, dev="CairoSVG"}
 pd <- evalcast:::setup_plot_trajectory(
-  bind_rows(county_predictions, submitted %>% filter(forecaster == "CMU-TimeSeries")),
+  bind_rows(state_predictions, submitted %>% filter(forecaster == "CMU-TimeSeries")),
   intervals = 0.8,
-  geo_type = "county", 
+  geo_type = "state", 
   start_day = min(forecast_dates) - 60)
 g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
 # build the fan
