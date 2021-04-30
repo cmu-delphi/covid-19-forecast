@@ -36,7 +36,7 @@ forecast_dates <- our_pred_dates[n_dates - 4 * 6:1]
 Get the predictions for our production forecaster:
 
 ```{r county-predictions, results="hide"}
-county_predictions <- NULL
+prod_predictions <- NULL
 for (i in seq_along(forecast_dates)) {
   # set parameters correctly for each forecast date
   Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
@@ -56,7 +56,7 @@ for (i in seq_along(forecast_dates)) {
     forecaster_args = county_forecaster_args
   )
 
-  county_predictions <- bind_rows(county_predictions, current_predictions)
+  prod_predictions <- bind_rows(prod_predictions, current_predictions)
 }
 ```
 
@@ -64,7 +64,7 @@ Get predictions for competitor 1 (production with population scaling for all
 signals):
 
 ```{r competitor-predictions-1, results="hide"}
-county_predictions2 <- NULL
+comp_predictions1 <- NULL
 for (i in seq_along(forecast_dates)) {
   # set parameters correctly for each forecast date
   Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
@@ -88,15 +88,25 @@ for (i in seq_along(forecast_dates)) {
     forecaster_args = county_forecaster_args
   )
 
-  county_predictions2 <- bind_rows(county_predictions2, current_predictions)
+  comp_predictions1 <- bind_rows(comp_predictions1, current_predictions)
 }
 ```
 
-Get predictions for competitor 2 (production with population scaling for all
-signals, and log transform for all signals):
+Get predictions for competitor 2 (production with log transform for all signals):
 
 ```{r competitor-predictions-2, results="hide"}
-county_predictions3 <- NULL
+# need some auxiliary functions so that we take logs after the featurizing
+# step, not before
+take_logs <- function(df) {
+  df %>% mutate(across(starts_with("value"),
+                       ~ ifelse(.x > 0, log(.x), NA)))
+}
+featurize_then_log <- function(df) {
+  animalia::make_county_7dav_featurizer()(df) %>% 
+    take_logs()
+}
+
+comp_predictions2 <- NULL
 for (i in seq_along(forecast_dates)) {
   # set parameters correctly for each forecast date
   Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
@@ -106,10 +116,10 @@ for (i in seq_along(forecast_dates)) {
   county_forecaster_signals$as_of <- forecast_date
   
   # additional tweaks
-  county_forecaster_name <- "popn + log"
-  county_forecaster_args$signals_to_normalize <- TRUE
-  county_forecaster_args$transform <- function(x) log(x + 1)
-  county_forecaster_args$inv_trans <- function(x) exp(x) - 1
+  county_forecaster_name <- "log"
+  county_forecaster_args$featurize <- featurize_then_log
+  county_forecaster_args$transform <- function(x) x  # log done in featurize step
+  county_forecaster_args$inv_trans <- function(x) exp(x)
 
   set.seed(i)  # corrections are random, for reproducibility
   current_predictions <- evalcast::get_predictions(
@@ -122,7 +132,42 @@ for (i in seq_along(forecast_dates)) {
     forecaster_args = county_forecaster_args
   )
 
-  county_predictions3 <- bind_rows(county_predictions3, current_predictions)
+  comp_predictions2 <- bind_rows(comp_predictions2, current_predictions)
+}
+```
+
+Get predictions for competitor 3 (production with population scaling for all
+signals, and log transform for all signals):
+
+```{r competitor-predictions-3, results="hide"}
+comp_predictions3 <- NULL
+for (i in seq_along(forecast_dates)) {
+  # set parameters correctly for each forecast date
+  Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
+  source("../production_params.R")
+  county_forecaster_args$save_wide_data <- NULL
+  county_forecaster_args$save_trained_models <- NULL
+  county_forecaster_signals$as_of <- forecast_date
+  
+  # additional tweaks
+  county_forecaster_name <- "popn + log"
+  county_forecaster_args$signals_to_normalize <- TRUE
+  county_forecaster_args$featurize <- featurize_then_log
+  county_forecaster_args$transform <- function(x) x  # log done in featurize step
+  county_forecaster_args$inv_trans <- function(x) exp(x)
+
+  set.seed(i)  # corrections are random, for reproducibility
+  current_predictions <- evalcast::get_predictions(
+    forecaster = animalia::production_forecaster,
+    name_of_forecaster = county_forecaster_name,
+    signals = county_forecaster_signals,
+    forecast_dates = forecast_date,
+    incidence_period = "epiweek",
+    apply_corrections = county_corrector,
+    forecaster_args = county_forecaster_args
+  )
+
+  comp_predictions3 <- bind_rows(comp_predictions3, current_predictions)
 }
 ```
 
@@ -138,9 +183,10 @@ submitted <- lapply(competition, get_covidhub_predictions,
 
 ```{r combine-predictions}
 submitted <- bind_rows(submitted) %>% filter(ahead < 5)
-county_predictions <- bind_rows(county_predictions, 
-                               county_predictions2, 
-                               county_predictions3)
+county_predictions <- bind_rows(prod_predictions, 
+                                comp_predictions1, 
+                                comp_predictions2,
+                                comp_predictions3)
 all_predictions <- bind_rows(county_predictions, submitted)
 ```
 
@@ -275,7 +321,7 @@ maps <- results %>%
   pivot_longer(wis:ae, names_to = "score") %>%
   group_by(score) %>%
   mutate(time_value = Sys.Date(),
-         r = max(value)) %>%
+         r = modeltools::Max(value)) %>%
   group_by(forecaster, .add = TRUE) %>%
   group_split()
 maps <- purrr::map(maps, ~as.covidcast_signal(
