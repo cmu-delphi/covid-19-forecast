@@ -1,0 +1,276 @@
+---
+title: "States Production Forecaster"
+author: "Kenneth Tay"
+date: "4/19/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+This is a template for comparing the states production forecaster against 
+submissions to COVIDhub.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, fig.align = "center",
+                      fig.width = 12, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(covidcast)
+library(evalcast)
+theme_set(theme_bw())
+```
+
+Get the dates we want forecasts for:
+
+```{r get-forecast-dates}
+our_pred_dates <- get_covidhub_forecast_dates("CMU-TimeSeries")
+n_dates <- length(our_pred_dates)
+
+# n_dates - 4 is often the most recent date with ground truth for 4 weeks ahead
+forecast_dates <- our_pred_dates[(n_dates - 5):(n_dates - 4)]
+```
+
+Get the predictions for our production forecaster:
+
+```{r state-predictions, results="hide"}
+state_predictions <- NULL
+for (i in seq_along(forecast_dates)) {
+  # set parameters correctly for each forecast date
+  Sys.setenv(FORECAST_DATE = as.character(forecast_dates[i]))
+  source("../production_params.R")
+  state_forecaster_args$save_wide_data <- NULL
+  state_forecaster_args$save_trained_models <- NULL
+  state_forecaster_signals$as_of <- forecast_date
+
+  set.seed(i)  # corrections are random, for reproducibility
+  current_predictions <- evalcast::get_predictions(
+    forecaster = animalia::production_forecaster,
+    name_of_forecaster = state_forecaster_name,
+    signals = state_forecaster_signals,
+    forecast_dates = forecast_date,
+    incidence_period = "epiweek",
+    apply_corrections = state_corrector,
+    forecaster_args = state_forecaster_args
+  )
+
+  state_predictions <- bind_rows(state_predictions, current_predictions)
+}
+```
+
+Get the competition and evaluate the predictions on the error metrics:
+
+```{r grab-the-competition}
+competition <- c("COVIDhub-ensemble", "COVIDhub-baseline",
+                 "CMU-TimeSeries", "Karlen-pypm")
+submitted <- lapply(competition[1:3], get_covidhub_predictions, 
+                    forecast_dates = forecast_dates, 
+                    signal = "deaths_incidence_num")
+submitted[[4]] <- get_covidhub_predictions("Karlen-pypm", 
+                                           forecast_dates = forecast_dates - 1,
+                                           signal = "deaths_incidence_num") %>%
+  mutate(forecast_date = forecast_date + 1)
+```
+
+```{r combine-predictions}
+submitted <- bind_rows(submitted) %>% filter(ahead < 5)
+all_predictions <- bind_rows(state_predictions, submitted)
+```
+
+```{r evaluate-predictions}
+results <- evaluate_covid_predictions(all_predictions,
+                                      backfill_buffer = 0,
+                                      geo_type = "state") %>%
+  intersect_averagers(c("forecaster"), c("forecast_date", "geo_value"))
+```
+
+## Overall AE, WIS, Coverage 80
+
+We compare the new forecaster to
+
+* COVIDhub-baseline
+* COVIDhub-ensemble
+* Our submission
+* Karlen pypm
+
+NOTE: Results are based on the following numbers of common locations
+
+```{r common-locs}
+results %>% group_by(forecast_date) %>% summarise(n_distinct(geo_value))
+```
+
+```{r overall}
+subtitle = sprintf("Forecasts made over %s to %s",
+                   format(min(forecast_dates), "%B %d, %Y"),
+                   format(max(forecast_dates), "%B %d, %Y"))
+
+plot_canonical(results, x = "ahead", y = "ae", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean AE") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+  
+plot_canonical(results, x = "ahead", y = "wis", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "ahead", y = "coverage_80", aggr = mean) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Mean Coverage") +
+  theme(legend.position = "bottom") + 
+  coord_cartesian(ylim=c(0,1)) + geom_hline(yintercept = .8, color="black")
+```
+
+## AE, WIS, and coverage by forecast date
+
+```{r by-forecast-date, message = FALSE, warning = FALSE}
+plot_canonical(results, x = "forecast_date", y = "ae", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean AE") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "forecast_date", y = "wis", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "forecast_date", y = "coverage_80", aggr = mean,
+               grp_vars = c("forecaster","ahead"), facet_cols = "ahead") +
+  labs(subtitle = subtitle, xlab = "forecast date", ylab = "Mean Coverage") +
+  theme(legend.position = "bottom") + 
+  coord_cartesian(ylim=c(0,1)) + geom_hline(yintercept = .8, color="black")
+```
+
+## Median relative WIS 
+
+Relative to baseline; scale first then take the median. 
+
+```{r, message = FALSE, warning = FALSE}
+plot_canonical(results, x = "ahead", y = "wis", aggr = median,
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  labs(subtitle = subtitle, xlab = "Weeks ahead", ylab = "Median relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+
+plot_canonical(results, x = "forecast_date", y = "wis", aggr = median,
+               grp_vars = c("forecaster", "ahead"), facet_cols = "ahead",
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  labs(subtitle = subtitle, xlab = "Forecast date", ylab = "Median relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+```
+
+## (Geometric) Mean relative WIS 
+
+Relative to baseline; scale first then take the geometric mean, ignoring a few 
+0's. I think this is potentially more useful than the median/mean for relative 
+WIS (or relative AE), but I haven't completely thought it through. 
+Putting the results here to be provocative.
+
+```{r}
+geom_mean <- function(x) prod(x)^(1/length(x))
+
+plot_canonical(results %>% filter(wis > 0), x = "ahead", y = "wis", 
+               aggr = geom_mean,
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) + 
+  labs(subtitle = subtitle, 
+       xlab = "Weeks ahead", ylab = "Mean (geometric) relative WIS") +
+  theme(legend.position = "bottom") + 
+  geom_hline(yintercept = 1)
+
+plot_canonical(results %>% filter(wis > 0), x = "forecast_date", y = "wis", 
+               aggr = geom_mean, facet_cols = "ahead",
+               grp_vars = c("forecaster", "ahead"),
+               base_forecaster = "COVIDhub-baseline", scale_before_aggr = TRUE) +
+  theme(legend.position = "bottom") + 
+  labs(subtitle = subtitle, 
+       xlab = "Forecast date", ylab = "Mean (geometric) relative WIS") +
+  geom_hline(yintercept = 1)
+```
+
+## Scores by target date (not forecast date)
+
+```{r}
+plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
+               dots = TRUE, grp_vars = "forecaster") + 
+  labs(subtitle = subtitle, xlab = "Target date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+
+plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
+               dots = TRUE, grp_vars = c("forecaster", "ahead"), 
+               facet_cols = "ahead") +
+  labs(subtitle = subtitle, xlab = "Target date", ylab = "Mean WIS") +
+  theme(legend.position = "bottom") + 
+  scale_y_log10()
+```
+
+## Maps (mean score over forecast dates and aheads)
+
+```{r maps-processing}
+maps <- results %>%
+  group_by(geo_value, forecaster) %>%
+  summarise(across(wis:ae, mean)) %>%
+  pivot_longer(wis:ae, names_to = "score") %>%
+  group_by(score) %>%
+  mutate(time_value = Sys.Date(),
+         r = max(value)) %>%
+  group_by(forecaster, .add = TRUE) %>%
+  group_split()
+maps <- purrr::map(maps, ~as.covidcast_signal(
+  .x, signal = .x$score[1], data_source = .x$forecaster[1], geo_type = "state"))
+maps <- purrr::map(maps,
+                   ~plot(.x, choro_col = scales::viridis_pal()(3),
+                         range = c(0,.x$r[1])))
+nfcasts <- length(unique(results$forecaster))
+```
+
+### Mean AE
+
+```{r map-ae, fig.width=12, fig.height=8}
+cowplot::plot_grid(plotlist = maps[1:nfcasts], ncol = 3)
+```
+
+### Mean WIS
+
+```{r map-wis, fig.width=12, fig.height=8}
+cowplot::plot_grid(plotlist = maps[(nfcasts+1):length(maps)], ncol = 3)
+```
+
+
+## Trajectory plots
+
+```{r trajectories, fig.height = 60, fig.width = 20, dev="CairoSVG"}
+pd <- evalcast:::setup_plot_trajectory(
+  bind_rows(state_predictions, submitted %>% filter(forecaster == "CMU-TimeSeries")),
+  intervals = 0.8,
+  geo_type = "state", 
+  start_day = min(forecast_dates) - 60)
+g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
+# build the fan
+g <- g + geom_ribbon(
+  data = pd$quantiles_df,
+  mapping = aes(ymin = lower, ymax = upper, fill = forecaster, 
+                group = interaction(forecaster,forecast_date)),
+  alpha = .1) +
+  scale_fill_viridis_d(begin=.15, end=.85)
+# line layer
+g <- g +
+  #geom_line(aes(y = .data$value.y), color = "#3182BD") + # corrected
+  geom_line(aes(y = value)) + # reported
+  geom_line(data = pd$points_df, 
+            mapping = aes(y = value, color = forecaster, 
+                          group = interaction(forecaster,forecast_date)),
+            size = 1) +
+  geom_point(aes(y = value)) + # reported gets dots
+  geom_point(data = pd$points_df, 
+             mapping = aes(y = value, color = forecaster),
+             size = 3) +
+  scale_color_viridis_d(begin=.15, end=.85)
+g + theme_bw(base_size = 20) + 
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5) +
+  theme(legend.position = "top") + ylab("") + xlab("")
+```
+
+```{r clean-up}
+Sys.unsetenv("FORECAST_DATE")
+```
