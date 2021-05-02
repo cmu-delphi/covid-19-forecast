@@ -231,7 +231,7 @@ county_forecaster_args <- list(
     response_signal = county_forecaster_signals$signal[1],
     n_locations = n_counties
   ),
-  signals_to_normalize = c(TRUE, FALSE, FALSE), 
+  #signals_to_normalize = c(TRUE, FALSE, FALSE), 
   verbose = TRUE,
   save_wide_data = file.path(output_dir, county_output_subdir),
   save_trained_models = file.path(output_dir, county_output_subdir)
