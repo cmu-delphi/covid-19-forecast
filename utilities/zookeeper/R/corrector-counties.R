@@ -116,7 +116,7 @@ make_county_corrector <- function(
         select(.data$data_source, .data$signal, .data$geo_value,
                .data$time_value,
                .data$value, .data$corrected, .data$flag, .data$special_flag)
-      if (!is.null(corrections_db_path)) 
+      if (!is.null(corrections_db_path))
         write_rds(corrected_df, file = corrections_db_path)
     }
     if (return_all) {
@@ -177,39 +177,44 @@ county_corrections_single_signal <- function(x, params, manual_flags) {
       flag = .data$flag |
         #Louisiana backlog drop https://ldh.la.gov/index.cfm/newsroom/detail/5891
         (.data$time_value == "2020-11-20" & as.numeric(.data$geo_value) %/% 1000 == 22),
-      state = covidcast::fips_to_abbr(paste0(substr(.data$geo_value,1,2),"000"))
-    ) %>%
+      state = tolower(
+        covidcast::fips_to_abbr(paste0(substr(.data$geo_value,1,2),"000")))
+      ) %>%
     relocate(.data$state, .after = .data$geo_value) %>%
     mutate(
-      flag_bad_RI = (.data$state == "ri"  & .data$value > 10 & dplyr::lag(.data$value) == 0),
+      flag_weeklies = .data$value > 10 &
+        dplyr::lag(.data$value) < 1 &
+        dplyr::lead(.data$value) < 1,
       corrected = .data$value,
       special_flag = FALSE
     )
-
 
   ds <- x$data_source[1]
   sig <- x$signal[1]
   if (is.null(manual_flags)) {
     manual_flags = tibble::tibble()
   } else {
-    manual_flags <- dplyr::filter(manual_flags,
-                                  .data$data_source == ds, .data$signal == sig)
+    manual_flags <- dplyr::filter(
+      manual_flags, .data$data_source == ds, .data$signal == sig)
   }
   if (nrow(manual_flags) > 0) {
     x <- make_manual_flags(x, manual_flags)
     x <- make_manual_corrections(x, manual_flags)
   }
 
+  # now do weeklies, ignore specials
   x <- x %>%
     dplyr::mutate(
       corrected = corrections_multinom_roll(
-        .data$corrected, .data$corrected, .data$flag_bad_RI, .data$time_value, 7)
-      )
+        .data$corrected, .data$corrected,
+        .data$flag_weeklies & !.data$special_flag , .data$time_value, 7),
+      special_flag = .data$special_flag | .data$flag_weeklies
+    )
+
 
    # General corrections
   x <- x %>%
     dplyr::mutate(
-           special_flag = .data$special_flag | .data$flag_bad_RI,
       corrected = corrections_multinom_roll(
         .data$corrected, .data$value - .data$fmedian,
         (.data$flag & !.data$special_flag),

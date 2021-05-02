@@ -115,7 +115,7 @@ make_state_corrector <- function(params = default_state_params(),
         select(.data$data_source, .data$signal, .data$geo_value,
                .data$time_value,
                .data$value, .data$corrected, .data$flag, .data$special_flag)
-      if (!is.null(corrections_db_path)) 
+      if (!is.null(corrections_db_path))
         write_rds(corrected_df, file = corrections_db_path)
     }
     if (return_all) {
@@ -169,12 +169,9 @@ state_corrections_single_signal <- function(x, params, manual_flags) {
         (.data$time_value < ymd(params$time_value_flag_date) |
            .data$value < -params$size_cut),
       # RI is not included in the special flagging process because it's sort of regular correlation
-      flag_bad_RI = (.data$geo_value == "ri" &
-                       .data$value > 0 &
-                       abs(lag(.data$value)) < 1e-6),
-      flag_bad_OK = (.data$geo_value == "ok" &
-                       .data$value > 0 &
-                       abs(lag(.data$value)) < 1e-6),
+      flag_weeklies = .data$value > 10 &
+        dplyr::lag(.data$value) < 1 &
+        dplyr::lead(.data$value) < 1,
       corrected = .data$value,
       special_flag = FALSE
       )
@@ -185,32 +182,26 @@ state_corrections_single_signal <- function(x, params, manual_flags) {
   if (is.null(manual_flags)) {
     manual_flags = tibble::tibble()
   } else {
-    manual_flags <- dplyr::filter(manual_flags,
-                                  .data$data_source == ds, .data$signal == sig)
+    manual_flags <- dplyr::filter(
+      manual_flags, .data$data_source == ds, .data$signal == sig)
   }
   if (nrow(manual_flags) > 0) {
     x <- make_manual_flags(x, manual_flags)
     x <- make_manual_corrections(x, manual_flags)
   }
 
-  # Correction on Rhode Island
+  # now do weeklies, ignore specials
   x <- x %>%
     dplyr::mutate(
       corrected = corrections_multinom_roll(
-        .data$corrected, .data$corrected - .data$fmean, #median will be 0, use mean
-        .data$flag_bad_RI, .data$time_value, 7))
-  # Correction on Oklahoma
-  x <- x %>%
-    dplyr::mutate(
-      corrected = corrections_multinom_roll(
-        .data$corrected, .data$corrected - .data$fmean,
-        .data$flag_bad_OK, .data$time_value, 7))
-
+        .data$corrected, .data$corrected,
+        .data$flag_weeklies & !.data$special_flag , .data$time_value, 7),
+      special_flag = .data$special_flag | .data$flag_weeklies
+    )
 
 
   # General corrections
   x <- x %>% mutate(
-    special_flag = .data$special_flag | .data$flag_bad_OK | .data$flag_bad_RI,
     corrected = corrections_multinom_roll( # for everywhere else
       .data$corrected, .data$corrected - .data$fmedian,
       (.data$flag & !.data$special_flag), # Excluded corrected states
