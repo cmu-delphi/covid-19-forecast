@@ -126,15 +126,19 @@ state_corrector <- zookeeper::make_state_corrector(
                "deaths_incidence_num",
                "deaths_incidence_num",
                "confirmed_incidence_num",
-               "confirmed_incidence_num"#,
+               "confirmed_incidence_num",
                ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
                ## "confirmed_incidence_num"
+               ## from JHU-CSSE notes 2021-05-02
+               "deaths_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                  "ak","mi","mo","al"#,
+                  "ak","mi","mo","al",
                   ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
                   ## "al"
+                  ## from JHU-CSSE notes 2021-05-02
+                  "wv"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -144,19 +148,24 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## ongoing as of 2021-04-24
-                       "2021-04-20", "2021-04-22", "2021-04-24"
+                       ## seems to be ongoing as of week of 2021-04-27
+                       "2021-04-20", "2021-04-22", "2021-04-24",
+                       "2021-04-27", "2021-04-29", "2021-05-01"
                        )),
       lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13","2021-04-20")#,
+      lubridate::ymd("2021-04-13","2021-04-20"),
       ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
       ## lubridate::ymd("2021-04-20")
+      ## from JHU-CSSE notes 2021-05-02
+      lubridate::ymd("2021-04-27")
     ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                75, 150, 150, 180#,
+                75, 150, 150, 180,
                 ## from JHU-CSSE notes 2021-04-24, 2021-04-25
                 ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
+                ## from JHU-CSSE notes 2021-05-02; just assign an arbitrary large value due to lack of accessible details
+                180
                 )
   )
 )
