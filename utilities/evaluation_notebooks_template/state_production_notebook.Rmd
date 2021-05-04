@@ -209,7 +209,7 @@ plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
 ```{r maps-processing}
 maps <- results %>%
   group_by(geo_value, forecaster) %>%
-  summarise(across(wis:ae, mean)) %>%
+  summarise(across(wis:ae, modeltools::Mean)) %>%
   pivot_longer(wis:ae, names_to = "score") %>%
   group_by(score) %>%
   mutate(time_value = Sys.Date(),
