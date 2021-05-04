@@ -16,6 +16,7 @@ production_forecaster(
   signals_to_normalize = FALSE,
   transform = NULL,
   inv_trans = NULL,
+  geo_value_selector = NULL,
   featurize = NULL,
   sort = TRUE,
   nonneg = TRUE,
@@ -88,6 +89,13 @@ specifies the inverse transformation to use on the response variable
 quantile model. Several convenience functions for transformations exist as
 part of the `quantgen` package. Default is `NULL` for both `transform` and
 `inv_trans`, which means no transformations are applied.}
+
+\item{geo_value_selector}{Function to decide which geo_values to keep
+in `df_list`. Predictions will only be made at these geo_values. The 
+function must take in a data frame in wide format and return a vector
+of geo_values. An example of such a function is the returned object from
+a call to `select_geo_top_n()`. Default is `NULL`, meaning that all
+geo_values in `df_list` are kept.}
 
 \item{featurize}{Function to construct custom features before the quantile
 model is fit. As input, this function must take a data frame with columns
