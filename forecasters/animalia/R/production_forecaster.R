@@ -159,7 +159,7 @@ production_forecaster <- function(df_list,
   if (!is.null(geo_value_selector)) {
     geo_values_to_keep <- geo_value_selector(df_wide)
     df_wide <- df_wide %>%
-      filte(.data$geo_value %in% geo_values_to_keep)
+      filter(.data$geo_value %in% geo_values_to_keep)
   }
   if (!is.null(featurize)) df_wide <- featurize(df_wide)
   
