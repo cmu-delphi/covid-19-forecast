@@ -143,6 +143,14 @@ for (i in seq_along(forecast_dates)) {
 }
 ```
 
+Some post-processing for this forecaster:
+```{r}
+state_predictions$value <- ifelse(state_predictions$value > 0,
+                                  state_predictions$value * 7,
+                                  0)
+```
+
+
 Get the competition and evaluate the predictions on the error metrics:
 
 ```{r grab-the-competition}
@@ -297,6 +305,8 @@ plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
 maps <- results %>%
   group_by(geo_value, forecaster) %>%
   summarise(across(wis:ae, modeltools::Mean)) %>%
+  left_join(animalia::state_population, by = "geo_value") %>%
+  mutate(across(wis:ae, ~ .x / population * 1e5)) %>%
   pivot_longer(wis:ae, names_to = "score") %>%
   group_by(score) %>%
   mutate(time_value = Sys.Date(),
