@@ -177,7 +177,7 @@ state_forecaster_args <- list(
   lambda = 0, # no regularization or CV
   lp_solver = "gurobi", # can remove if no license
   noncross = TRUE, # takes a bit longer, but not much
-  featurize = animalia::make_state_7dav_featurizer(), # has no arguments
+  featurize = animalia::make_7dav_featurizer(), # has no arguments
   verbose = TRUE,
   signals_to_normalize = c(TRUE, TRUE),
   save_wide_data = file.path(output_dir, state_output_subdir),
@@ -235,11 +235,10 @@ county_forecaster_args <- list(
   lambda = 0,
   lp_solver = "gurobi",
   noncross = TRUE,
-  featurize = animalia::make_county_7dav_featurizer(
-    response_data_source = county_forecaster_signals$data_source[1],
-    response_signal = county_forecaster_signals$signal[1],
+  geo_value_selector = animalia::select_geo_top_n(
     n_locations = n_counties
   ),
+  featurize = animalia::make_7dav_featurizer(),
   #signals_to_normalize = c(TRUE, FALSE, FALSE), 
   verbose = TRUE,
   save_wide_data = file.path(output_dir, county_output_subdir),

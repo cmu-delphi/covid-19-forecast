@@ -102,7 +102,7 @@ take_logs <- function(df) {
                        ~ ifelse(.x > 0, log(.x), NA)))
 }
 featurize_then_log <- function(df) {
-  animalia::make_state_7dav_featurizer()(df) %>% 
+  animalia::make_7dav_featurizer()(df) %>% 
     take_logs()
 }
 
