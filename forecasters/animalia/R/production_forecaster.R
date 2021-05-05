@@ -50,7 +50,7 @@
 #'   `inv_trans`, which means no transformations are applied.
 #' @param geo_value_selector Function to decide which geo_values to keep
 #'   in `df_list`. Predictions will only be made at these geo_values. The 
-#'   function must take in a data frame in wide format and return a vector
+#'   function must take in a data frame in list format and return a vector
 #'   of geo_values. An example of such a function is the returned object from
 #'   a call to `select_geo_top_n()`. Default is `NULL`, meaning that all
 #'   geo_values in `df_list` are kept.
@@ -111,6 +111,7 @@
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom assertthat assert_that
 #' @importFrom rlang .data
+#' @importFrom purrr map
 #' @export
 production_forecaster <- function(df_list,
                                   forecast_date,
@@ -149,18 +150,20 @@ production_forecaster <- function(df_list,
   # -------------------------------
   # 1. data transformations, and saving
   
+  # keep just the geo_values we want
+  if (!is.null(geo_value_selector)) {
+    geo_values_to_keep <- geo_value_selector(df_list)
+    df_list <- map(df_list,
+                   ~ .x %>% filter(geo_value %in% geo_values_to_keep))
+  }
+  
   # apply any transformations (incl. normalizing by population)
   geo_type <- unlist(lapply(df_list, get_geo_type))
   df_list <- normalize_by_population(df_list, geo_type, signals_to_normalize)
   df_list <- transformer(df_list, transform, inv_trans)
   df_wide <- covidcast::aggregate_signals(df_list, dt = dt, format = "wide")
   
-  # keep just the geo_values we want, then featurize
-  if (!is.null(geo_value_selector)) {
-    geo_values_to_keep <- geo_value_selector(df_wide)
-    df_wide <- df_wide %>%
-      filter(.data$geo_value %in% geo_values_to_keep)
-  }
+  # featurize
   if (!is.null(featurize)) df_wide <- featurize(df_wide)
   
   # rename response

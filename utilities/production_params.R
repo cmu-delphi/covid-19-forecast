@@ -236,8 +236,6 @@ county_forecaster_args <- list(
   lp_solver = "gurobi",
   noncross = TRUE,
   geo_value_selector = animalia::select_geo_top_n(
-    response_data_source = county_forecaster_signals$data_source[1],
-    response_signal = county_forecaster_signals$signal[1],
     n_locations = n_counties
   ),
   featurize = animalia::make_7dav_featurizer(),

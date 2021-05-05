@@ -92,7 +92,7 @@ part of the `quantgen` package. Default is `NULL` for both `transform` and
 
 \item{geo_value_selector}{Function to decide which geo_values to keep
 in `df_list`. Predictions will only be made at these geo_values. The 
-function must take in a data frame in wide format and return a vector
+function must take in a data frame in list format and return a vector
 of geo_values. An example of such a function is the returned object from
 a call to `select_geo_top_n()`. Default is `NULL`, meaning that all
 geo_values in `df_list` are kept.}
