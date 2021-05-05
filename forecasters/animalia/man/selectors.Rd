@@ -3,28 +3,22 @@
 \name{selectors}
 \alias{selectors}
 \alias{select_geo_top_n}
-\title{Functions to create "selectors"}
+\title{Function factory for creating "selector" functions based on top response 
+count}
 \usage{
-select_geo_top_n(
-  response_data_source = "jhu-csse",
-  response_signal = "confirmed_incidence_num",
-  n_locations = 200
-)
+select_geo_top_n(n_locations = 200)
 }
 \arguments{
-\item{response_data_source}{The name of the response.}
-
-\item{response_signal}{The name of the response signal.}
-
-\item{n_locations}{The number of locations to predict.}
+\item{n_locations}{The number of locations to predict/return.}
 }
 \value{
-A function that takes in a data frame in wide format and returns
+A function that takes in a data frame in list format and returns
   a vector of geo_values.
 }
 \description{
-These create functions that take in a dataframe in wide format and
-return a vector of geo_values. These geo_values are the ones that we
+This creates a function that takes in a dataframe in list format and
+returns a vector of geo_values. These geo_values are the ones that have the
+largest cumulative value of the response, and are the ones that we
 want forecasts for. (We currently only use them for county case 
 predictions.)
 }
