@@ -38,7 +38,11 @@ aheads  <- 1:4
 lags <- c(0, 7, 14)
 state_forecaster <- larrys_anteater
 state_forecaster_name  <- "larry's anteater"
-state_forecaster_signals <- dplyr::tibble( # state death forecaster
+
+# don't put an as_of column in the signals dataframe: this will be
+# taken care of correctly by evalcast::get_predictions
+# (i.e. as_of = the relevant forecast date)
+state_forecaster_signals <- dplyr::tibble(
       data_source = "jhu-csse",
       signal = c("deaths_7dav_incidence_num",
                  "confirmed_7dav_incidence_num"
@@ -122,25 +126,15 @@ State correction parameters (taken directly from `production_params.R`):
 Get the predictions for our forecaster:
 
 ```{r state-predictions, results="hide"}
-state_predictions <- NULL
-for (i in seq_along(forecast_dates)) {
-  # set parameters correctly for each forecast date
-  forecast_date <- forecast_dates[i]
-  state_forecaster_signals$as_of <- forecast_date
-
-  set.seed(i)  # corrections are random, for reproducibility
-  current_predictions <- evalcast::get_predictions(
-    forecaster = state_forecaster,
-    name_of_forecaster = state_forecaster_name,
-    signals = state_forecaster_signals,
-    forecast_dates = forecast_date,
-    incidence_period = "epiweek",
-    #apply_corrections = state_corrector,
-    forecaster_args = state_forecaster_args
-  )
-
-  state_predictions <- bind_rows(state_predictions, current_predictions)
-}
+state_predictions <- evalcast::get_predictions(
+  forecaster = state_forecaster,
+  name_of_forecaster = state_forecaster_name,
+  signals = state_forecaster_signals,
+  forecast_dates = forecast_dates,
+  incidence_period = "epiweek",
+  #apply_corrections = state_corrector,
+  forecaster_args = state_forecaster_args
+)
 ```
 
 Some post-processing for this forecaster:
@@ -300,6 +294,8 @@ plot_canonical(results, x = "target_end_date", y = "wis", aggr = mean,
 ```
 
 ## Maps (mean score over forecast dates and aheads)
+
+Note that the results are scaled by population.
 
 ```{r maps-processing}
 maps <- results %>%
