@@ -41,7 +41,8 @@ larrys_anteater <- function(df_list,
                             incidence_period = c("epiweek", "day"),
                             ahead = 1:4,
                             lags = 0,
-                            tau = evalcast::covidhub_probs()) {
+                            tau = evalcast::covidhub_probs(),
+                            featurize = NULL) {
   
 
   # data pivoting -----------------------------------------------------------
@@ -53,6 +54,8 @@ larrys_anteater <- function(df_list,
     ahead,  ~evalcast::get_target_ahead(forecast_date, incidence_period, .x))
   dt[[1]] <- c(dt[[1]], ahead_in_days)   
   df_wide <- covidcast::aggregate_signals(df_list, dt = dt, format = "wide")
+  
+  if (!is.null(featurize)) df_wide <- featurize(df_wide)
   
   # rename response columns -------------------------------------------------
   response_cols <- stringr::str_detect(names(df_wide), "value\\+[1-9]")
