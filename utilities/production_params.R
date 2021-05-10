@@ -122,23 +122,25 @@ state_corrector <- zookeeper::make_state_corrector(
     data_source = "jhu-csse",
     signal = c(rep("deaths_incidence_num", 3),
                "confirmed_incidence_num",
-               ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+               ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
                "deaths_incidence_num",
                "deaths_incidence_num",
                "confirmed_incidence_num",
                "confirmed_incidence_num",
-               ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-               ## "confirmed_incidence_num"
                ## from JHU-CSSE notes 2021-05-02
+               "deaths_incidence_num",
+               ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+               "confirmed_incidence_num",
                "deaths_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
-                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
                   "ak","mi","mo","al",
-                  ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-                  ## "al"
                   ## from JHU-CSSE notes 2021-05-02
-                  "wv"
+                  "wv",
+                  ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+                  "nj",
+                  "mt"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -148,24 +150,27 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## seems to be ongoing as of week of 2021-04-27
+                       ## ongoing as of 2021-05-08
                        "2021-04-20", "2021-04-22", "2021-04-24",
-                       "2021-04-27", "2021-04-29", "2021-05-01"
+                       "2021-04-27", "2021-04-29", "2021-05-01",
+                       "2021-05-04", "2021-05-06", "2021-05-08"
                        )),
       lubridate::ymd("2021-04-17"),
       lubridate::ymd("2021-04-13","2021-04-20"),
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-      ## lubridate::ymd("2021-04-20")
       ## from JHU-CSSE notes 2021-05-02
-      lubridate::ymd("2021-04-27")
+      lubridate::ymd("2021-04-27"),
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      lubridate::ymd(c("2021-04-26", "2021-05-05")),
+      lubridate::ymd("2021-05-07")
     ),
     max_lag = c(rep(90, 4),
-                ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+                ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
                 75, 150, 150, 180,
-                ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-                ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
                 ## from JHU-CSSE notes 2021-05-02; just assign an arbitrary large value due to lack of accessible details
-                180
+                180,
+                ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+                121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
+                218 # (if implement corresponding min_lag, would set its value to 96)
                 )
   )
 )
@@ -198,29 +203,35 @@ county_corrector  <- zookeeper::make_county_corrector(
     data_source = "jhu-csse",
     signal = "confirmed_incidence_num",
     geo_value = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
       "29077", "29095", "29183", "29189",
-      "01097"#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## "01097"
+      "01097",
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      "34003",
+      c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041")
     ),
-    time_value = list(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
-      lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13",
-                     ## partially resolve conflict
-                     "2021-04-20"
-                     )#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## lubridate::ymd("2021-04-20")
+    time_value = c(
+      list(
+        ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+        lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
+        lubridate::ymd("2021-04-17"),
+        lubridate::ymd("2021-04-13",
+                       "2021-04-20")
+        ),
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      list(lubridate::ymd(c("2021-04-26",
+                            ## (Bergen NJ antigen case addition seem to be 2 days rather than just 2021-05-05?)
+                            "2021-05-05","2021-05-06"))),
+      rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L)
     ),
     max_lag = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      rep_len(150, 4L),
-      180#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+      rep(150, 4L),
+      ## (`max_lag` could be selected better when able to have different values for different `time_value`s or with a `min_lag`)
+      180,
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
+      rep(400, 21L-1L)
     )
   )
 )
