@@ -235,7 +235,7 @@ county_corrector  <- zookeeper::make_county_corrector(
                             "2021-05-05", "2021-05-06"))),
       rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L),
       ## from spot checks
-      list(lubridate::ymd(c("2021-02-08","2021-04-27")))
+      list(lubridate::ymd(c("2021-02-08","2021-04-26")))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
