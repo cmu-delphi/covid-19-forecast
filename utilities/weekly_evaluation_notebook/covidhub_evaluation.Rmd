@@ -1,0 +1,304 @@
+---
+title: "COVID-19 Forecast Evaluation"
+author: "Delphi Group"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    code_folding: hide
+params:
+  score_file: "score_cards_state.rds"
+  preds_file: "predictions_cards.rds"
+  main_forecaster: "CMU-TimeSeries"
+  highlight_forecasters: NULL
+  base_forecaster: "COVIDhub-baseline"
+  wedge_forecasters: NULL
+  verbose_wedges: TRUE
+  signal: "deaths_incidence_num"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+# knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, cache.comments = TRUE)
+
+library(covidcast)
+library(evalcast)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(RColorBrewer)
+library(stringr)
+```
+# {.tabset}
+
+## Select Forecasts
+
+Filter to forecasters that have significant overlap in predictions with `r params$main_forecaster` for the last 4 weeks.This is used primarily to ensure we don't include inactive forecasters in the pairwise tournament rankings and that there is enough overlap for pairwise scores to be meaningful.
+
+```{r}
+if (file.exists(params$score_file)){
+  score_cards = readRDS(params$score_file)
+} else {
+  stop(paste("File not found:", params$score_file))
+}
+
+if (file.exists(params$preds_file)){
+  predictions = readRDS(params$preds_file)
+  predictions = predictions %>% filter(signal == params$signal)
+} else {
+  stop(paste("File not found:", params$preds_file))
+}
+
+highlight_forecasters = params$highlight_forecasters
+if (is.null(highlight_forecasters)){
+  highlight_forecasters = predictions %>% distinct(forecaster)
+}
+if(is.null(params$wedge_forecasters)){
+  wedge_forecasters = params$main_forecaster
+} else {
+  wedge_forecasters = params$wedge_forecasters
+}
+
+score_cards_tourney = score_cards
+score_cards_main = score_cards %>% 
+                    filter(forecaster == params$main_forecaster) %>% 
+                    distinct(ahead, geo_value, target_end_date)
+score_cards = semi_join(score_cards, score_cards_main)
+
+recent_score_by_frcstr = score_cards %>% 
+                           filter(target_end_date > today() - 28) %>%
+                           group_by(forecaster, ahead) %>% 
+                           summarize(num = sum(!is.na(wis))) %>%
+                           pivot_wider(names_from = ahead, 
+                                       names_prefix = "num_", 
+                                       values_from = num)
+recent_score_by_frcstr = recent_score_by_frcstr %>% 
+                           mutate(num_total = num_1 + num_2 + num_3 + num_4) %>%
+                           arrange(desc(num_total))
+print(recent_score_by_frcstr, n = Inf)
+main_forecasts = recent_score_by_frcstr[recent_score_by_frcstr$forecaster == params$main_forecaster,]$num_total
+
+active_forecasters = recent_score_by_frcstr[recent_score_by_frcstr$num_total > main_forecasts * 0.80,]$forecaster
+
+# save for pairwise tournament
+score_cards_tourney = score_cards_tourney %>% 
+                filter(forecaster %in% active_forecasters)
+```
+
+Next, filter to forecasters of interest for line plots and find common locations.
+
+```{r}
+score_cards = score_cards %>% filter(forecaster %in% highlight_forecasters)
+
+# TODO: Use evalcast::intersect_averagers after merging the kill-cards updates
+forecaster_coverage = score_cards %>% 
+                        group_by(ahead, geo_value, target_end_date) %>% 
+                        summarise(num_forecasts = n())
+max_forecasts = max(forecaster_coverage$num_forecasts)
+table(forecaster_coverage$num_forecasts)
+common_forecasts = forecaster_coverage %>% 
+                            filter(num_forecasts == max_forecasts) %>%
+                            select(ahead, geo_value, target_end_date)
+
+
+# score_cards = semi_join(score_cards, common_forecasts)
+```
+
+## Line plots
+
+Now we make line plots: one line per ahead and forecaster, as a function of
+forecast date. Here we use the mean as the aggregator function, and we look at
+WIS and coverage-80. 
+
+
+```{r, fig.width = 10, fig.height = 8}
+# Define mean and median functions that deal with missingness well
+Mean = function(x) mean(x, na.rm = TRUE)
+Median = function(x) median(x, na.rm = TRUE)
+
+summarize_var = function(df, var, aggr = Mean) {
+  df_by_date = df %>% 
+    group_by(forecaster, ahead, target_end_date) %>%
+    summarize(var = aggr(!!as.symbol(var))) %>%
+    ungroup()
+  df_overall = df %>%
+    group_by(forecaster, ahead) %>%
+    summarize(var_overall = aggr(!!as.symbol(var))) %>%
+    ungroup() %>% group_by(ahead) %>%
+    arrange(var_overall, .by_group = TRUE) %>%
+    ungroup() %>%
+    mutate(order = row_number())
+  df_sum = full_join(df_by_date, df_overall, by = c("forecaster", "ahead"))
+}
+
+# From https://stackoverflow.com/questions/15282580/
+color_picker = function(n) {
+  qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+  unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+}
+
+line_plot = function(df, var = "wis", ylab = var, ylim = NULL, aggr = Mean) {
+  df_sum = summarize_var(df, var, aggr)
+  df_sum$ahead = factor(paste("ahead =", df_sum$ahead))
+  
+  ggplot(df_sum, aes(x = target_end_date, y = var)) +
+    geom_line(aes(color = forecaster, linetype = forecaster)) +
+    geom_point(aes(color = forecaster)) +
+    facet_wrap(vars(ahead), scales = "free") + 
+    labs(x = "Date", y = ylab) +
+    coord_cartesian(ylim = ylim) +
+    scale_color_manual(values = color_picker(length(unique(forecaster))))
+}
+```
+
+```{r, fig.width = 10, fig.height = 8}
+line_plot(score_cards, var = "wis", ylab = "Mean WIS") + scale_y_log10() 
+line_plot(score_cards, var = "coverage_80", ylab = "Coverage-80", ylim = c(0,1)) +
+  geom_hline(yintercept = 0.8)
+line_plot(score_cards, var = "ae", ylab = "Mean AE") + scale_y_log10() 
+```
+
+## Scaling by baseline
+
+We scale each score, per location and forecast date, by the COVIDhub-baseline 
+score; then we take the mean or median. 
+
+Important note on the order of operations here: scale then aggregate. The other
+way around: aggregate then scale, would be a simple post-adjustment applied to
+the metrics we computed earlier. This way: scale then aggregate, results in a 
+different final metric altogether. It is potentially interesting as it provides
+a nonparametric spatiotemporal adjustment; assuming that space and time effects 
+are *multiplicative*, we're directly "canceling them out" by taking ratios. 
+
+```{r, fig.width = 10, fig.height = 10}
+# Note to self: mutate_at() gave me a weird bug below! From now on, better use
+# mutate() with across() instead ...
+scale_df = function(df, var, base_forecaster = "COVIDhub-baseline") {
+  df %>% select(-c(forecast_date)) %>%
+    distinct() %>%
+    pivot_wider(id_cols = c(geo_value, target_end_date, ahead),
+                names_from = "forecaster", names_prefix = var, 
+                values_from = var) %>%
+    mutate(across(starts_with(var), ~ .x /
+                !!as.symbol(paste0(var, base_forecaster)))) %>%
+    pivot_longer(cols = starts_with(var), names_to = "forecaster",
+                 values_to = "scaled") %>%
+    mutate(forecaster = substring(forecaster, nchar(var) + 1)) %>%
+    filter(forecaster != base_forecaster)
+}
+```
+
+Here are now line plots for median scaled WIS. 
+
+```{r, fig.width = 10, fig.height = 8}
+line_plot(scale_df(score_cards, var = "wis", base_forecaster = params$base_forecaster), var = "scaled", 
+          ylab = "Median scaled WIS", aggr = Median) + geom_hline(yintercept = 1) 
+```
+
+## Wedge plots
+
+To give a fuller view of the coverage of forecasts, we create
+a wedge plot per ahead:
+
+```{r, fig.width = 10, fig.height = 10}
+for (forecaster_name in wedge_forecasters){
+  cat(forecaster_name)
+  type_chars = nchar(score_cards$geo_value[1])
+  f_preds = predictions %>% filter(forecaster == forecaster_name, 
+                                     nchar(geo_value) == type_chars)
+  geo_val = f_preds$geo_value[1]
+  if (geo_val == "us"){
+    f_geo_type = "nation"
+  } else if (nchar(geo_val) == 2){
+    f_geo_type = "state"
+  } else {
+    f_geo_type = "county"
+  }
+  print(plot_calibration(f_preds, grp_vars = c("ahead"), avg_vars = c("geo_value", "forecast_date"), type = "wedgeplot", facet_rows = "ahead", geo_type = f_geo_type))
+  if(params$verbose_wedges){
+    print(plot_calibration(f_preds, grp_vars = c("ahead", "forecast_date"), avg_vars = c("geo_value"), type = "wedgeplot", facet_cols = "ahead", facet_rows = "forecast_date", geo_type = f_geo_type))
+  }
+}
+```
+
+## Pairwise tournament
+
+We run a pairwise tournament. This is inspired by Johannes Bracher's analysis
+(and similar ideas in the literature). Except, the order of operations here is
+different: scale then aggregate (whereas Johannes did: aggregate then scale).
+The motivation for this was explained above (thinking of it as providing a 
+nonparametric spatiotemporal adjustment), as was the fact that the order of
+operations really makes a difference.
+
+For each pair of forecasters $f$ and $g$, we compute:
+
+$$
+\theta_{fg} = A\bigg\{ \frac{S(f;\ell,d,a)}{S(g;\ell,d,a)} \;:\; \text{common 
+locations $\ell$, forecast dates $d$, and ahead values $a$} \bigg\}
+$$
+
+where $S$ is a score of interest, say WIS, and $A$ is an aggregator of interest,
+say the mean. Important note: we aggregate over *all common locations, dates, 
+and ahead values*, which may differ for each pair $f,g$. To compute an overall
+metric for forecaster $f$, we use:
+
+$$
+\theta_f = \bigg( \prod_g \theta_{fg} \bigg)^{1/F}.
+$$
+
+the geometric mean of all pairwise comparisons of $f$ to other forecasters (here
+$F$ is the total number of forecasters). Another interesting option would be to 
+define $(\theta_f)_{f \in F}$ as the top left singular vector of the matrix 
+$(\theta_{fg})_{f,g \in F}$, which we'll also investigate.
+
+```{r, fig.width = 10, fig.height = 10}
+pairwise_tournament = function(df, var, aggr = Mean) {
+  forecasters = unique(df$forecaster)
+  theta_mat = matrix(NA, length(forecasters), length(forecasters))
+  rownames(theta_mat) = colnames(theta_mat) = forecasters
+  for (f in forecasters) {
+    result =  scale_df(df, var, base_forecaster = f) %>% 
+      group_by(forecaster) %>%
+      summarize(v = aggr(scaled))
+    theta_mat[result$forecaster, f] = result$v
+  }
+  
+  # Convert to data frame for convenience with ggplot
+  theta_df = as.data.frame(theta_mat) %>%
+    mutate(Forecaster1 = forecasters) %>%
+    pivot_longer(cols = -Forecaster1, names_to = "Forecaster2",
+                 values_to = "value")
+  
+  # Compute overall metrics two ways: geometric mean, SVD
+  theta_vec1 = exp(rowMeans(log(theta_mat), na.rm = TRUE))
+  diag(theta_mat) = 1 # so the SVD won't fail; undo it later
+  theta_vec2 = as.numeric(svd(theta_mat, nu = 1)$u)
+  names(theta_vec2) = names(theta_vec1)
+  diag(theta_mat) = NA
+  
+  return(list(mat = theta_mat, df = theta_df, vec1 = theta_vec1, 
+              vec2 = theta_vec2))
+}
+```
+
+```{r, fig.width = 10, fig.height = 10}
+#score_cards_tourney = score_cards_tourney %>% filter(geo_value != "as")
+theta = pairwise_tournament(score_cards_tourney, var = "wis", aggr = 
+                              function(x) median(x, na.rm = TRUE))
+ranked_list = rownames(theta$mat)[order(theta$vec1)]
+colors = colorRampPalette(brewer.pal(n = 6, name = "RdBu"))(30)
+ggplot(theta$df, aes(x = factor(Forecaster2, levels = rev(ranked_list)),
+                     y = factor(Forecaster1, levels = rev(ranked_list)))) +
+  geom_tile(aes(fill = value)) +
+  geom_text(aes(label = round(value, 3))) +
+  scale_fill_gradientn(colours = colors) +
+  labs(x = NULL, y = NULL) +
+  theme_bw() + theme(legend.position = "none", 
+                     axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Overall metric (computed via GM of pairwise metrics):
+knitr::kable(data.frame(rank = 1:length(theta$vec1), forecaster = ranked_list,
+                        theta = sort(theta$vec1), row.names = NULL))
+```
+
+
