@@ -18,7 +18,7 @@ zebra <- readRDS(file.path(
   sprintf("predictions_for_%s.RDS", forecast_date)))
 
 simple_labs <- function(geo_value) {
-  sl <- covidcast::fips_to_name(geo_value)
+  sl <- covidcast::county_fips_to_name(geo_value)
   sl <- gsub(" County| city| Parish", "", sl)
   state <- evalcast:::fips_2_abbr(substr(names(sl), 1, 2))
   paste(sl, toupper(state))
