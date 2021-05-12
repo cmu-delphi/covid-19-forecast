@@ -51,8 +51,7 @@ preds = get_covidhub_predictions(forecasters,
                                predictions_cards = preds,
                                start_date = start_date,
                                date_filtering_function = date_filter,
-                               verbose = TRUE,
-                               use_disk = TRUE)
+                               verbose = TRUE)
 
 saveRDS(preds,
         file = preds_filename, 
