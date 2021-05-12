@@ -2,32 +2,17 @@
 % Please edit documentation in R/featurizers.R
 \name{featurizers}
 \alias{featurizers}
-\alias{make_state_7dav_featurizer}
-\alias{make_county_7dav_featurizer}
+\alias{make_7dav_featurizer}
 \title{Functions to create "featurizers"}
 \usage{
-make_state_7dav_featurizer()
-
-make_county_7dav_featurizer(
-  response_data_source = "jhu-csse",
-  response_signal = "confirmed_incidence_num",
-  n_locations = 200
-)
-}
-\arguments{
-\item{response_data_source}{the name of the response}
-
-\item{response_signal}{the name of the response signal}
-
-\item{n_locations}{the number of locations to predict}
+make_7dav_featurizer()
 }
 \value{
-a function that takes in a data frame with the same columns, 
-  but possibly fewer rows
+A function that takes in a data frame with the same columns, 
+  but possibly fewer rows.
 }
 \description{
-Essentially, these both create functions that compute
-weekly averages of daily data. The state version needs no arguments at the 
-moment. For counties, we need the name of the response so that we can choose
-the top n counties.
+Essentially, these create functions that compute
+weekly averages of daily data. The function needs no arguments at the 
+moment.
 }

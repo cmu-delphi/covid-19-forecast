@@ -122,19 +122,29 @@ state_corrector <- zookeeper::make_state_corrector(
     data_source = "jhu-csse",
     signal = c(rep("deaths_incidence_num", 3),
                "confirmed_incidence_num",
-               ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+               ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
                "deaths_incidence_num",
                "deaths_incidence_num",
                "confirmed_incidence_num",
-               "confirmed_incidence_num"#,
-               ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-               ## "confirmed_incidence_num"
+               "confirmed_incidence_num",
+               ## from JHU-CSSE notes 2021-05-02
+               "deaths_incidence_num",
+               ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+               "confirmed_incidence_num",
+               "deaths_incidence_num",
+               ## from spot checks
+               "confirmed_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
-                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                  "ak","mi","mo","al"#,
-                  ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-                  ## "al"
+                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+                  "ak","mi","mo","al",
+                  ## from JHU-CSSE notes 2021-05-02
+                  "wv",
+                  ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+                  "nj",
+                  "mt",
+                  ## from spot checks
+                  "hi"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -144,19 +154,32 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## ongoing as of 2021-04-24
-                       "2021-04-20", "2021-04-22", "2021-04-24"
+                       ## ongoing as of 2021-05-08
+                       "2021-04-20", "2021-04-22", "2021-04-24",
+                       "2021-04-27", "2021-04-29", "2021-05-01",
+                       "2021-05-04", "2021-05-06", "2021-05-08"
                        )),
       lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13","2021-04-20")#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-      ## lubridate::ymd("2021-04-20")
+      lubridate::ymd("2021-04-13","2021-04-20"),
+      ## from JHU-CSSE notes 2021-05-02
+      lubridate::ymd("2021-04-27"),
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      lubridate::ymd(c("2021-04-26",
+                       "2021-05-05", "2021-05-06")),
+      lubridate::ymd("2021-05-07"),
+      ## from spot checks
+      lubridate::ymd(c("2021-03-12","2021-03-13", "2021-03-19", "2021-04-02"))
     ),
     max_lag = c(rep(90, 4),
-                ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-                75, 150, 150, 180#,
-                ## from JHU-CSSE notes 2021-04-24, 2021-04-25
-                ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
+                ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+                75, 150, 150, 180,
+                ## from JHU-CSSE notes 2021-05-02; just assign an arbitrary large value due to lack of accessible details
+                180,
+                ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+                121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
+                218, # (if implement corresponding min_lag, would set its value to 96)
+                ## from spot checks
+                1+1 # not sure of correct value, but having last spike up drop down a lot doesn't seem right
                 )
   )
 )
@@ -168,7 +191,7 @@ state_forecaster_args <- list(
   lambda = 0, # no regularization or CV
   lp_solver = "gurobi", # can remove if no license
   noncross = TRUE, # takes a bit longer, but not much
-  featurize = animalia::make_state_7dav_featurizer(), # has no arguments
+  featurize = animalia::make_7dav_featurizer(), # has no arguments
   verbose = TRUE,
   signals_to_normalize = c(TRUE, TRUE),
   save_wide_data = file.path(output_dir, state_output_subdir),
@@ -189,29 +212,41 @@ county_corrector  <- zookeeper::make_county_corrector(
     data_source = "jhu-csse",
     signal = "confirmed_incidence_num",
     geo_value = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
       "29077", "29095", "29183", "29189",
-      "01097"#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## "01097"
+      "01097",
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      "34003",
+      c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041"),
+      ## from spot checks
+      "06095"
     ),
-    time_value = list(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
-      lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13",
-                     ## partially resolve conflict
-                     "2021-04-20"
-                     )#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## lubridate::ymd("2021-04-20")
+    time_value = c(
+      list(
+        ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+        lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
+        lubridate::ymd("2021-04-17"),
+        lubridate::ymd("2021-04-13",
+                       "2021-04-20")
+        ),
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      list(lubridate::ymd(c("2021-04-26",
+                            ## (Bergen NJ antigen case addition seem to be 2 days rather than just 2021-05-05?)
+                            "2021-05-05", "2021-05-06"))),
+      rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L),
+      ## from spot checks
+      list(lubridate::ymd(c("2021-02-08","2021-04-26")))
     ),
     max_lag = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
-      rep_len(150, 4L),
-      180#,
-      ## ## from JHU-CSSE notes 2021-04-24, 2021-04-25 --- seems to conflict with last week's
-      ## as.integer(as.Date("2021-04-20") - as.Date("2020-10-23"))
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+      rep(150, 4L),
+      ## (`max_lag` could be selected better when able to have different values for different `time_value`s or with a `min_lag`)
+      180,
+      ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
+      121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
+      rep(400, 21L-1L),
+      ## from spot checks
+      3+1
     )
   )
 )
@@ -226,11 +261,10 @@ county_forecaster_args <- list(
   lambda = 0,
   lp_solver = "gurobi",
   noncross = TRUE,
-  featurize = animalia::make_county_7dav_featurizer(
-    response_data_source = county_forecaster_signals$data_source[1],
-    response_signal = county_forecaster_signals$signal[1],
+  geo_value_selector = animalia::select_geo_top_n(
     n_locations = n_counties
   ),
+  featurize = animalia::make_7dav_featurizer(),
   #signals_to_normalize = c(TRUE, FALSE, FALSE), 
   verbose = TRUE,
   save_wide_data = file.path(output_dir, county_output_subdir),
