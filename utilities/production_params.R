@@ -122,7 +122,7 @@ state_corrector <- zookeeper::make_state_corrector(
     data_source = "jhu-csse",
     signal = c(rep("deaths_incidence_num", 3),
                "confirmed_incidence_num",
-               ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+               ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
                "deaths_incidence_num",
                "deaths_incidence_num",
                "confirmed_incidence_num",
@@ -136,7 +136,7 @@ state_corrector <- zookeeper::make_state_corrector(
                "confirmed_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
-                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+                  ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
                   "ak","mi","mo","al",
                   ## from JHU-CSSE notes 2021-05-02
                   "wv",
@@ -151,7 +151,7 @@ state_corrector <- zookeeper::make_state_corrector(
       lubridate::ymd(c("2021-03-18","2021-03-19")),
       lubridate::ymd("2021-04-07"),
       lubridate::ymd("2021-04-07"),
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
                        ## ongoing as of 2021-05-08
@@ -160,7 +160,7 @@ state_corrector <- zookeeper::make_state_corrector(
                        "2021-05-04", "2021-05-06", "2021-05-08"
                        )),
       lubridate::ymd("2021-04-17"),
-      lubridate::ymd("2021-04-13","2021-04-20"),
+      lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
       ## from JHU-CSSE notes 2021-05-02
       lubridate::ymd("2021-04-27"),
       ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
@@ -171,8 +171,8 @@ state_corrector <- zookeeper::make_state_corrector(
       lubridate::ymd(c("2021-03-12","2021-03-13", "2021-03-19", "2021-04-02"))
     ),
     max_lag = c(rep(90, 4),
-                ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
-                75, 150, 150, 180,
+                ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
+                75, 150, 150, 180, # (AL 2021-05-13,2021-05-14,2021-05-15 would be a couple months larger if different max_lag's allowed, plus would use min_lag if available)
                 ## from JHU-CSSE notes 2021-05-02; just assign an arbitrary large value due to lack of accessible details
                 180,
                 ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
@@ -212,9 +212,9 @@ county_corrector  <- zookeeper::make_county_corrector(
     data_source = "jhu-csse",
     signal = "confirmed_incidence_num",
     geo_value = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       "29077", "29095", "29183", "29189",
-      "01097",
+      c("01000", "01001", "01003", "01005", "01007", "01009", "01011",  "01013", "01015", "01017", "01019", "01021", "01023", "01025",  "01027", "01029", "01031", "01033", "01035", "01037", "01039",  "01041", "01043", "01045", "01047", "01049", "01051", "01053",  "01055", "01057", "01059", "01061", "01063", "01065", "01067",  "01069", "01071", "01073", "01075", "01077", "01079", "01081",  "01083", "01085", "01087", "01089", "01091", "01093", "01095",  "01097", "01099", "01101", "01103", "01105", "01107", "01109",  "01111", "01113", "01115", "01117", "01119", "01121", "01123",  "01125", "01127", "01129", "01131", "01133"),
       ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
       "34003",
       c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041"),
@@ -223,12 +223,15 @@ county_corrector  <- zookeeper::make_county_corrector(
     ),
     time_value = c(
       list(
-        ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+        ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
         lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")), lubridate::ymd(c("2021-03-11","2021-04-17")),
-        lubridate::ymd("2021-04-17"),
-        lubridate::ymd("2021-04-13",
-                       "2021-04-20")
+        lubridate::ymd("2021-04-17")
         ),
+      rep(list(
+        lubridate::ymd("2021-04-13",
+                       "2021-04-20",
+                       "2021-05-13", "2021-05-14", "2021-05-15") # (2021-05-15 seems along the lines of the two preceding anomalous days)
+      ), 68L),
       ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
       list(lubridate::ymd(c("2021-04-26",
                             ## (Bergen NJ antigen case addition seem to be 2 days rather than just 2021-05-05?)
@@ -238,10 +241,10 @@ county_corrector  <- zookeeper::make_county_corrector(
       list(lubridate::ymd(c("2021-02-08","2021-04-26")))
     ),
     max_lag = c(
-      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25
+      ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       rep(150, 4L),
       ## (`max_lag` could be selected better when able to have different values for different `time_value`s or with a `min_lag`)
-      180,
+      rep(180, 68L),
       ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
       121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
       rep(400, 21L-1L),
