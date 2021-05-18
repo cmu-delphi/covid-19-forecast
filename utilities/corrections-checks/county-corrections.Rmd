@@ -13,6 +13,7 @@ df <- suppressMessages(covidcast::covidcast_signal(
   county_forecaster_signals$data_source[1],
   county_forecaster_signals$signal[1],
   start_day = county_forecaster_signals$start_day[1], 
+  end_day = forecast_date,
   geo_type = "county")) 
 
 big_locs <-  df %>% 
