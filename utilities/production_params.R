@@ -133,6 +133,8 @@ state_corrector <- zookeeper::make_state_corrector(
                "confirmed_incidence_num",
                "deaths_incidence_num",
                ## from spot checks
+               "confirmed_incidence_num",
+               ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
                "confirmed_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
@@ -144,7 +146,9 @@ state_corrector <- zookeeper::make_state_corrector(
                   "nj",
                   "mt",
                   ## from spot checks
-                  "hi"
+                  "hi",
+                  ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
+                  "ks"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -154,11 +158,12 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## ongoing as of 2021-05-15
+                       ## ongoing as of 2021-05-22
                        "2021-04-20", "2021-04-22", "2021-04-24",
                        "2021-04-27", "2021-04-29", "2021-05-01",
                        "2021-05-04", "2021-05-06", "2021-05-08",
-                       "2021-05-11", "2021-05-13", "2021-05-15"
+                       "2021-05-11", "2021-05-13", "2021-05-15",
+                       "2021-05-18", "2021-05-20", "2021-05-22"
                        )),
       lubridate::ymd("2021-04-17"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -169,7 +174,9 @@ state_corrector <- zookeeper::make_state_corrector(
                        "2021-05-05", "2021-05-06")),
       lubridate::ymd("2021-05-07"),
       ## from spot checks
-      lubridate::ymd(c("2021-03-12","2021-03-13", "2021-03-19", "2021-04-02"))
+      lubridate::ymd(c("2021-03-12","2021-03-13", "2021-03-19", "2021-04-02")),
+      ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
+      lubridate::ymd(c("2021-04-19","2021-04-26","2021-05-03","2021-05-10"))
     ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -180,7 +187,9 @@ state_corrector <- zookeeper::make_state_corrector(
                 121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
                 218, # (if implement corresponding min_lag, would set its value to 96)
                 ## from spot checks
-                1+1 # not sure of correct value, but having last spike up drop down a lot doesn't seem right
+                1+1, # not sure of correct value, but having last spike up drop down a lot doesn't seem right
+                ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
+                2+1 # not sure of correct value; intending to spread across date itself + 2 preceding days
                 )
   )
 )
@@ -220,7 +229,11 @@ county_corrector  <- zookeeper::make_county_corrector(
       "34003",
       c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041"),
       ## from spot checks
-      "06095"
+      "06095",
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
+      "06107",
+      ## Philadelphia PA apparent schedule change triggers inappropriate flags
+      "42101"
     ),
     time_value = c(
       list(
@@ -239,7 +252,11 @@ county_corrector  <- zookeeper::make_county_corrector(
                             "2021-05-05", "2021-05-06"))),
       rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L),
       ## from spot checks
-      list(lubridate::ymd(c("2021-02-08","2021-04-26")))
+      list(lubridate::ymd(c("2021-02-08","2021-04-26"))),
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
+      list(lubridate::ymd("2021-05-20")),
+      ## Philadelphia PA apparent schedule change triggers inappropriate flags
+      list(lubridate::ymd(c("2021-05-03","2021-05-06","2021-05-10","2021-05-13","2021-05-17","2021-05-20")))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -250,7 +267,11 @@ county_corrector  <- zookeeper::make_county_corrector(
       121, # (the 2021-04-26 duplicate removal should probably go back further, say 400 instead of 121, when required feature is implemented)
       rep(400, 21L-1L),
       ## from spot checks
-      3+1
+      3+1,
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
+      14,
+      ## Philadelphia PA apparent schedule change triggers inappropriate flags
+      3+1 # if max_lag allowed to vary here, should do 2+1 and then alternate between 2+1 and 3+1
     )
   )
 )
