@@ -8,20 +8,20 @@
 #' @param response_data_source the name of the response
 #' @param response_signal the name of the response signal
 #' @param n_locations the number of locations to predict
-#' @param location_size_filter_lookback when summing county totals, how many
-#'   days back should we sum over? Defaults to all available. If you specify
-#'   this argument, you must also pass the forecast date.
-#' @param forecast_date required for non null `lovation_size_filter_lookback`
-#'   otherwise ignored
+#' @param location_size_filter_lookback when summing county totals to determine
+#'   the top \code{n_locations} counties, how many days back should we sum over?
+#'   Defaults to all days available. If you specify this argument, you must also
+#'   pass the forecast date.
+#' @param forecast_date required for non null
+#'   \code{location_size_filter_lookback} otherwise ignored
 #' 
 #'
 #'
 #' @return a function that takes in a data frame with the same columns, 
 #'   but possibly fewer rows
 #' @name featurizers
-#' @importFrom dplyr group_by arrange slice_max ungroup summarise across
-#' @importFrom dplyr left_join
-#' @importFrom rlang .data
+#' @importFrom dplyr filter group_by arrange mutate slice_max select pull ungroup summarise across left_join
+#' @importFrom rlang .data !!
 NULL
 
 #' @export
@@ -56,11 +56,12 @@ make_county_7dav_featurizer <- function(response_data_source = "jhu-csse",
                    "must be present."))
   function(df) {
     first_day_available <- min(df$time_value)
-    window_start_day <- lubridate::as_date(ifelse(
-      is.null(location_size_filter_lookback),
-      first_day_available,
-      forecast_date - 
-        lubridate::duration(location_size_filter_lookback, "days")))
+    window_start_day <-
+      if (is.null(location_size_filter_lookback)) {
+        first_day_available
+      } else {
+        forecast_date - lubridate::duration(location_size_filter_lookback, "days")
+      }
     if (window_start_day < first_day_available) {
       warning("You're trying to use a larger window to choose\n",
               "than you have data available. Using everything.")

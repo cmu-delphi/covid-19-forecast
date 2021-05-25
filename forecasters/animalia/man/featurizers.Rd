@@ -23,12 +23,13 @@ make_county_7dav_featurizer(
 
 \item{n_locations}{the number of locations to predict}
 
-\item{location_size_filter_lookback}{when summing county totals, how many
-days back should we sum over? Defaults to all available. If you specify
-this argument, you must also pass the forecast date.}
+\item{location_size_filter_lookback}{when summing county totals to determine
+the top \code{n_locations} counties, how many days back should we sum over?
+Defaults to all days available. If you specify this argument, you must also
+pass the forecast date.}
 
-\item{forecast_date}{required for non null `lovation_size_filter_lookback`
-otherwise ignored}
+\item{forecast_date}{required for non null
+\code{location_size_filter_lookback} otherwise ignored}
 }
 \value{
 a function that takes in a data frame with the same columns, 
