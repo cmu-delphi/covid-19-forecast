@@ -1,33 +1,6 @@
 #!/usr/bin/env Rscript
 
-## ## Obtain environment variables
-
-## forecast_date <- lubridate::ymd(Sys.getenv("FORECAST_DATE"))
-## today  <- lubridate::ymd(Sys.getenv("TODAY"))
-## ##output_dir  <- Sys.getenv("OUTPUT_DIR")
-## ## We can fix this at /mnt
-## output_dir  <- "/mnt"
-
-## These are usually not changed except by those know what is going on.
-## Volatile packages are those that go frequent development and are
-## therefore installed just-in-time from repos before running forecasts
-
-volatile_pkgs <- list(
-  evalcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
-                   subdir = "R-packages/evalcast"),
-  modeltools = list(repo = "cmu-delphi/covidcast", ref = "modeltools",
-                  subdir = "R-packages/modeltools"),
-  zookeeper = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
-                   subdir = "utilities/zookeeper"),
-  animalia = list(repo = "cmu-delphi/covid-19-forecast", ref = "develop",
-                  subdir = "forecasters/animalia")
-)
-
-for (pkg in volatile_pkgs) {
-  devtools::install_github(repo = pkg$repo, ref = pkg$ref,
-                           subdir = pkg$subdir, upgrade = "never")
-}
-
+## Obtain production parameters
 source("production_params.R")
 
 ## Ensure that state and county output directories specified in production_params.R
@@ -92,6 +65,15 @@ saveRDS(county_predictions,
         file = file.path(output_dir, county_output_subdir,
                          sprintf("predictions_for_%s.RDS", forecast_date)))
 
+
+cat("Running Corrections report for states\n")
+
+## Render the corrections report
+
+rmarkdown::render(input = state_corrections_md,
+                  output_file = sprintf("%s_%s.html", tools::file_path_sans_ext(state_corrections_md), forecast_date),
+                  output_dir = file.path(output_dir, state_output_subdir))
+
 cat("Running QA for States\n")
 
 ## Render the QA report
@@ -101,6 +83,14 @@ rmarkdown::render(input = state_qc_md,
                   output_dir = file.path(output_dir, state_output_subdir))
 
 cat("Done with States\n")
+
+cat("Running Corrections report for counties\n")
+
+## Render the corrections report
+rmarkdown::render(input = county_corrections_md,
+                  output_file = sprintf("%s_%s.html", tools::file_path_sans_ext(county_corrections_md), forecast_date),
+                  output_dir = file.path(output_dir, county_output_subdir))
+
 cat("Running QA for Counties\n")
 
 ## Render the QA report

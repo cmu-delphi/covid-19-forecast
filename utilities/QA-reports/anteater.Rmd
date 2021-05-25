@@ -11,6 +11,7 @@ library(zookeeper)
 library(lubridate)
 library(tidyverse)
 source("production_params.R")
+corrections_lookback <- 365
 
 anteater  <- readRDS(file.path(
   output_dir, state_output_subdir,
@@ -30,7 +31,8 @@ corrected <- suppressMessages(
   covidcast::covidcast_signal(
     state_forecaster_signals$data_source[1], 
     state_forecaster_signals$signal[1],
-    start_day = ymd(today) - days(x = qa_lookback), 
+    start_day = ymd(today) - days(x = corrections_lookback), 
+    end_day = forecast_date,
     geo_type = "state")) %>% 
   state_corrector()
 
@@ -39,11 +41,13 @@ corrected <- corrected[[1]] %>% evalcast:::sum_to_epiweek()
 # setup the plot and join corrections to the truth
 pd <- evalcast:::setup_plot_trajectory(
   anteater, geo_type = "state",
-  start_day = lubridate::ymd(today) - lubridate::days(x = qa_lookback))
+  start_day = lubridate::ymd(today) - lubridate::days(x = corrections_lookback),
+  end_day = forecast_date,)
   
 pd$truth_df <- left_join(
   pd$truth_df, corrected, 
-  by = c("geo_value" = "geo_value", "target_end_date" = "time_value"))
+  by = c("geo_value" = "geo_value", "target_end_date" = "time_value")) %>%
+  filter(target_end_date >= ymd(today) - days(x = qa_lookback))
 
 g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
 

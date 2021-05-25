@@ -8,18 +8,19 @@ library(zookeeper)
 library(covidcast)
 library(tidyverse)
 library(lubridate)
+source("production_params.R")
 df <- suppressMessages(
   covidcast_signals(
     state_forecaster_signals$data_source,
     state_forecaster_signals$signal,
-    start_day = today - lubridate::days(x = correction_lookback - 30), 
+    start_day = state_forecaster_signals$start_day, 
+    end_day = forecast_date,
     geo_type = "state"
   )
 )
 
-corrected <- df %>% 
-  state_corrector(return_all = TRUE) %>% 
-  filter(time_value > today - duration(correction_lookback, "days") %>%
+corrected <- state_corrector(df, return_all = TRUE) %>%
+  filter(time_value > today - duration(correction_lookback, "days")) %>%
   pivot_longer(value:corrected)
 ```
 

@@ -12,7 +12,8 @@ source("production_params.R")
 df <- suppressMessages(covidcast::covidcast_signal(
   county_forecaster_signals$data_source[1],
   county_forecaster_signals$signal[1],
-  start_day = today - lubridate::days(x = correction_lookback - 30), 
+  start_day = county_forecaster_signals$start_day[1], 
+  end_day = forecast_date,
   geo_type = "county")) 
 
 big_locs <-  df %>% 
@@ -30,7 +31,7 @@ corrected <- df %>%
   pivot_longer(value:corrected)
 
 simple_labs <- function(geo_value) {
-  sl <- covidcast::fips_to_name(geo_value)
+  sl <- covidcast::county_fips_to_name(geo_value)
   sl <- gsub(" County| city| Parish", "", sl)
   state <- evalcast:::fips_2_abbr(substr(names(sl), 1, 2))
   paste(sl, toupper(state))

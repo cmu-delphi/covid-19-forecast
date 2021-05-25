@@ -16,9 +16,8 @@
 #'   \code{location_size_filter_lookback} otherwise ignored
 #' 
 #'
-#'
-#' @return a function that takes in a data frame with the same columns, 
-#'   but possibly fewer rows
+#' @return A function that takes in a data frame with the same columns, 
+#'   but possibly fewer rows.
 #' @name featurizers
 #' @importFrom dplyr filter group_by arrange mutate slice_max select pull ungroup summarise across left_join
 #' @importFrom rlang .data !!
@@ -26,7 +25,7 @@ NULL
 
 #' @export
 #' @rdname featurizers
-make_state_7dav_featurizer <- function() {
+make_7dav_featurizer <- function() {
   function(df){
     df %>% 
       group_by(.data$geo_value) %>% # maybe easier with modeltools::slide_by_geo

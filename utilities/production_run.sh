@@ -38,6 +38,7 @@ echo "0. Copy scripts and markdowns for run"
 
 cp ${C19_REPO_PATH}/utilities/production_script.R ${C19_REPO_PATH}/utilities/production_params.R ${PROD_DOCKER_DIR}
 cp ${C19_REPO_PATH}/utilities/QA-reports/anteater.Rmd ${C19_REPO_PATH}/utilities/QA-reports/zebra.Rmd ${PROD_DOCKER_DIR}
+cp ${C19_REPO_PATH}/utilities/corrections-checks/state-corrections.Rmd ${C19_REPO_PATH}/utilities/corrections-checks/county-corrections.Rmd ${PROD_DOCKER_DIR}
 
 echo "1. Run forecasts in docker"
 (docker run --env TODAY --env FORECAST_DATE --env GITHUB_PAT --env TZ="America/New_York" --rm --name AZ --volume ${PROD_DOCKER_DIR}:/mnt --workdir /mnt covidcast R CMD BATCH --no-save --no-restore /mnt/production_script.R /mnt/production_script_${TODAY}.Rout)

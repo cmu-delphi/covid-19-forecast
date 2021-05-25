@@ -2,11 +2,11 @@
 % Please edit documentation in R/featurizers.R
 \name{featurizers}
 \alias{featurizers}
-\alias{make_state_7dav_featurizer}
+\alias{make_7dav_featurizer}
 \alias{make_county_7dav_featurizer}
 \title{Functions to create "featurizers"}
 \usage{
-make_state_7dav_featurizer()
+make_7dav_featurizer()
 
 make_county_7dav_featurizer(
   response_data_source = "jhu-csse",
@@ -32,8 +32,8 @@ pass the forecast date.}
 \code{location_size_filter_lookback} otherwise ignored}
 }
 \value{
-a function that takes in a data frame with the same columns, 
-  but possibly fewer rows
+A function that takes in a data frame with the same columns, 
+  but possibly fewer rows.
 }
 \description{
 Essentially, these both create functions that compute
