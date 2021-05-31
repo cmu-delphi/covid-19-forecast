@@ -135,7 +135,18 @@ state_corrector <- zookeeper::make_state_corrector(
                ## from spot checks
                "confirmed_incidence_num",
                ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
-               "confirmed_incidence_num"
+               "confirmed_incidence_num",
+               ## from JHU-CSSE notes and spot checks for 2021-05-31
+               ##   MD state deaths 2021-05-27
+               "deaths_incidence_num",
+               ##   NM state deaths 2021-05-24
+               "deaths_incidence_num",
+               ##   OH state deaths have been repeatedly updated with date of death rather than report (up to May 17, 2021), but recent data are by date of report; fiddle with backdistribution or recent points --- quick look at recent revisions suggests a window of 21 days, see if that with manual-flag backdistribution pattern plus additional manual flags on low points will look better
+               "deaths_incidence_num",
+               ##   OK state deaths 2021-05-26
+               "deaths_incidence_num",
+               ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
+               "deaths_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -148,7 +159,18 @@ state_corrector <- zookeeper::make_state_corrector(
                   ## from spot checks
                   "hi",
                   ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
-                  "ks"
+                  "ks",
+                  ## from JHU-CSSE notes and spot checks for 2021-05-31
+                  ##   MD state deaths 2021-05-27
+                  "md",
+                  ##   NM state deaths 2021-05-24
+                  "nm",
+                  ##   OH state deaths have been repeatedly updated with date of death rather than report (up to May 17, 2021), but recent data are by date of report; fiddle with backdistribution or recent points --- quick look at recent revisions suggests a window of 21 days, see if that with manual-flag backdistribution pattern plus additional manual flags on low points will look better
+                  "oh",
+                  ##   OK state deaths 2021-05-26
+                  "ok",
+                  ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
+                  "mo"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -158,12 +180,13 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## ongoing as of 2021-05-22
+                       ## ongoing as of 2021-05-29
                        "2021-04-20", "2021-04-22", "2021-04-24",
                        "2021-04-27", "2021-04-29", "2021-05-01",
                        "2021-05-04", "2021-05-06", "2021-05-08",
                        "2021-05-11", "2021-05-13", "2021-05-15",
-                       "2021-05-18", "2021-05-20", "2021-05-22"
+                       "2021-05-18", "2021-05-20", "2021-05-22",
+                       "2021-05-25", "2021-05-27", "2021-05-29"
                        )),
       lubridate::ymd("2021-04-17"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -176,8 +199,19 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from spot checks
       lubridate::ymd(c("2021-03-12","2021-03-13", "2021-03-19", "2021-04-02")),
       ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
-      lubridate::ymd(c("2021-04-19","2021-04-26","2021-05-03","2021-05-10"))
-    ),
+      lubridate::ymd(c("2021-04-19","2021-04-26","2021-05-03","2021-05-10")),
+      ## from JHU-CSSE notes and spot checks for 2021-05-31
+      ##   MD state deaths 2021-05-27
+      lubridate::ymd(c("2021-05-27")),
+      ##   NM state deaths 2021-05-24
+      lubridate::ymd(c("2021-05-24")),
+      ##   OH state deaths have been repeatedly updated with date of death rather than report (up to May 17, 2021), but recent data are by date of report; fiddle with backdistribution or recent points --- quick look at recent revisions suggests a window of 21 days, see if that with manual-flag backdistribution pattern plus additional manual flags on low points will look better
+      lubridate::ymd("2021-05-28") - (21+3-1):0, # flag both the recent data points, plus one before (because earlier one should be Tue rather than Wed?), plus the ones being backdistributed over, in a hack to attempt to counteract significant overall bias for recent weeks due to not having deaths that will be reported in the future
+      ##   OK state deaths 2021-05-26
+      lubridate::ymd("2021-05-26"),
+      ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
+      lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-29","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-12","2021-04-19","2021-04-26","2021-05-18","2021-05-25"))
+      ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
                 75, 150, 150, 180, # (AL 2021-05-13,2021-05-14,2021-05-15 would be a couple months larger if different max_lag's allowed, plus would use min_lag if available)
@@ -189,7 +223,18 @@ state_corrector <- zookeeper::make_state_corrector(
                 ## from spot checks
                 1+1, # not sure of correct value, but having last spike up drop down a lot doesn't seem right
                 ## KS state wday reporting behavior triggering inconsistent flagging; adjust some automatic flags
-                2+1 # not sure of correct value; intending to spread across date itself + 2 preceding days
+                2+1, # not sure of correct value; intending to spread across date itself + 2 preceding days
+                ## from JHU-CSSE notes and spot checks for 2021-05-31
+                ##   MD state deaths 2021-05-27
+                180, # somewhat arbitrary; not taken from an announcement
+                ##   NM state deaths 2021-05-24
+                180, # somewhat arbitrary; not taken from an announcement
+                ##   OH state deaths have been repeatedly updated with date of death rather than report (up to May 17, 2021), but recent data are by date of report; fiddle with backdistribution or recent points --- quick look at recent revisions suggests a window of 21 days, see if that with manual-flag backdistribution pattern plus additional manual flags on low points will look better
+                21,
+                ##   OK state deaths 2021-05-26
+                180, # somewhat arbitrary; not taken from an announcement
+                ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
+                180
                 )
   )
 )
@@ -230,10 +275,15 @@ county_corrector  <- zookeeper::make_county_corrector(
       c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041"),
       ## from spot checks
       "06095",
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
       "06107",
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
-      "42101"
+      "42101",
+      ## from JHU-CSSE notes and spot checks for 2021-05-31
+      ##   Los Angeles CA cases 2021-05-27
+      "06037",
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      c("53033","53053","53063")
     ),
     time_value = c(
       list(
@@ -253,10 +303,15 @@ county_corrector  <- zookeeper::make_county_corrector(
       rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L),
       ## from spot checks
       list(lubridate::ymd(c("2021-02-08","2021-04-26"))),
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
-      list(lubridate::ymd("2021-05-20")),
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
+      list(lubridate::ymd(c("2021-05-20", "2021-05-26","2021-05-27","2021-05-28"))),
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
-      list(lubridate::ymd(c("2021-05-03","2021-05-06","2021-05-10","2021-05-13","2021-05-17","2021-05-20")))
+      list(lubridate::ymd(c("2021-05-03","2021-05-06","2021-05-10","2021-05-13","2021-05-17","2021-05-20"))),
+      ## from JHU-CSSE notes and spot checks for 2021-05-31
+      ##   Los Angeles CA cases 2021-05-27
+      list(lubridate::ymd("2021-05-27")),
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      rep(list(lubridate::ymd(c("2021-05-14","2021-05-15","2021-05-16","2021-05-17","2021-05-21","2021-05-22","2021-05-23","2021-05-24","2021-05-26"))), 3L)
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -268,10 +323,15 @@ county_corrector  <- zookeeper::make_county_corrector(
       rep(400, 21L-1L),
       ## from spot checks
       3+1,
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spike
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
       14,
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
-      3+1 # if max_lag allowed to vary here, should do 2+1 and then alternate between 2+1 and 3+1
+      3+1, # if max_lag allowed to vary here, should do 2+1 and then alternate between 2+1 and 3+1
+      ## from JHU-CSSE notes and spot checks for 2021-05-31
+      ##   Los Angeles CA cases 2021-05-27
+      180, # somewhat arbitrary; not taken from an announcement
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      rep(180L, 3L) # somewhat arbitrary; not taken from an announcement
     )
   )
 )
