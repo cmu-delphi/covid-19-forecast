@@ -5,7 +5,7 @@ FROM rocker/verse
 MAINTAINER "Balasubramanian Narasimhan" naras@stanford.edu
 
 ## Copy Gurobi installation file
-COPY ./gurobi9.1.1_linux64.tar.gz /tmp
+COPY ./gurobi9.1.1_linux64.tar.gz ./gurobi.lic /tmp
 
 # Don't print "debconf: unable to initialize frontend: Dialog" messages
 ARG DEBIAN_FRONTEND=noninteractive
@@ -21,8 +21,10 @@ RUN Rscript -e 'install.packages("covidcast", repos = "https://cran.r-project.or
 ## Install the Gurobi optimizer libraries
 RUN cd /opt && tar xzf /tmp/gurobi9.1.1_linux64.tar.gz
 
+## Now replaced by containerized license
 ## Create the Gurobi License file that uses the CMU Gurobi token server
-RUN echo "TOKENSERVER=gurobi-license-1.srv.cs.cmu.edu" > /opt/gurobi911/linux64/gurobi.lic
+## RUN echo "TOKENSERVER=gurobi-license-1.srv.cs.cmu.edu" > /opt/gurobi911/linux64/gurobi.lic
+RUN cp -f /tmp/gurobi.lic /opt/gurobi911/linux64
 
 ## Set environment variables for GUROBI and install R Gurobi package
 ENV GUROBI_HOME "/opt/gurobi911/linux64"
