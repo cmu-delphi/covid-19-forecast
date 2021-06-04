@@ -5,7 +5,7 @@ FROM rocker/verse
 MAINTAINER "Balasubramanian Narasimhan" naras@stanford.edu
 
 ## Copy Gurobi installation file
-COPY ./gurobi9.1.1_linux64.tar.gz ./gurobi.lic /tmp
+COPY ./gurobi9.1.1_linux64.tar.gz ./gurobi.lic /tmp/
 
 # Don't print "debconf: unable to initialize frontend: Dialog" messages
 ARG DEBIAN_FRONTEND=noninteractive
@@ -16,7 +16,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN Rscript -e 'install.packages(c("glmnet", "zoo", "fuzzyjoin", "Iso", "logger", "usmap", "Rglpk", "maptools", "MMWRweek", "sf", "Cairo", "triebeard", "httpcode", "urltools", "crul", "fauxpas", "base64url", "webmockr", "mockery", "RcppArmadillo", "scoringRules", "goftest", "data.table", "ggnewscale", "RcppRoll", "scoringutils", "TTR", "xts", "quantmod", "quadprog", "urca", "tseries", "timeDate", "lmtest", "fracdiff", "forecast"))'
 
 ## Install commonly used packages for our packages
-RUN Rscript -e 'install.packages("covidcast", repos = "https://cran.r-project.org")
+RUN Rscript -e 'install.packages("covidcast", repos = "https://cran.r-project.org")'
 
 ## Install the Gurobi optimizer libraries
 RUN cd /opt && tar xzf /tmp/gurobi9.1.1_linux64.tar.gz
