@@ -13,10 +13,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 ## Install tidyverse and needed packages
 
 ## Install packages needed for nearly everything
-RUN Rscript -e 'install.packages(c("glmnet", "zoo", "fuzzyjoin", "Iso", "logger", "usmap", "Rglpk", "maptools", "MMWRweek", "sf", "Cairo", "triebeard", "httpcode", "urltools", "crul", "fauxpas", "base64url", "webmockr", "mockery", "RcppArmadillo", "scoringRules", "goftest", "data.table", "ggnewscale", "RcppRoll", "scoringutils", "TTR", "xts", "quantmod", "quadprog", "urca", "tseries", "timeDate", "lmtest", "fracdiff", "forecast"))'
+RUN Rscript -e 'install.packages(c("glmnet", "zoo", "fuzzyjoin", "Iso", "logger", "usmap", "Rglpk", "maptools", "MMWRweek", "sf", "Cairo", "triebeard", "httpcode", "urltools", "crul", "fauxpas", "base64url", "webmockr", "mockery", "RcppArmadillo", "scoringRules", "goftest", "data.table", "ggnewscale", "RcppRoll", "scoringutils", "TTR", "xts", "quantmod", "quadprog", "urca", "tseries", "timeDate", "lmtest", "fracdiff", "forecast", "RColorBrewer"))'
 
 ## Install commonly used packages for our packages
 RUN Rscript -e 'install.packages("covidcast", repos = "https://cran.r-project.org")'
+## Evalcast is needed by weekly forecaster performace reports
+RUN Rscript -e 'devtools::install_github(repo = "cmu-delphi/covidcast", subdir = "R-packages/evalcast")'
 
 ## Install the Gurobi optimizer libraries
 RUN cd /opt && tar xzf /tmp/gurobi9.1.1_linux64.tar.gz
