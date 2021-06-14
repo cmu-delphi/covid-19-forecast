@@ -146,7 +146,12 @@ state_corrector <- zookeeper::make_state_corrector(
                ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
                "deaths_incidence_num",
                ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
-               "confirmed_incidence_num"
+               "confirmed_incidence_num",
+               ## new rows for 2021-06-14
+               ##   WA state deaths 2021-06-08
+               "deaths_incidence_num",
+               ##   WI state deaths 2021-05-27
+               "deaths_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -168,7 +173,12 @@ state_corrector <- zookeeper::make_state_corrector(
                   ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
                   "mo",
                   ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
-                  "in"
+                  "in",
+                  ## new rows for 2021-06-14
+                  ##   WA state deaths 2021-06-08
+                  "wa",
+                  ##   WI state deaths 2021-05-27
+                  "wi"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -178,15 +188,16 @@ state_corrector <- zookeeper::make_state_corrector(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
       lubridate::ymd("2021-04-15"),
       lubridate::ymd(c("2021-04-01", "2021-04-03", "2021-04-06", "2021-04-08", "2021-04-10", "2021-04-13", "2021-04-15", "2021-04-17",
-                       ## appears ongoing as of 2021-06-05
+                       ## appears ongoing as of 2021-06-12
                        "2021-04-20", "2021-04-22", "2021-04-24",
                        "2021-04-27", "2021-04-29", "2021-05-01",
                        "2021-05-04", "2021-05-06", "2021-05-08",
                        "2021-05-11", "2021-05-13", "2021-05-15",
                        "2021-05-18", "2021-05-20", "2021-05-22",
                        "2021-05-25", "2021-05-27", "2021-05-29",
-                       "2021-05-31", # Memorial Day
-                       "2021-06-01", "2021-06-03", "2021-06-05"
+                       ## "2021-05-31", # Memorial Day
+                       "2021-06-01", "2021-06-03", "2021-06-05",
+                       "2021-06-08", "2021-06-10", "2021-06-12"
                        )),
       lubridate::ymd("2021-04-17","2021-06-02"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -208,7 +219,12 @@ state_corrector <- zookeeper::make_state_corrector(
       ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
       lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-29","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-12","2021-04-19","2021-04-26","2021-05-18","2021-05-25")),
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
-      lubridate::ymd("2021-06-03")
+      lubridate::ymd("2021-06-03"),
+      ## new rows for 2021-06-14
+      ##   WA state deaths 2021-06-08
+      lubridate::ymd("2021-06-08"),
+      ##   WI state deaths 2021-05-27
+      lubridate::ymd("2021-05-27")
       ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -230,27 +246,33 @@ state_corrector <- zookeeper::make_state_corrector(
                 ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
                 180,
                 ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
-                180 # arbitrary
+                180, # arbitrary
+                ## new rows for 2021-06-14
+                ##   WA state deaths 2021-06-08
+                120,
+                ##   WI state deaths 2021-05-27
+                60
                 )
     ) %magrittr>%
-    {
-      previous <- .
-      geo_values_with_memorial_day_response_zeros_unlike_previous_monday <- c("co", "ct", "dc", "fl", "id", "in", "ks", "ky", "la", "ma",  "me", "mi", "nc", "ne", "nm", "nv", "oh", "ri", "tn", "wa", "wv" )
-      time_values_to_flag_for_memorial_day <- lubridate::ymd(c("2021-05-31","2021-06-01"))
-      previous %>%
-        dplyr::mutate(time_value = dplyr::if_else(geo_value %in% geo_values_with_memorial_day_response_zeros_unlike_previous_monday,
-                                                  lapply(time_value, function(time_value_elt) c(time_value_elt, lubridate::as_date(setdiff(time_values_to_flag_for_memorial_day, time_value_elt)))),
-                                                  as.list(time_value))) %>%
-        dplyr::bind_rows(
-                 tidyr::crossing(data_source="jhu-csse",
-                                 signal=c("confirmed_incidence_num","deaths_incidence_num"),
-                                 geo_value=geo_values_with_memorial_day_response_zeros_unlike_previous_monday) %>%
-                 setdiff(previous[c("data_source","signal","geo_value")]) %>%
-                 dplyr::mutate(time_value = list(time_values_to_flag_for_memorial_day),
-                               max_lag = 180 # arbitrary large value to try to make this like just filling in with smoothed values
-                               )
-               )
-    }
+    ## {
+    ##   previous <- .
+    ##   geo_values_with_memorial_day_response_zeros_unlike_previous_monday <- c("co", "ct", "dc", "fl", "id", "in", "ks", "ky", "la", "ma",  "me", "mi", "nc", "ne", "nm", "nv", "oh", "ri", "tn", "wa", "wv" )
+    ##   time_values_to_flag_for_memorial_day <- lubridate::ymd(c("2021-05-31","2021-06-01"))
+    ##   previous %>%
+    ##     dplyr::mutate(time_value = dplyr::if_else(geo_value %in% geo_values_with_memorial_day_response_zeros_unlike_previous_monday,
+    ##                                               lapply(time_value, function(time_value_elt) c(time_value_elt, lubridate::as_date(setdiff(time_values_to_flag_for_memorial_day, time_value_elt)))),
+    ##                                               as.list(time_value))) %>%
+    ##     dplyr::bind_rows(
+    ##              tidyr::crossing(data_source="jhu-csse",
+    ##                              signal=c("confirmed_incidence_num","deaths_incidence_num"),
+    ##                              geo_value=geo_values_with_memorial_day_response_zeros_unlike_previous_monday) %>%
+    ##              setdiff(previous[c("data_source","signal","geo_value")]) %>%
+    ##              dplyr::mutate(time_value = list(time_values_to_flag_for_memorial_day),
+    ##                            max_lag = 180 # arbitrary large value to try to make this like just filling in with smoothed values
+    ##                            )
+    ##            )
+    ## }
+    identity()
 )
 
 state_forecaster_args <- list(
@@ -289,14 +311,14 @@ county_corrector  <- zookeeper::make_county_corrector(
       c("34001", "34005", "34007", "34009", "34011", "34013", "34015", "34017", "34019", "34021", "34023", "34025", "34027", "34029", "34031", "34033", "34035", "34037", "34039", "34041"),
       ## from spot checks
       "06095",
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-06-14)
       "06107",
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
       "42101",
       ## from JHU-CSSE notes and spot checks for 2021-05-31
       ##   Los Angeles CA cases 2021-05-27
       "06037",
-      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26,30,31}, 2021-06-{07,09}
       c("53033","53053","53063"),
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       ##   Pima AZ
@@ -307,8 +329,11 @@ county_corrector  <- zookeeper::make_county_corrector(
       "45051",
       ##   Harris TX
       "48201",
-      ##   Bexar TX (incomplete, need to add some missed entries next run)
-      "48029"
+      ##   Bexar TX
+      "48029",
+      ## new rows for 2021-06-14
+      ##   Webb TX
+      "48479"
     ),
     time_value = c(
       list(
@@ -328,16 +353,17 @@ county_corrector  <- zookeeper::make_county_corrector(
       rep(list(lubridate::ymd(c("2021-04-26"))), 21L-1L),
       ## from spot checks
       list(lubridate::ymd(c("2021-02-08","2021-04-26"))),
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
-      list(lubridate::ymd(c("2021-05-20", "2021-05-26","2021-05-27","2021-05-28"))),
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing some unflagged spikes + redundantly tagging some to ensure (ongoing issues as of 2021-06-14)
+      list(lubridate::ymd(c("2021-05-20", "2021-05-26","2021-05-27","2021-05-28","2021-06-01","2021-06-04","2021-06-07","2021-06-08","2021-06-12"))),
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
       list(lubridate::ymd(c("2021-05-03","2021-05-06","2021-05-10","2021-05-13","2021-05-17","2021-05-20"))),
       ## from JHU-CSSE notes and spot checks for 2021-05-31
       ##   Los Angeles CA cases 2021-05-27
       list(lubridate::ymd("2021-05-27")),
-      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26,30,31}, 2021-06-{07,09}
       rep(list(lubridate::ymd(c("2021-05-14","2021-05-15","2021-05-16","2021-05-17","2021-05-21","2021-05-22","2021-05-23","2021-05-24","2021-05-26",
-                                "2021-05-30","2021-05-31"))), 3L),
+                                "2021-05-30","2021-05-31",
+                                "2021-06-07","2021-06-09"))), 3L),
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       ##   Pima AZ
       list(lubridate::ymd(c("2021-05-31","2021-06-05","2021-06-06"))),
@@ -347,8 +373,11 @@ county_corrector  <- zookeeper::make_county_corrector(
       list(lubridate::ymd(c("2021-05-31","2021-06-01"))),
       ##   Harris TX
       list(lubridate::ymd(c("2021-05-31","2021-06-01","2021-06-02"))),
-      ## Bexar TX
-      list(lubridate::ymd(c("2021-06-03","2021-05-24","2021-05-17","2021-05-10","2021-05-03","2021-04-26","2021-04-19","2021-04-12","2021-03-28")))
+      ##   Bexar TX
+      list(lubridate::ymd(c("2021-06-03","2021-05-24","2021-05-17","2021-05-10","2021-05-03","2021-04-26","2021-04-19","2021-04-12","2021-04-05","2021-03-28","2021-03-21"))),
+      ## new rows for 2021-06-14
+      ##   Webb TX
+      list(lubridate::ymd("2021-06-09"))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -360,14 +389,14 @@ county_corrector  <- zookeeper::make_county_corrector(
       rep(400, 21L-1L),
       ## from spot checks
       3+1,
-      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-05-31)
+      ## Tulare CA inconsistent flagging of recent spikes; try backdistributing unflagged spikes (ongoing issues as of 2021-06-14)
       14,
       ## Philadelphia PA apparent schedule change triggers inappropriate flags
       3+1, # if max_lag allowed to vary here, should do 2+1 and then alternate between 2+1 and 3+1
       ## from JHU-CSSE notes and spot checks for 2021-05-31
       ##   Los Angeles CA cases 2021-05-27
       180, # somewhat arbitrary; not taken from an announcement
-      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26}
+      ##   King WA, Pierce WA, Spokane WA cases 2021-05-{14-17,21-23,24,26,30,31}, 2021-06-{07,09}
       rep(180, 3L), # somewhat arbitrary; not taken from an announcement
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       ##   Pima AZ
@@ -379,27 +408,31 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Harris TX
       180,
       ##   Bexar TX
-      7
+      7,
+      ## new rows for 2021-06-14
+      ##   Webb TX
+      180
     )
   ) %magrittr>%
-    {
-      previous <- .
-      geo_values_with_memorial_day_response_zeros_unlike_previous_monday <- c("01073", "01089", "01097", "06053", "06059", "06065", "06067",  "06071", "06077", "06095", "06099", "06107", "06111", "09001",  "09003", "09009", "11001", "12009", "12011", "12021", "12031",  "12033", "12057", "12071", "12081", "12086", "12095", "12097",  "12099", "12101", "12103", "12105", "12115", "12117", "12127",  "16001", "18003", "18057", "18089", "18097", "18141", "20091",  "20173", "21067", "21111", "22033", "22051", "25005", "25009",  "25013", "25017", "25021", "25023", "25025", "25027", "26049",  "26081", "26099", "26125", "26163", "27003", "27037", "27053",  "27123", "31055", "32003", "32031", "33011", "35001", "37067",  "37081", "37119", "37183", "39017", "39035", "39049", "39061",  "39095", "39113", "39153", "42101", "44007", "47037", "47065",  "47093", "47149", "47157", "48029", "48085", "48113", "48121",  "48157", "48339", "48439", "48491", "51153", "53033", "53053",  "53061", "53063")
-      time_values_to_flag_for_memorial_day <- lubridate::ymd(c("2021-05-31","2021-06-01"))
-      previous %>%
-        dplyr::mutate(time_value = dplyr::if_else(geo_value %in% geo_values_with_memorial_day_response_zeros_unlike_previous_monday,
-                                                  lapply(time_value, function(time_value_elt) c(time_value_elt, lubridate::as_date(setdiff(time_values_to_flag_for_memorial_day, time_value_elt)))),
-                                                  as.list(time_value))) %>%
-        dplyr::bind_rows(
-                 tidyr::crossing(data_source="jhu-csse",
-                                 signal="confirmed_incidence_num",
-                                 geo_value=geo_values_with_memorial_day_response_zeros_unlike_previous_monday) %>%
-                 setdiff(previous[c("data_source","signal","geo_value")]) %>%
-                 dplyr::mutate(time_value = list(time_values_to_flag_for_memorial_day),
-                               max_lag = 180 # arbitrary large value to try to make this like just filling in with smoothed values
-                               )
-               )
-    }
+    ## {
+    ##   previous <- .
+    ##   geo_values_with_memorial_day_response_zeros_unlike_previous_monday <- c("01073", "01089", "01097", "06053", "06059", "06065", "06067",  "06071", "06077", "06095", "06099", "06107", "06111", "09001",  "09003", "09009", "11001", "12009", "12011", "12021", "12031",  "12033", "12057", "12071", "12081", "12086", "12095", "12097",  "12099", "12101", "12103", "12105", "12115", "12117", "12127",  "16001", "18003", "18057", "18089", "18097", "18141", "20091",  "20173", "21067", "21111", "22033", "22051", "25005", "25009",  "25013", "25017", "25021", "25023", "25025", "25027", "26049",  "26081", "26099", "26125", "26163", "27003", "27037", "27053",  "27123", "31055", "32003", "32031", "33011", "35001", "37067",  "37081", "37119", "37183", "39017", "39035", "39049", "39061",  "39095", "39113", "39153", "42101", "44007", "47037", "47065",  "47093", "47149", "47157", "48029", "48085", "48113", "48121",  "48157", "48339", "48439", "48491", "51153", "53033", "53053",  "53061", "53063")
+    ##   time_values_to_flag_for_memorial_day <- lubridate::ymd(c("2021-05-31","2021-06-01"))
+    ##   previous %>%
+    ##     dplyr::mutate(time_value = dplyr::if_else(geo_value %in% geo_values_with_memorial_day_response_zeros_unlike_previous_monday,
+    ##                                               lapply(time_value, function(time_value_elt) c(time_value_elt, lubridate::as_date(setdiff(time_values_to_flag_for_memorial_day, time_value_elt)))),
+    ##                                               as.list(time_value))) %>%
+    ##     dplyr::bind_rows(
+    ##              tidyr::crossing(data_source="jhu-csse",
+    ##                              signal="confirmed_incidence_num",
+    ##                              geo_value=geo_values_with_memorial_day_response_zeros_unlike_previous_monday) %>%
+    ##              setdiff(previous[c("data_source","signal","geo_value")]) %>%
+    ##              dplyr::mutate(time_value = list(time_values_to_flag_for_memorial_day),
+    ##                            max_lag = 180 # arbitrary large value to try to make this like just filling in with smoothed values
+    ##                            )
+    ##            )
+    ## }
+    identity()
 )
 
 prob_type <- ifelse(county_forecaster_signals$signal[1] == "confirmed_incidence_num",
