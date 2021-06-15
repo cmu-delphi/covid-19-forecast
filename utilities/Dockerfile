@@ -17,8 +17,6 @@ RUN Rscript -e 'install.packages(c("glmnet", "zoo", "fuzzyjoin", "Iso", "logger"
 
 ## Install commonly used packages for our packages
 RUN Rscript -e 'install.packages("covidcast", repos = "https://cran.r-project.org")'
-## Evalcast is needed by weekly forecaster performace reports
-RUN Rscript -e 'devtools::install_github(repo = "cmu-delphi/covidcast", subdir = "R-packages/evalcast")'
 
 ## Install the Gurobi optimizer libraries
 RUN cd /opt && tar xzf /tmp/gurobi9.1.1_linux64.tar.gz
