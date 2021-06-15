@@ -1,0 +1,173 @@
+
+R version 4.1.0 (2021-05-18) -- "Camp Pontanezen"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## Start of prologue
+> ## These are usually not changed except by those know what is going
+> ## on.  Volatile packages are those that undergo frequent development
+> ## and are therefore installed just-in-time from repos before running
+> ## forecasts
+> 
+> ## Install a package if not already installed from github
+> install_from_github_if_needed <- function(pkgs, ...) {
++   installed_pkgs <- installed.packages()[, 1]
++   pkg_names <- names(pkgs)
++   to_install <- pkgs[setdiff(pkg_names, installed_pkgs)]
++   for (pkg in to_install) {
++     devtools::install_github(repo = pkg$repo, ref = pkg$ref,
++                              subdir = pkg$subdir, ...)
++   }
++ }
+> 
+> volatile_pkgs <- list(
++   evalcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
++                    subdir = "R-packages/evalcast")
++ )
+> 
+> install_from_github_if_needed(volatile_pkgs, upgrade = "never")
+Using github PAT from envvar GITHUB_PAT
+Downloading GitHub repo cmu-delphi/covidcast@evalcast
+Downloading GitHub repo reichlab/zoltr@HEAD
+     checking for file ‘/tmp/RtmpaJmDQ2/remotesb69224be5/reichlab-zoltr-0add3f7/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb69224be5/reichlab-zoltr-0add3f7/DESCRIPTION’
+  ─  preparing ‘zoltr’:
+     checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+  ─  checking for LF line-endings in source and make files and shell scripts
+  ─  checking for empty or unneeded directories
+     Omitted ‘LazyData’ from DESCRIPTION
+  ─  building ‘zoltr_0.91.tar.gz’
+     
+Installing package into ‘/usr/local/lib/R/site-library’
+(as ‘lib’ is unspecified)
+* installing *source* package ‘zoltr’ ...
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (zoltr)
+Downloading GitHub repo reichlab/covidHubUtils@HEAD
+     checking for file ‘/tmp/RtmpaJmDQ2/remotesb6acc0343/reichlab-covidHubUtils-67f3a53/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb6acc0343/reichlab-covidHubUtils-67f3a53/DESCRIPTION’
+  ─  preparing ‘covidHubUtils’:
+   checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+  ─  installing the package to process help pages
+  ─  checking for LF line-endings in source and make files and shell scripts (4.5s)
+  ─  checking for empty or unneeded directories
+  ─  building ‘covidHubUtils_0.1.5.tar.gz’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/COVIDhub-baseline/metadata-COVIDhub-baseline.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/COVIDhub-ensemble/metadata-COVIDhub-ensemble.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamA-modelA/metadata-teamA-modelA.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamB-modelB/metadata-teamB-modelB.txt’
+   Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamC-modelC/metadata-teamC-modelC.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamD-modelD/metadata-teamD-modelD.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamE-modelE/metadata-teamE-modelE.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-baseline/2020-12-07-COVIDhub-baseline.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-baseline/2020-12-14-COVIDhub-baseline.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-baseline/metadata-COVIDhub-baseline.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-ensemble/2020-12-07-COVIDhub-ensemble.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-ensemble/2020-12-14-COVIDhub-ensemble.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/COVIDhub-ensemble/metadata-COVIDhub-ensemble.txt’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/model-model1/2020-12-07-model-model1.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-load_forecasts/data-processed/model-model1/2020-12-14-model-model1.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-preprocess_truth_for_zoltar/2020-12-12/2020-12-12_time_series_covid19_deaths_US.csv’
+     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-preprocess_truth_for_zoltar/2020-12-14/2020-12-14_time_series_covid19_deaths_US.csv’
+     
+Installing package into ‘/usr/local/lib/R/site-library’
+(as ‘lib’ is unspecified)
+* installing *source* package ‘covidHubUtils’ ...
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (covidHubUtils)
+Skipping install of 'zoltr' from a github remote, the SHA1 (0add3f72) has not changed since last install.
+  Use `force = TRUE` to force installation
+Skipping install of 'covidHubUtils' from a github remote, the SHA1 (67f3a533) has not changed since last install.
+  Use `force = TRUE` to force installation
+     checking for file ‘/tmp/RtmpaJmDQ2/remotesb33db9476/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb33db9476/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’
+  ─  preparing ‘evalcast’:
+   checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+  ─  checking for LF line-endings in source and make files and shell scripts
+  ─  checking for empty or unneeded directories
+     Omitted ‘LazyData’ from DESCRIPTION
+  ─  building ‘evalcast_0.2.0.tar.gz’
+     
+Installing package into ‘/usr/local/lib/R/site-library’
+(as ‘lib’ is unspecified)
+* installing *source* package ‘evalcast’ ...
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (evalcast)
+> 
+> ## End of prologue
+> 
+> proc.time()
+   user  system elapsed 
+ 42.547  21.990  54.281 
