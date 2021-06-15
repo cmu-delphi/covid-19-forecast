@@ -41,7 +41,7 @@ Type 'q()' to quit R.
 Using github PAT from envvar GITHUB_PAT
 Downloading GitHub repo cmu-delphi/covidcast@evalcast
 Downloading GitHub repo reichlab/zoltr@HEAD
-     checking for file ‘/tmp/RtmpaJmDQ2/remotesb69224be5/reichlab-zoltr-0add3f7/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb69224be5/reichlab-zoltr-0add3f7/DESCRIPTION’
+     checking for file ‘/tmp/Rtmpdwk0uZ/remotesa6759b288/reichlab-zoltr-0add3f7/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/Rtmpdwk0uZ/remotesa6759b288/reichlab-zoltr-0add3f7/DESCRIPTION’
   ─  preparing ‘zoltr’:
      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
   ─  checking for LF line-endings in source and make files and shell scripts
@@ -64,7 +64,7 @@ Downloading GitHub repo reichlab/zoltr@HEAD
 ** testing if installed package keeps a record of temporary installation path
 * DONE (zoltr)
 Downloading GitHub repo reichlab/covidHubUtils@HEAD
-     checking for file ‘/tmp/RtmpaJmDQ2/remotesb6acc0343/reichlab-covidHubUtils-67f3a53/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb6acc0343/reichlab-covidHubUtils-67f3a53/DESCRIPTION’
+     checking for file ‘/tmp/Rtmpdwk0uZ/remotesa4019d74a/reichlab-covidHubUtils-67f3a53/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/Rtmpdwk0uZ/remotesa4019d74a/reichlab-covidHubUtils-67f3a53/DESCRIPTION’
   ─  preparing ‘covidHubUtils’:
    checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
   ─  installing the package to process help pages
@@ -77,19 +77,19 @@ Downloading GitHub repo reichlab/covidHubUtils@HEAD
      Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
      storing paths of more than 100 bytes is not portable:
      ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/COVIDhub-ensemble/metadata-COVIDhub-ensemble.txt’
-     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
      storing paths of more than 100 bytes is not portable:
      ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamA-modelA/metadata-teamA-modelA.txt’
-     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
-     storing paths of more than 100 bytes is not portable:
-     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamB-modelB/metadata-teamB-modelB.txt’
    Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
      storing paths of more than 100 bytes is not portable:
-     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamC-modelC/metadata-teamC-modelC.txt’
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamB-modelB/metadata-teamB-modelB.txt’
      Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
      storing paths of more than 100 bytes is not portable:
+     ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamC-modelC/metadata-teamC-modelC.txt’
+Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+     storing paths of more than 100 bytes is not portable:
      ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamD-modelD/metadata-teamD-modelD.txt’
-     Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
+   Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
      storing paths of more than 100 bytes is not portable:
      ‘covidHubUtils/tests/testthat/test-data/test-get_model_designations/data-processed/teamE-modelE/metadata-teamE-modelE.txt’
      Warning in utils::tar(filepath, pkgname, compression = compression, compression_level = 9L,  :
@@ -143,7 +143,7 @@ Skipping install of 'zoltr' from a github remote, the SHA1 (0add3f72) has not ch
   Use `force = TRUE` to force installation
 Skipping install of 'covidHubUtils' from a github remote, the SHA1 (67f3a533) has not changed since last install.
   Use `force = TRUE` to force installation
-     checking for file ‘/tmp/RtmpaJmDQ2/remotesb33db9476/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/RtmpaJmDQ2/remotesb33db9476/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’
+     checking for file ‘/tmp/Rtmpdwk0uZ/remotesa70ba809a/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’ ...  ✔  checking for file ‘/tmp/Rtmpdwk0uZ/remotesa70ba809a/cmu-delphi-covidcast-1393dda/R-packages/evalcast/DESCRIPTION’
   ─  preparing ‘evalcast’:
    checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
   ─  checking for LF line-endings in source and make files and shell scripts
@@ -168,6 +168,696 @@ Skipping install of 'covidHubUtils' from a github remote, the SHA1 (67f3a533) ha
 > 
 > ## End of prologue
 > 
+> library(rmarkdown)
+> library(lubridate)
+
+Attaching package: ‘lubridate’
+
+The following objects are masked from ‘package:base’:
+
+    date, intersect, setdiff, union
+
+> library(tidyverse)
+── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+✔ ggplot2 3.3.3     ✔ purrr   0.3.4
+✔ tibble  3.1.2     ✔ dplyr   1.0.6
+✔ tidyr   1.1.3     ✔ stringr 1.4.0
+✔ readr   1.4.0     ✔ forcats 0.5.1
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ lubridate::as.difftime() masks base::as.difftime()
+✖ lubridate::date()        masks base::date()
+✖ dplyr::filter()          masks stats::filter()
+✖ lubridate::intersect()   masks base::intersect()
+✖ dplyr::lag()             masks stats::lag()
+✖ lubridate::setdiff()     masks base::setdiff()
+✖ lubridate::union()       masks base::union()
+> library(evalcast)
+> 
+> preds_filename = "predictions_cards.rds"
+> start_date = today() - 12 * 7
+> forecasters = c("CMU-TimeSeries",
++                 "CovidAnalytics-DELPHI",
++                 "CU-select",
++                 #   "Google_Harvard-CPF", Excluded for now. Doesn't have quantiles for all forecasts
++                 "GT-DeepCOVID",
++                 "IEM_MED-CovidProject",
++                 "IowaStateLW-STEM",
++                 "IHME-CurveFit",
++                 "JHUAPL-Bucky",
++                 "JHU_IDD-CovidSP",
++                 "JHU_UNC_GAS-StatMechPool",
++                 "Karlen-pypm",
++                 "LANL-GrowthRate",
++                 "LNQ-ens1",
++                 "MOBS-GLEAM_COVID",
++                 "OliverWyman-Navigator",
++                 "OneQuietNight-ML",
++                 "PandemicCentral-USCounty",
++                 "UCLA-SuEIR",
++                 "UMass-MechBayes",
++                 "UT-Mobility",
++                 "UVA-Ensemble",
++                 "Yu_Group-CLEP",
++                 "YYG-ParamSearch",
++                 "COVIDhub-ensemble",
++                 "COVIDhub-baseline")
+> 
+> signals = c("deaths_incidence_num", "confirmed_incidence_num")
+> 
+> date_filter <- function(date_list){
++   date_filter_helper <- function(dates){
++     end_week_dates = dates[wday(dates) %in% c(1, 2)]
++     ret_dates = end_week_dates[!(end_week_dates + 1) %in% end_week_dates]
++     return(ret_dates)
++   }
++   return(lapply(date_list, date_filter_helper))
++ }
+> 
+> preds = readRDS(preds_filename)
+> preds = preds %>% filter(forecast_date >= start_date)
+> 
+> preds = get_covidhub_predictions(forecasters,
++                                signal = signals,
++                                predictions_cards = preds,
++                                start_date = start_date,
++                                date_filtering_function = date_filter,
++                                verbose = TRUE)
+Getting forecasts for 25 forecasters.
+1/25: CMU-TimeSeries...
+2/25: CovidAnalytics-DELPHI...
+3/25: CU-select...
+4/25: GT-DeepCOVID...
+5/25: IEM_MED-CovidProject...
+6/25: IowaStateLW-STEM...
+7/25: IHME-CurveFit...
+8/25: JHUAPL-Bucky...
+9/25: JHU_IDD-CovidSP...
+10/25: JHU_UNC_GAS-StatMechPool...
+11/25: Karlen-pypm...
+12/25: LANL-GrowthRate...
+13/25: LNQ-ens1...
+14/25: MOBS-GLEAM_COVID...
+15/25: OliverWyman-Navigator...
+16/25: OneQuietNight-ML...
+17/25: PandemicCentral-USCounty...
+18/25: UCLA-SuEIR...
+19/25: UMass-MechBayes...
+20/25: UT-Mobility...
+21/25: UVA-Ensemble...
+22/25: Yu_Group-CLEP...
+23/25: YYG-ParamSearch...
+24/25: COVIDhub-ensemble...
+25/25: COVIDhub-baseline...
+> 
+> saveRDS(preds,
++         file = preds_filename,
++         compress = "xz")
+> 
+> pred_state_deaths = preds %>%
++                       filter(nchar(geo_value) == 2,
++                              geo_value != "us",
++                              signal == "deaths_incidence_num",
++                              target_end_date < today())
+> state_scores = evaluate_covid_predictions(pred_state_deaths, geo_type = "state")
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 1
+Downloading deaths_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading deaths_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 2
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 3
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 4
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Joining, by = c("ahead", "geo_value", "forecast_date", "data_source", "signal", "incidence_period", "actual")
+Warning messages:
+1: In get_target_response(response, forecast_dates, incidence_period,  :
+  When `ahead` is 2, it is too soon to evaluate forecasts on these forecast dates: 2021-06-07, 2021-06-06.
+2: In get_target_response(response, forecast_dates, incidence_period,  :
+  When `ahead` is 3, it is too soon to evaluate forecasts on these forecast dates: 2021-06-07, 2021-05-31, 2021-06-06, 2021-05-30.
+3: In get_target_response(response, forecast_dates, incidence_period,  :
+  When `ahead` is 4, it is too soon to evaluate forecasts on these forecast dates: 2021-06-07, 2021-05-31, 2021-05-24, 2021-06-06, 2021-05-30, 2021-05-23.
+> state_scores = state_scores %>% filter(!is.na(wis) & !is.na(ae))
+> saveRDS(state_scores,
++         "score_cards_state_deaths.rds",
++         compress = "xz")
+> 
+> pred_county_cases = preds %>%
++                       filter(nchar(geo_value) == 5,
++                              signal == "confirmed_incidence_num",
++                              target_end_date < today())
+> county_scores = evaluate_covid_predictions(pred_county_cases, geo_type = "county")
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 1
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 2
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 3
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 4
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Joining, by = c("ahead", "geo_value", "forecast_date", "data_source", "signal", "incidence_period", "actual")
+There were 50 or more warnings (use warnings() to see the first 50)
+> county_scores = county_scores %>% filter(!is.na(wis) & !is.na(ae))
+> saveRDS(county_scores,
++         "score_cards_county_cases.rds",
++         compress = "xz")
+> 
+> render("covidhub_evaluation.Rmd",
++            params = list(score_file = "score_cards_state_deaths.rds",
++                          highlight_forecasters = c("CMU-TimeSeries", "COVIDhub-baseline", "COVIDhub-ensemble"),
++                          signal = "deaths_incidence_num"),
++            output_file = "state_evaluations.html",
++            envir = new.env())
+
+
+processing file: covidhub_evaluation.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |...                                                                   |   5%
+   inline R code fragments
+
+  |                                                                              |.......                                                               |  10%
+label: unnamed-chunk-1 (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |..........                                                            |  14%
+   inline R code fragments
+
+  |                                                                              |.............                                                         |  19%
+label: unnamed-chunk-2
+Joining, by = c("ahead", "geo_value", "target_end_date")
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |.................                                                     |  24%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-3
+`summarise()` has grouped output by 'ahead', 'geo_value'. You can override using the `.groups` argument.
+  |                                                                              |.......................                                               |  33%
+  ordinary text without R code
+
+  |                                                                              |...........................                                           |  38%
+label: unnamed-chunk-4 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+  |                                                                              |..............................                                        |  43%
+  ordinary text without R code
+
+  |                                                                              |.................................                                     |  48%
+label: unnamed-chunk-5 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |.....................................                                 |  52%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |...........................................                           |  62%
+  ordinary text without R code
+
+  |                                                                              |...............................................                       |  67%
+label: unnamed-chunk-7 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+Note: Using an external vector in selections is ambiguous.
+ℹ Use `all_of(var)` instead of `var` to silence this message.
+ℹ See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
+This message is displayed once per session.
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |..................................................                    |  71%
+  ordinary text without R code
+
+  |                                                                              |.....................................................                 |  76%
+label: unnamed-chunk-8 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 1
+Downloading deaths_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 2
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 3
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 4
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+In intersect_averagers: Some avg_vars were not common to all grp_vars. Only the intersection is used for averaging.
+Joining, by = c("geo_value", "forecast_date")
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 1
+Downloading deaths_incidence_num from covidcast for period from 2021-03-28 to 2021-04-03.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 2
+Downloading deaths_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 3
+Downloading deaths_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = deaths_incidence_num incidence_period = epiweek ahead = 4
+Downloading deaths_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading deaths_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading deaths_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading deaths_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Joining, by = "geo_value"
+  |                                                                              |.........................................................             |  81%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-9 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |...............................................................       |  90%
+  ordinary text without R code
+
+  |                                                                              |...................................................................   |  95%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |......................................................................| 100%
+  ordinary text without R code
+
+
+output file: covidhub_evaluation.knit.md
+
+/usr/local/bin/pandoc +RTS -K512m -RTS covidhub_evaluation.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output state_evaluations.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --template /usr/local/lib/R/site-library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --variable theme=bootstrap --include-in-header /tmp/Rtmpdwk0uZ/rmarkdown-stra12aa77c6.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --variable code_folding=hide --variable code_menu=1 
+
+Output created: state_evaluations.html
+There were 11 warnings (use warnings() to see them)
+> render("covidhub_evaluation.Rmd",
++            params = list(score_file = "score_cards_county_cases.rds",
++                          highlight_forecasters = c("CMU-TimeSeries", "COVIDhub-baseline", "COVIDhub-ensemble"),
++                          signal = "confirmed_incidence_num"),
++            output_file = "county_evaluations.html",
++            envir = new.env())
+
+
+processing file: covidhub_evaluation.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |...                                                                   |   5%
+   inline R code fragments
+
+  |                                                                              |.......                                                               |  10%
+label: unnamed-chunk-1 (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |..........                                                            |  14%
+   inline R code fragments
+
+  |                                                                              |.............                                                         |  19%
+label: unnamed-chunk-2
+Joining, by = c("ahead", "geo_value", "target_end_date")
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |.................                                                     |  24%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-3
+`summarise()` has grouped output by 'ahead', 'geo_value'. You can override using the `.groups` argument.
+  |                                                                              |.......................                                               |  33%
+  ordinary text without R code
+
+  |                                                                              |...........................                                           |  38%
+label: unnamed-chunk-4 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+  |                                                                              |..............................                                        |  43%
+  ordinary text without R code
+
+  |                                                                              |.................................                                     |  48%
+label: unnamed-chunk-5 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |.....................................                                 |  52%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |...........................................                           |  62%
+  ordinary text without R code
+
+  |                                                                              |...............................................                       |  67%
+label: unnamed-chunk-7 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 8
+
+`summarise()` has grouped output by 'forecaster', 'ahead'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'forecaster'. You can override using the `.groups` argument.
+  |                                                                              |..................................................                    |  71%
+  ordinary text without R code
+
+  |                                                                              |.....................................................                 |  76%
+label: unnamed-chunk-8 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 1
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 2
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 3
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 4
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+In intersect_averagers: Some avg_vars were not common to all grp_vars. Only the intersection is used for averaging.
+Joining, by = c("geo_value", "forecast_date")
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 1
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-04 to 2021-04-10.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 2
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-11 to 2021-04-17.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 3
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-18 to 2021-04-24.
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+data_source = jhu-csse signal = confirmed_incidence_num incidence_period = epiweek ahead = 4
+Downloading confirmed_incidence_num from covidcast for period from 2021-04-25 to 2021-05-01.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-02 to 2021-05-08.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-09 to 2021-05-15.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-16 to 2021-05-22.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-23 to 2021-05-29.
+Downloading confirmed_incidence_num from covidcast for period from 2021-06-06 to 2021-06-12.
+Downloading confirmed_incidence_num from covidcast for period from 2021-05-30 to 2021-06-05.
+In intersect_averagers: Some avg_vars were not common to all grp_vars. Only the intersection is used for averaging.
+Joining, by = "geo_value"
+  |                                                                              |.........................................................             |  81%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-9 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |...............................................................       |  90%
+  ordinary text without R code
+
+  |                                                                              |...................................................................   |  95%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 10
+ $ fig.height: num 10
+
+  |                                                                              |......................................................................| 100%
+  ordinary text without R code
+
+
+output file: covidhub_evaluation.knit.md
+
+/usr/local/bin/pandoc +RTS -K512m -RTS covidhub_evaluation.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output county_evaluations.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --template /usr/local/lib/R/site-library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --variable theme=bootstrap --include-in-header /tmp/Rtmpdwk0uZ/rmarkdown-stra74035e51.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --variable code_folding=hide --variable code_menu=1 
+
+Output created: county_evaluations.html
+There were 11 warnings (use warnings() to see them)
+> 
 > proc.time()
-   user  system elapsed 
- 42.547  21.990  54.281 
+    user   system  elapsed 
+1165.784   27.048 1654.778 
