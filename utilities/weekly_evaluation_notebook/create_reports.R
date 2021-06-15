@@ -17,7 +17,7 @@ install_from_github_if_needed <- function(pkgs, ...) {
 
 volatile_pkgs <- list(
   evalcast = list(repo = "cmu-delphi/covidcast", ref = "evalcast",
-                   subdir = "R-packages/evalcast"),
+                   subdir = "R-packages/evalcast")
 )
 
 install_from_github_if_needed(volatile_pkgs, upgrade = "never")
