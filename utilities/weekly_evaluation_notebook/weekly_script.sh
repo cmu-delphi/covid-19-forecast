@@ -41,7 +41,7 @@ cp ${C19_REPO_PATH}/forecasts/weekly_reports/${LASTWEEK}/predictions_cards.rds $
 cp ${C19_REPO_PATH}/utilities/weekly_evaluation_notebook/covidhub_evaluation.Rmd ${C19_REPO_PATH}/utilities/weekly_evaluation_notebook/create_reports.R ${PROD_DOCKER_DIR}
 
 echo "1. Run forecasts in docker"
-(docker run --env TODAY --env FORECAST_DATE --env GITHUB_PAT --env TZ="America/New_York" --rm --name AZ --volume ${PROD_DOCKER_DIR}:/mnt --workdir /mnt covidcast R CMD BATCH --no-save --no-restore /mnt/create_reports.R /mnt/create_reports_${TODAY}.Rout)
+(docker run --env TODAY --env FORECAST_DATE --env GITHUB_PAT --env TZ="America/New_York" --rm --name AZ --volume ${PROD_DOCKER_DIR}:/mnt --workdir /mnt covidcast R CMD BATCH --no-save --no-restore /mnt/create_reports.R /mnt/create_reports.Rout)
 
 echo "2. Commit results to repo main branch under today's date"
 ## Check out main branch first
@@ -49,7 +49,7 @@ git -C ${C19_REPO_PATH} checkout main
 ## Make directory
 mkdir ${C19_REPO_PATH}/forecasts/weekly_reports/${TODAY}
 ## Move output and log
-mv ${PROD_DOCKER_DIR}/predictions_cards.rds ${PROD_DOCKER_DIR}/score_cards_state_deaths.rds ${PROD_DOCKER_DIR}/score_cards_county_cases.rds ${PROD_DOCKER_DIR}/state_evaluations.html ${PROD_DOCKER_DIR}/county_evaluations.html ${PROD_DOCKER_DIR}/create_reports_${TODAY}.Rout ${C19_REPO_PATH}/forecasts/weekly_reports/${TODAY}
+mv ${PROD_DOCKER_DIR}/predictions_cards.rds ${PROD_DOCKER_DIR}/score_cards_state_deaths.rds ${PROD_DOCKER_DIR}/score_cards_county_cases.rds ${PROD_DOCKER_DIR}/state_evaluations.html ${PROD_DOCKER_DIR}/county_evaluations.html ${PROD_DOCKER_DIR}/create_reports.Rout ${C19_REPO_PATH}/forecasts/weekly_reports/${TODAY}
 ## Commit and push
 (cd ${C19_REPO_PATH} &&
      git add --all &&
