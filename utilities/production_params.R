@@ -148,10 +148,13 @@ state_corrector <- zookeeper::make_state_corrector(
                ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
                "confirmed_incidence_num",
                ## new rows for 2021-06-14
-               ##   WA state deaths 2021-06-08
+               ##   WA state deaths 2021-06-08, 2021-06-23?
                "deaths_incidence_num",
                ##   WI state deaths 2021-05-27
-               "deaths_incidence_num"
+               "deaths_incidence_num",
+               ## new rows for 2021-06-28
+               ##   WA state cases 2021-06-23
+               "confirmed_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -175,10 +178,13 @@ state_corrector <- zookeeper::make_state_corrector(
                   ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
                   "in",
                   ## new rows for 2021-06-14
-                  ##   WA state deaths 2021-06-08
+                  ##   WA state deaths 2021-06-08, 2021-06-23?
                   "wa",
                   ##   WI state deaths 2021-05-27
-                  "wi"
+                  "wi",
+                  ## new rows for 2021-06-28
+                  ##   WA state cases 2021-06-23
+                  "wa"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -198,7 +204,9 @@ state_corrector <- zookeeper::make_state_corrector(
                        ## "2021-05-31", # Memorial Day
                        "2021-06-01", "2021-06-03", "2021-06-05",
                        "2021-06-08", "2021-06-10", "2021-06-12",
-                       "2021-06-15", "2021-06-17" # , "2021-06-19"
+                       "2021-06-15", "2021-06-17", # "2021-06-19", # zero on Juneteenth
+                       ## "2021-06-21", # assume that this is weekend backfill excluding any death cert review
+                       "2021-06-22", "2021-06-24" # ,  "2021-06-26", # zero on this Saturday as well; maybe stopped reporting on Saturdays?
                        )),
       lubridate::ymd("2021-04-17","2021-06-02"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -222,10 +230,13 @@ state_corrector <- zookeeper::make_state_corrector(
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       lubridate::ymd("2021-06-03"),
       ## new rows for 2021-06-14
-      ##   WA state deaths 2021-06-08
-      lubridate::ymd("2021-06-08"),
+      ##   WA state deaths 2021-06-08, 2021-06-23?
+      lubridate::ymd(c("2021-06-08", "2021-06-23")),
       ##   WI state deaths 2021-05-27
-      lubridate::ymd("2021-05-27")
+      lubridate::ymd("2021-05-27"),
+      ## new rows for 2021-06-28
+      ##   WA state cases 2021-06-23
+      lubridate::ymd("2021-06-23")
       ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -252,7 +263,10 @@ state_corrector <- zookeeper::make_state_corrector(
                 ##   WA state deaths 2021-06-08
                 120,
                 ##   WI state deaths 2021-05-27
-                60
+                60,
+                ## new rows for 2021-06-28
+                ##   WA state cases 2021-06-23
+                120
                 )
     ) %magrittr>%
     ## {
@@ -334,7 +348,12 @@ county_corrector  <- zookeeper::make_county_corrector(
       "48029",
       ## new rows for 2021-06-14
       ##   Webb TX
-      "48479"
+      "48479",
+      ## new rows for 2021-06-28
+      ##   Jefferson TX
+      "48245",
+      ##   Collin TX better backdistribution shape
+      "48085"
     ),
     time_value = c(
       list(
@@ -373,12 +392,17 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Horry SC
       list(lubridate::ymd(c("2021-05-31","2021-06-01"))),
       ##   Harris TX
-      list(lubridate::ymd(c("2021-05-31","2021-06-01","2021-06-02"))),
+      list(lubridate::ymd(c("2021-05-31","2021-06-01","2021-06-02","2021-06-24"))),
       ##   Bexar TX
       list(lubridate::ymd(c("2021-06-03","2021-05-24","2021-05-17","2021-05-10","2021-05-03","2021-04-26","2021-04-19","2021-04-12","2021-04-05","2021-03-28","2021-03-21"))),
       ## new rows for 2021-06-14
       ##   Webb TX
-      list(lubridate::ymd("2021-06-09"))
+      list(lubridate::ymd("2021-06-09")),
+      ## new rows for 2021-06-28
+      ##   Jefferson TX
+      list(lubridate::ymd("2021-06-22")),
+      ##   Collin TX better backdistribution shape
+      list(lubridate::ymd("2021-06-12"))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -412,7 +436,12 @@ county_corrector  <- zookeeper::make_county_corrector(
       7,
       ## new rows for 2021-06-14
       ##   Webb TX
-      180
+      180,
+      ## new rows for 2021-06-28
+      ##   Jefferson TX
+      20, # for June 3 -- June 22 on June 22: 20 days
+      ##   Collin TX better backdistribution shape
+      15 # appears to be for 15 days from 2021-05-28 to 2021-06-12
     )
   ) %magrittr>%
     ## {
