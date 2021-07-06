@@ -206,7 +206,8 @@ state_corrector <- zookeeper::make_state_corrector(
                        "2021-06-08", "2021-06-10", "2021-06-12",
                        "2021-06-15", "2021-06-17", # "2021-06-19", # zero on Juneteenth
                        ## "2021-06-21", # assume that this is weekend backfill excluding any death cert review
-                       "2021-06-22", "2021-06-24" # ,  "2021-06-26", # zero on this Saturday as well; maybe stopped reporting on Saturdays?
+                       "2021-06-22", "2021-06-24", # ,  "2021-06-26", # zero on this Saturday as well; maybe stopped reporting on Saturdays?
+                       "2021-06-29", "2021-07-01" # seems like stopped reporting on Saturdays.
                        )),
       lubridate::ymd("2021-04-17","2021-06-02"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -226,7 +227,7 @@ state_corrector <- zookeeper::make_state_corrector(
       ##   NM state deaths 2021-05-24
       lubridate::ymd(c("2021-05-24")),
       ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
-      lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-29","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-12","2021-04-19","2021-04-26","2021-05-18","2021-05-25")),
+      lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-26","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-13","2021-04-20","2021-04-27","2021-05-04","2021-05-11","2021-05-18","2021-05-25","2021-06-02","2021-06-08","2021-06-15","2021-06-22","2021-06-29")),
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       lubridate::ymd("2021-06-03"),
       ## new rows for 2021-06-14
@@ -353,7 +354,18 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Jefferson TX
       "48245",
       ##   Collin TX better backdistribution shape
-      "48085"
+      "48085",
+      ## new rows for 2021-07-05
+      ##   Fresno CA 2021-07-02 spike down backdistribute longer
+      "06019",
+      ##   San Francisco CA 2021-06-30 spike down backdistribute longer
+      "06075",
+      ##   San Mateo CA 2021-06-30 spike down backdistribute longer
+      "06081",
+      ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
+      "06085",
+      ##   Butler OH 2021-07-01 spike up backdistribute longer
+      "39017"
     ),
     time_value = c(
       list(
@@ -392,7 +404,7 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Horry SC
       list(lubridate::ymd(c("2021-05-31","2021-06-01"))),
       ##   Harris TX
-      list(lubridate::ymd(c("2021-05-31","2021-06-01","2021-06-02","2021-06-24"))),
+      list(lubridate::ymd(c("2021-05-31","2021-06-01","2021-06-02","2021-6-24"))),
       ##   Bexar TX
       list(lubridate::ymd(c("2021-06-03","2021-05-24","2021-05-17","2021-05-10","2021-05-03","2021-04-26","2021-04-19","2021-04-12","2021-04-05","2021-03-28","2021-03-21"))),
       ## new rows for 2021-06-14
@@ -402,7 +414,18 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Jefferson TX
       list(lubridate::ymd("2021-06-22")),
       ##   Collin TX better backdistribution shape
-      list(lubridate::ymd("2021-06-12"))
+      list(lubridate::ymd("2021-06-12")),
+      ## new rows for 2021-07-05
+      ##   Fresno CA 2021-07-02 spike down backdistribute longer
+      list(lubridate::ymd("2021-07-02")),
+      ##   San Francisco CA 2021-06-30 spike down backdistribute longer
+      list(lubridate::ymd("2021-06-30")),
+      ##   San Mateo CA 2021-06-30 spike down backdistribute longer
+      list(lubridate::ymd("2021-06-30")),
+      ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
+      list(lubridate::ymd("2021-06-30")),
+      ##   Butler OH 2021-07-01 spike up backdistribute longer
+      list(lubridate::ymd("2021-07-01"))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -441,7 +464,18 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Jefferson TX
       20, # for June 3 -- June 22 on June 22: 20 days
       ##   Collin TX better backdistribution shape
-      15 # appears to be for 15 days from 2021-05-28 to 2021-06-12
+      15, # appears to be for 15 days from 2021-05-28 to 2021-06-12
+      ## new rows for 2021-07-05
+      ##   Fresno CA 2021-07-02 spike down backdistribute longer
+      180,
+      ##   San Francisco CA 2021-06-30 spike down backdistribute longer
+      180,
+      ##   San Mateo CA 2021-06-30 spike down backdistribute longer
+      180,
+      ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
+      180,
+      ##   Butler OH 2021-07-01 spike up backdistribute longer
+      180
     )
   ) %magrittr>%
     ## {
