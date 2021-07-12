@@ -154,7 +154,12 @@ state_corrector <- zookeeper::make_state_corrector(
                "deaths_incidence_num",
                ## new rows for 2021-06-28
                ##   WA state cases 2021-06-23
-               "confirmed_incidence_num"
+               "confirmed_incidence_num",
+               ## new rows for 2021-07-12
+               ##   NJ state deaths 2021-06-09: "remove" auto-flag
+               "deaths_incidence_num",
+               ##   OH state deaths 2021-07-07, 2021-07-09: backdistribute as JHU-CSSE backdistribution wasn't available at time that covidcast fetched
+               "deaths_incidence_num"
                ),
     geo_value = c("va","ky","ok","ok",
                   ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -184,7 +189,12 @@ state_corrector <- zookeeper::make_state_corrector(
                   "wi",
                   ## new rows for 2021-06-28
                   ##   WA state cases 2021-06-23
-                  "wa"
+                  "wa",
+                  ## new rows for 2021-07-12
+                  ##   NJ state deaths 2021-06-09: "remove" auto-flag
+                  "nj",
+                  ##   OH state deaths 2021-07-07, 2021-07-09: backdistribute as JHU-CSSE backdistribution wasn't available at time that covidcast fetched
+                  "oh"
                   ),
     time_value = list(
       seq(lubridate::ymd("2021-02-21"), lubridate::ymd("2021-03-04"), by = 1),
@@ -207,7 +217,8 @@ state_corrector <- zookeeper::make_state_corrector(
                        "2021-06-15", "2021-06-17", # "2021-06-19", # zero on Juneteenth
                        ## "2021-06-21", # assume that this is weekend backfill excluding any death cert review
                        "2021-06-22", "2021-06-24", # ,  "2021-06-26", # zero on this Saturday as well; maybe stopped reporting on Saturdays?
-                       "2021-06-29", "2021-07-01" # seems like stopped reporting on Saturdays.
+                       "2021-06-29", "2021-07-01", # seems like stopped reporting on Saturdays.
+                       "2021-07-06", "2021-07-09" # 2021-07-09 is off one day from expected 2021-07-08 but 4 surrounding days have 0s so it may still be the death cert review
                        )),
       lubridate::ymd("2021-04-17","2021-06-02"),
       lubridate::ymd("2021-04-13","2021-04-20","2021-05-13","2021-05-14","2021-05-15"), # (2021-05-15 seems along the lines of the two preceding anomalous days)
@@ -227,7 +238,7 @@ state_corrector <- zookeeper::make_state_corrector(
       ##   NM state deaths 2021-05-24
       lubridate::ymd(c("2021-05-24")),
       ##   MO weekly (not completely regular) death cert review; starting to flag from Jan 5 but looks like goes back even further, mixed with other reporting events
-      lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-26","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-13","2021-04-20","2021-04-27","2021-05-04","2021-05-11","2021-05-18","2021-05-25","2021-06-02","2021-06-08","2021-06-15","2021-06-22","2021-06-29")),
+      lubridate::ymd(c("2021-01-05","2021-01-12","2021-01-20","2021-01-26","2021-02-02","2021-02-11","2021-02-18","2021-02-23","2021-03-03","2021-03-09","2021-03-16","2021-03-23","2021-03-30","2021-04-13","2021-04-20","2021-04-27","2021-05-04","2021-05-11","2021-05-18","2021-05-25","2021-06-02","2021-06-08","2021-06-15","2021-06-22","2021-06-29","2021-07-07")),
       ## new rows for 2021-06-07 ( + potential updates above and extra Memorial Day handling below)
       lubridate::ymd("2021-06-03"),
       ## new rows for 2021-06-14
@@ -237,7 +248,12 @@ state_corrector <- zookeeper::make_state_corrector(
       lubridate::ymd("2021-05-27"),
       ## new rows for 2021-06-28
       ##   WA state cases 2021-06-23
-      lubridate::ymd("2021-06-23")
+      lubridate::ymd("2021-06-23"),
+      ## new rows for 2021-07-12
+      ##   NJ state deaths 2021-06-09: "remove" auto-flag
+      lubridate::ymd("2021-06-09"),
+      ##   OH state deaths 2021-07-07, 2021-07-09: backdistribute as JHU-CSSE backdistribution wasn't available at time that covidcast fetched
+      lubridate::ymd(c("2021-07-07","2021-07-09"))
       ),
     max_lag = c(rep(90, 4),
                 ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -267,7 +283,12 @@ state_corrector <- zookeeper::make_state_corrector(
                 60,
                 ## new rows for 2021-06-28
                 ##   WA state cases 2021-06-23
-                120
+                120,
+                ## new rows for 2021-07-12
+                ##   NJ state deaths 2021-06-09: "remove" auto-flag
+                1,
+                ##   OH state deaths 2021-07-07, 2021-07-09: backdistribute as JHU-CSSE backdistribution wasn't available at time that covidcast fetched
+                21
                 )
     ) %magrittr>%
     ## {
@@ -365,7 +386,32 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
       "06085",
       ##   Butler OH 2021-07-01 spike up backdistribute longer
-      "39017"
+      "39017",
+      ## new rows for 2021-07-12
+      ##   Orange CA cases 2021-07-06: backdistribute shorter
+      "06059",
+      ##   Riverside CA cases 2021-07-08: backdistribute longer
+      "06065",
+      ##   Sacramento CA cases 2021-06-19, 2021-07-06: backdistribute shorter
+      "06067",
+      ##   San Diego CA cases 2021-07-07: backdistribute longer (there is a preceding reporting day, so maybe this isn't preceding 0 days in batch but a longer period)
+      "06073",
+      ##   Fulton GA cases 2021-07-06: backdistribute shorter
+      "13121",
+      ##   Polk IA cases 2021-07-07: backdistribute longer
+      "19153",
+      ##   Jefferson LA cases 2021-07-06: backdistribute shorter
+      "22051",
+      ##   Williamson TN cases 2021-04-19, 2021-06-11: backdistribute longer
+      "47187",
+      ##   Brazos TX cases 2021-05-24: backdistribute longer
+      "48041",
+      ##   Galveston TX cases 2021-07-07: backdistribute shorter (why are some of these three zeros followed by data happening on 2021-07-06 and others on 2021-07-07?)
+      "48167",
+      ##   McLennan TX cases 2021-07-07, 2021-07-10: backdistribute longer
+      "48309",
+      ##   Travis TX cases 2021-07-06: backdistribute shorter
+      "48453"
     ),
     time_value = c(
       list(
@@ -376,7 +422,8 @@ county_corrector  <- zookeeper::make_county_corrector(
       rep(list(
         lubridate::ymd("2021-04-13",
                        "2021-04-20",
-                       "2021-05-13", "2021-05-14", "2021-05-15") # (2021-05-15 seems along the lines of the two preceding anomalous days)
+                       "2021-05-13", "2021-05-14", "2021-05-15", # (2021-05-15 seems along the lines of the two preceding anomalous days)
+                       "2021-07-09") # 2021-07-09 sticks out especially in Mobile AL but also in others; might be a similar statewide effect
       ), 68L),
       ## from JHU-CSSE notes, https://covid19.nj.gov/faqs/announcements/all-announcements/covid-19-data-cleaning-update, https://www.nbcphiladelphia.com/news/coronavirus/new-jersey-coronavirus-2021-phil-murphy/2654709/
       list(lubridate::ymd(c("2021-04-26",
@@ -425,7 +472,32 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
       list(lubridate::ymd("2021-06-30")),
       ##   Butler OH 2021-07-01 spike up backdistribute longer
-      list(lubridate::ymd("2021-07-01"))
+      list(lubridate::ymd("2021-07-01")),
+      ## new rows for 2021-07-12
+      ##   Orange CA cases 2021-07-06: backdistribute shorter
+      list(lubridate::ymd("2021-07-06")),
+      ##   Riverside CA cases 2021-07-08: backdistribute longer
+      list(lubridate::ymd("2021-07-08")),
+      ##   Sacramento CA cases 2021-06-19, 2021-07-06: backdistribute shorter
+      list(lubridate::ymd(c("2021-06-19","2021-07-08"))),
+      ##   San Diego CA cases 2021-07-07: backdistribute longer (there is a preceding reporting day, so maybe this isn't preceding 0 days in batch but a longer period)
+      list(lubridate::ymd("2021-07-07")),
+      ##   Fulton GA cases 2021-07-06: backdistribute shorter
+      list(lubridate::ymd("2021-07-06")),
+      ##   Polk IA cases 2021-07-07: backdistribute longer
+      list(lubridate::ymd("2021-07-07")),
+      ##   Jefferson LA cases 2021-07-06: backdistribute shorter
+      list(lubridate::ymd("2021-07-06")),
+      ##   Williamson TN cases 2021-04-19, 2021-06-11: backdistribute longer
+      list(lubridate::ymd(c("2021-04-19","2021-06-11"))),
+      ##   Brazos TX cases 2021-05-24: backdistribute longer
+      list(lubridate::ymd("2021-05-24")),
+      ##   Galveston TX cases 2021-07-07: backdistribute shorter (why are some of these three zeros followed by data happening on 2021-07-06 and others on 2021-07-07?)
+      list(lubridate::ymd("2021-07-07")),
+      ##   McLennan TX cases 2021-07-07, 2021-07-10: backdistribute longer
+      list(lubridate::ymd(c("2021-07-07","2021-07-10"))),
+      ##   Travis TX cases 2021-07-06: backdistribute shorter
+      list(lubridate::ymd("2021-07-06"))
     ),
     max_lag = c(
       ## from JHU-CSSE notes 2021-04-17, 2021-04-18, 2021-04-24, 2021-04-25, 2021-05-16
@@ -475,7 +547,32 @@ county_corrector  <- zookeeper::make_county_corrector(
       ##   Santa Clara CA 2021-06-30 spike down backdistribute longer
       180,
       ##   Butler OH 2021-07-01 spike up backdistribute longer
-      180
+      180,
+      ## new rows for 2021-07-12
+      ##   Orange CA cases 2021-07-06: backdistribute shorter
+      4,
+      ##   Riverside CA cases 2021-07-08: backdistribute longer
+      180,
+      ##   Sacramento CA cases 2021-06-19, 2021-07-06: backdistribute shorter
+      4,
+      ##   San Diego CA cases 2021-07-07: backdistribute longer (there is a preceding reporting day, so maybe this isn't preceding 0 days in batch but a longer period)
+      180,
+      ##   Fulton GA cases 2021-07-06: backdistribute shorter
+      4,
+      ##   Polk IA cases 2021-07-07: backdistribute longer
+      180,
+      ##   Jefferson LA cases 2021-07-06: backdistribute shorter
+      4,
+      ##   Williamson TN cases 2021-04-19, 2021-06-11: backdistribute longer
+      180,
+      ##   Brazos TX cases 2021-05-24: backdistribute longer
+      180,
+      ##   Galveston TX cases 2021-07-07: backdistribute shorter (why are some of these three zeros followed by data happening on 2021-07-06 and others on 2021-07-07?)
+      4,
+      ##   McLennan TX cases 2021-07-07, 2021-07-10: backdistribute longer
+      18, # days in range [2021-06-20..2021-07-07] (inclusive, based on current understanding of `max_lag` implementation)
+      ##   Travis TX cases 2021-07-06: backdistribute shorter
+      4
     )
   ) %magrittr>%
     ## {
