@@ -13,7 +13,8 @@
 #' @param nsigs Number of signals.
 #' 
 #' @return A list of length `nsigs`, with each element being the vector of
-#' (non-positive) lags associated with each signal.
+#' (non-positive) lags associated with each signal. When `nsigs` is 1, 
+#' returns the vector of lags for that signal.
 lag_processor <- function(lags, nsigs){
   assert_that(all(unlist(lags) >= 0), msg = "All lags must be nonnegative.")
   if (!is.list(lags)) {
@@ -25,5 +26,7 @@ lag_processor <- function(lags, nsigs){
                   "of signals."))
   }
   dt <- lapply(lags, "-")
+  if(length(dt)==1)
+    dt = unlist(dt)
   return(dt)
 }

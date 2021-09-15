@@ -145,7 +145,10 @@ production_forecaster <- function(df_list,
   dt <- lag_processor(lags, nsigs)
   ahead_in_days <- purrr::map_dbl(
     ahead,  ~evalcast::get_target_ahead(forecast_date, incidence_period, .x))
-  dt[[1]] <- c(dt[[1]], ahead_in_days) 
+  if(class(dt) != 'list')
+    dt <- c(dt, ahead_in_days) 
+  else
+    dt[[1]] <- c(dt[[1]], ahead_in_days) 
   
   # -------------------------------
   # 1. data transformations, and saving
