@@ -2,14 +2,26 @@
 % Please edit documentation in R/corrections_utils.R
 \name{make_manual_flags}
 \alias{make_manual_flags}
-\title{Two helper functions
- (1) Add manually flagged columns, this function will create columns like
- "flag_bad_va", "flag_bad_wa", etc.}
+\title{Add columns \code{manual_flag}, \code{manual_flag_max_lag} to \code{df} based on \code{manual_flags}}
 \usage{
-make_manual_flags(df, special_flags)
+make_manual_flags(df, manual_flags)
+}
+\arguments{
+\item{df}{a data frame with at least the columns \code{data_source},
+\code{signal}, \code{geo_value}, \code{time_value}; must either contain
+only a single value for \code{data_source} and for \code{signal} or be
+grouped by these columns to make it appear that way}
+
+\item{manual_flags}{a data frame with columns \code{data_source},
+\code{signal}, \code{geo_value}, \code{time_value}, and \code{max_lag}, to
+be expanded from a(n optional) compressed format using
+\code{\link{unchop_cartesian_mapping}} with grouping specification
+\code{data_source, signal, geo_value, time_value ~ max_lag}}
+}
+\value{
+\code{df} with \code{manual_flag} and \code{manual_flag_max_lag}
+  columns added
 }
 \description{
-Two helper functions
- (1) Add manually flagged columns, this function will create columns like
- "flag_bad_va", "flag_bad_wa", etc.
+Add columns \code{manual_flag}, \code{manual_flag_max_lag} to \code{df} based on \code{manual_flags}
 }

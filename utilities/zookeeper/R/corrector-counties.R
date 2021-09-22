@@ -199,7 +199,7 @@ county_corrections_single_signal <- function(x, params, manual_flags) {
   }
   if (nrow(manual_flags) > 0) {
     x <- make_manual_flags(x, manual_flags)
-    x <- make_manual_corrections(x, manual_flags)
+    x <- make_manual_corrections(x)
   }
 
   # now do weeklies, ignore specials
