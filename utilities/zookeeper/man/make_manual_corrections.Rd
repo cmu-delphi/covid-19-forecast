@@ -2,14 +2,22 @@
 % Please edit documentation in R/corrections_utils.R
 \name{make_manual_corrections}
 \alias{make_manual_corrections}
-\title{(2) This function makes corrections on manually flagged columns
-This function will return the original dataframe with two additional columns:
-`corrected` and `special_flag`, in which the latter one is used to avoid duplicate corrections}
+\title{Make corrections to \code{df} as specified by \code{manual_flag} and \code{manual_flag_max_lag} columns}
 \usage{
-make_manual_corrections(df, special_flags)
+make_manual_corrections(df)
+}
+\arguments{
+\item{df}{a data frame with at least the columns \code{data_source},
+\code{signal}, \code{geo_value}, \code{time_value}, \code{corrected},
+\code{fmedian}, \code{special_flag}, \code{manual_flag}, and
+\code{manual_flag_max_lag}; must either have a signal value for
+\code{data_source}, for \code{signal}, and for \code{geo_value}, or be
+grouped by these columns to make it appear that way}
+}
+\value{
+\code{df} with updated \code{corrected} and \code{special_flag}
+  columns
 }
 \description{
-(2) This function makes corrections on manually flagged columns
-This function will return the original dataframe with two additional columns:
-`corrected` and `special_flag`, in which the latter one is used to avoid duplicate corrections
+Make corrections to \code{df} as specified by \code{manual_flag} and \code{manual_flag_max_lag} columns
 }

@@ -1,5 +1,8 @@
 ## Used by aardvark, taken from evalforecast,
 
+#' @source wrappers.R
+NULL
+
 #' Preprocesses the response values in a data frame.
 #'
 #' Replaces zeroes (which we suspect are due to lagged reporting) by samples from a multinomial.
@@ -69,11 +72,11 @@ multinomial_roll_sum <-  function(x, max_lag = Inf){
 
 generate_multinomial <- function(y, max_lag) {
   if (length(y) <= max_lag)
-    stats::rmultinom(1,size = max(sum(y),0),prob = rep(1,length(y)))
+    rmultinom_wrapper(1,size = max(sum(y),0),prob = rep(1,length(y)))
   else {
     ii_lag <- seq(length(y) - max_lag + 1, length(y))
-    c(y[-ii_lag], rmultinom(1,
-                            size = max(sum(y[ii_lag]), 0),
-                            prob = rep(1, length(ii_lag))))
+    c(y[-ii_lag], rmultinom_wrapper(1,
+                                    size = max(sum(y[ii_lag]), 0),
+                                    prob = rep(1, length(ii_lag))))
   }
 }
