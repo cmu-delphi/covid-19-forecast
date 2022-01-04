@@ -11,7 +11,7 @@ Description: This packages contains various functions necessary to run our forec
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Imports: 
     magrittr,
     dplyr,
@@ -26,12 +26,16 @@ Imports:
     RcppRoll,
     assertthat,
     fs,
-    evalcast
+    evalcast,
+    stringr
 Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast-killcards,
 Suggests: 
+    mockery,
+    covidcast,
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    mockr
 Depends: 
     R (>= 3.5)
 VignetteBuilder: knitr

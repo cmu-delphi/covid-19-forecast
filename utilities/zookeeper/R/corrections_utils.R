@@ -135,6 +135,7 @@ corrections_multinom_roll <- function(
 #'   time, location ~ tag
 #' )
 #'
+#' @export
 unchop_cartesian_mapping <- function(df, ...) {
   ## Translate `...` into list of list of (potentially named) integer vectors; `group_key_val_selections[[g]][[1L]]` should be the indices of the key selections of the `g`th group, and `group_key_val_selections[[g]][[2L]]` those of the vals:
   group_quosures <- rlang::enquos(...)
