@@ -1,0 +1,97 @@
+---
+title: "Antelope Trajectory Plots"
+author: "Delphi State Hospitalizations, Forecast on:"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(evalcast)
+library(zookeeper)
+library(lubridate)
+library(tidyverse)
+source("hosp_production_params.R")
+corrections_lookback <- 365
+
+antelope  <- readRDS(here::here(
+  state_output_subdir,
+  sprintf("predictions_for_%s.RDS", forecast_date)))
+```
+	
+## Trajectory plots
+
+* Fan displays 50/80/95% confidence intervals
+* Black line (with dots) is reported deaths
+* Blue line (without dots) is the "corrected" deaths
+
+
+```{r, fig.height = 80, fig.width = 30, dev="CairoSVG", echo=FALSE}
+# Grab corrected data
+corrected <- suppressMessages(
+  covidcast::covidcast_signal(
+    state_forecaster_signals$data_source[1], 
+    state_forecaster_signals$signal[1],
+    start_day = ymd(today) - days(x = corrections_lookback), 
+    end_day = forecast_date,
+    geo_type = "state")) %>% 
+  state_corrector()
+
+corrected <- corrected[[1]] 
+
+# setup the plot and join corrections to the truth
+pd <- evalcast:::setup_plot_trajectory(
+  antelope, geo_type = "state",
+  start_day = lubridate::ymd(today) - lubridate::days(x = corrections_lookback),
+  end_day = forecast_date,)
+  
+pd$truth_df <- left_join(
+  pd$truth_df, corrected, 
+  by = c("geo_value" = "geo_value", "target_end_date" = "time_value")) %>%
+  filter(target_end_date >= ymd(today) - days(x = qa_lookback))
+
+g <- ggplot(pd$truth_df, mapping = aes(x = target_end_date))
+
+# build the fan
+g <- g + geom_ribbon(
+  data = pd$quantiles_df,
+  mapping = aes(ymin = lower, ymax = upper, fill = interval)) +
+  scale_fill_brewer(palette = "Blues")
+
+# line layer
+g <- g +
+  geom_line(aes(y = .data$value.y), color = "#3182BD") + # corrected
+  geom_line(aes(y = .data$value.x)) + # reported
+  geom_line(data = pd$points_df, 
+            mapping = aes(y = .data$value),
+            color = "orange", size = 1) +
+  geom_point(aes(y = .data$value.x)) + # reported gets dots
+  geom_point(data = pd$points_df, 
+             mapping = aes(y = .data$value),
+             color = "orange", size = 3)
+
+g + theme_bw(base_size = 20) + 
+  facet_wrap(~geo_value, scales = "free_y", ncol = 5) +
+  theme(legend.position = "none") + ylab("") + xlab("")
+```
+
+## Compare to hub
+
+* We grab two hub forecasts, the ensemble and 
+
+
+```{r, echo=FALSE}
+hub <- get_covidhub_predictions(
+  c("COVIDhub-4_week_ensemble", "UMass-trends_ensemble"),
+  forecast_dates = "2022-01-10", forecast_type = "point", 
+  ahead = 0:28, incidence_period = "day", signal = "confirmed_admissions_covid_1d")
+hub_and_ours <- bind_rows(hub, antelope)
+actuals <- covidcast::covidcast_signal("hhs", "confirmed_admissions_covid_1d",
+                                       start_day = "2021-12-01", geo_type = "state")
+ggplot(hub) +
+  geom_line(aes(target_end_date, value, color = forecaster)) +
+  geom_line(data = actuals, aes(time_value, value), color = "black") +
+  scale_color_brewer(palette = "Set1") +
+  facet_wrap(~geo_value, scales = "free_y") + theme_bw() +
+  theme(legend.position = "bottom")
+
+```
