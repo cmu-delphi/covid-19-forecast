@@ -79,19 +79,22 @@ g + theme_bw(base_size = 20) +
 * We grab two hub forecasts, the ensemble and 
 
 
-```{r, echo=FALSE}
+```{r, fig.height = 80, fig.width = 30, dev="CairoSVG", echo=FALSE}
 hub <- get_covidhub_predictions(
   c("COVIDhub-4_week_ensemble", "UMass-trends_ensemble"),
   forecast_dates = "2022-01-10", forecast_type = "point", 
   ahead = 0:28, incidence_period = "day", signal = "confirmed_admissions_covid_1d")
-hub_and_ours <- bind_rows(hub, antelope)
+hub_and_ours <- bind_rows(hub, antelope %>% filter(is.na(quantile)))
 actuals <- covidcast::covidcast_signal("hhs", "confirmed_admissions_covid_1d",
                                        start_day = "2021-12-01", geo_type = "state")
-ggplot(hub) +
+ggplot(hub_and_ours) +
   geom_line(aes(target_end_date, value, color = forecaster)) +
+  geom_point(aes(target_end_date, value, color = forecaster), size=3) +
   geom_line(data = actuals, aes(time_value, value), color = "black") +
+  geom_point(data = actuals, aes(time_value, value), color = "black", size=3) +
   scale_color_brewer(palette = "Set1") +
-  facet_wrap(~geo_value, scales = "free_y") + theme_bw() +
+  facet_wrap(~geo_value, scales = "free_y", ncol=5) + 
+  theme_bw(base_size = 30) +
   theme(legend.position = "bottom")
 
 ```
