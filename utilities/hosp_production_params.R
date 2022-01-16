@@ -50,7 +50,7 @@ forecaster_details  <- list(
     qc_markdown = "antelope.Rmd"
   ))
 
-state_corrections_md <- "state-corrections.Rmd"
+state_corrections_md <- here::here("utilities", "corrections-checks", "state-corrections.Rmd")
 state_forecaster_name  <- "antelope"
 
 state_forecaster_signals  <- forecaster_details[[state_forecaster_name]][["signals"]]
@@ -74,6 +74,7 @@ state_forecaster_args <- list(
   noncross = TRUE, # takes a bit longer, but not much
   featurize = animalia::make_7dav_featurizer(), # has no arguments
   verbose = TRUE,
+  incidence_period = "day",
   signals_to_normalize = c(TRUE, TRUE),
   save_wide_data = here::here(state_output_subdir),
   save_trained_models = here::here(state_output_subdir)
