@@ -28,11 +28,11 @@ install_from_github_if_needed(volatile_pkgs, upgrade = "never")
 `%magrittr>%` <- magrittr::`%>%`
 
 ## End of prologue
-forecast_date <- lubridate::ymd("2022-01-10")
+forecast_date <- lubridate::ymd("2022-01-24")
 today  <- lubridate::ymd(Sys.Date())
 
 
-aheads  <- 0:28
+aheads  <- 1:28
 qa_lookback <- 60 # how far back do we show actual data on the QA report?
 correction_lookback <- 90 # how far back do we look on the daily corrections report?
 forecaster_details  <- list(
