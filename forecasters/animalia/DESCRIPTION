@@ -12,7 +12,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Remotes:
-    ryantibs/quantgen/R-package/quantgen@master,
+    ryantibs/quantgen/quantgen@master,
     cmu-delphi/covidcast/R-packages/covidcast@main,
     cmu-delphi/covidcast/R-packages/evalcast@evalcast,
     cmu-delphi/covidcast/R-packages/modeltools@modeltools,
