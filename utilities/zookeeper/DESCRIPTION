@@ -30,11 +30,12 @@ Imports:
     tidyselect
 Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast,
 Suggests: 
+    mockery,
+    covidcast,
     knitr,
     rmarkdown,
-    mockery,
-    mockr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    mockr
 Depends: 
     R (>= 3.5)
 VignetteBuilder: knitr
