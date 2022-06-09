@@ -1,10 +1,12 @@
+library(mockery)
+
 testthat::test_that("state corrector works", {
   ## Fakes/stubs for some functions that could be used to test output behavior, but currently aren't.
   rbinom_min <- function(n, size, prob) rep(0L, n)
   rbinom_max <- function(n, size, prob) rep_along(size, n)
   rmultinom_first <- function(n, size, prob) `[<-`(matrix(0L, length(prob),n), 1L,seq_len(n), size)
   rmultinom_last <- function(n, size, prob) `[<-`(matrix(0L, length(prob),n), length(prob),seq_len(n), size)
-  rmultinom_mock <- mockery::mock()
+  rmultinom_mock <- mock()
   rmultinom_fullmock <- function(...) {rmultinom_mock(...); rmultinom_first(...)}
   ##
   mockr::with_mock(rmultinom_wrapper = rmultinom_fullmock, {
@@ -31,10 +33,11 @@ testthat::test_that("state corrector works", {
     })
   }, .env=asNamespace("zookeeper")) # .env setting due to https://github.com/krlmlr/mockr/issues/7
   ##
-  testthat::expect_match(corrector_warnings, "multinomial trick", all=TRUE)
-  ak_death_call_args <- mockery::mock_args(rmultinom_mock)[[1L]]
-  print(ak_death_call_args[[2L]])
-  print(class(ak_death_call_args[[2L]]))
+  print(sigs)
+  print(corrector_warnings)
+  # testthat::expect_match(corrector_warnings, "multinomial trick", all=TRUE)
+  ak_death_call_args <- mock_args(rmultinom_mock)[[1L]]
+  print(ak_death_call_args)
   testthat::expect_identical(ak_death_call_args[[1L]][[2L]],
                              ## rolling filter median on 1:<applicable window size>; appears to take min on this type of tie
                              dplyr::filter(default_state_params(), .data$data_source=="jhu-csse", .data$signal=="deaths_incidence_num")[["window_size"]] %/% 2L)
