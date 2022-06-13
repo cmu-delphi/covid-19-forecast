@@ -27,11 +27,12 @@ Imports:
     evalcast,
     covidcast,
     rlang,
-    tidyselect
+    tidyselect,
+    readr,
+    stringr
 Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast,
 Suggests: 
     mockery,
-    covidcast,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),

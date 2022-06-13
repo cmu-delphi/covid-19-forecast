@@ -16,7 +16,6 @@
 #' @export
 #' @importFrom purrr map map_lgl map_int map2
 #' @importFrom dplyr bind_rows filter group_by distinct
-#' @importFrom stringr str_detect
 #' @importFrom assertthat assert_that
 format_predictions_for_reichlab_submission <- function(predictions_cards,
                                                        geo_values_to_filter = NULL){
@@ -50,8 +49,8 @@ format_predictions_for_reichlab_submission <- function(predictions_cards,
     select(.data$signal, .data$incidence_period, .data$ahead) %>%
     mutate(
       chk_period = case_when(
-        str_detect(.data$signal, "incidence") ~ .data$incidence_period == "epiweek",
-        str_detect(.data$signal, "admissions") ~ .data$incidence_period == "day",
+        stringr::str_detect(.data$signal, "incidence") ~ .data$incidence_period == "epiweek",
+        stringr::str_detect(.data$signal, "admissions") ~ .data$incidence_period == "day",
         TRUE ~ FALSE),
       chk_ahead = case_when(
         .data$signal == "confirmed_incidence_num" ~ .data$ahead %in% 1:8,
