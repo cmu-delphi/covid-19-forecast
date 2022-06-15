@@ -1,18 +1,4 @@
 test_that("format_predictions_for_reichlab_submission works", {
-    pcard <- tibble(
-      ahead = rep(c(1, 2, 3, 4), each = 5),
-      geo_value = "pa",
-      quantile = rep(c(0.1, 0.4, 0.5, 0.6, 0.9), 4),
-      value = 1:20,
-      forecaster = "a",
-      forecast_date = as.Date("2020-01-02"),
-      data_source = "source",
-      signal = rep(c("confirmed_incidence_num", "confirmed_incidence_num",
-                     "deaths_incidence_num", "confirmed_admissions_covid_1d"),
-                   each = 5),
-      target_end_date = rep(as.Date(c("2020-01-09", "2020-01-16", "2020-01-23", "2020-01-23")), each = 5),
-      incidence_period = c(rep("epiweek", 15), rep("day", 5))
-    )
     pcard1 <- tibble(
       ahead = rep(c(1, 2, 3, 4), each = 5),
       geo_value = "pa",
@@ -24,7 +10,7 @@ test_that("format_predictions_for_reichlab_submission works", {
       signal = rep(c("confirmed_incidence_num", "confirmed_incidence_num",
                      "deaths_incidence_num", "confirmed_admissions_covid_1d"),
                    each = 5),
-      target_end_date = rep(as.Date(c("2020-01-09", "2020-01-16", "2020-01-23", "2020-01-23")), each = 5),
+      target_end_date = rep(as.Date(c("2020-01-09", "2020-01-16", "2020-01-23", "2020-01-06")), each = 5),
       incidence_period = c(rep("epiweek", 15), rep("day", 5))
     )
     class(pcard1) <- c("predictions_cards", class(pcard1))
@@ -59,9 +45,10 @@ test_that("format_predictions_for_reichlab_submission works", {
                                ))
     expect_equal(out$target_end_date, as.Date(c("2020-01-09", "2020-01-09", "2020-01-09",
                                                 "2020-01-16", "2020-01-16", "2020-01-16",
-                                                rep("2020-01-23", 10),
+                                                rep("2020-01-23", 5),
+                                                rep("2020-01-06", 5),
                                                 "2020-01-09", "2020-01-16", "2020-01-23",
-                                                "2020-01-23")))
+                                                "2020-01-06")))
     expect_equal(out$type, c(rep("quantile", 16), rep("point", 4)))
 })
 
