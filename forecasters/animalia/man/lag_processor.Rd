@@ -18,7 +18,8 @@ in order to apply a different set of shifts to each signal.}
 }
 \value{
 A list of length `nsigs`, with each element being the vector of
-(non-positive) lags associated with each signal.
+(non-positive) lags associated with each signal. When `nsigs` is 1, 
+returns the vector of lags for that signal.
 }
 \description{
 Helper function to take positive input lags (in the style of Ryan's

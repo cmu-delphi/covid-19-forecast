@@ -12,7 +12,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Remotes:
-    ryantibs/quantgen/R-package/quantgen@master,
+    ryantibs/quantgen/quantgen@master,
     cmu-delphi/covidcast/R-packages/covidcast@main,
     cmu-delphi/covidcast/R-packages/evalcast@evalcast,
     cmu-delphi/covidcast/R-packages/modeltools@modeltools,
@@ -31,6 +31,6 @@ Imports:
     stringr,
     tidyr,
     zoo
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.0
 Depends: 
     R (>= 2.10)

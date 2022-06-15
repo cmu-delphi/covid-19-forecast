@@ -117,7 +117,7 @@ make_county_corrector <- function(
                .data$time_value,
                .data$value, .data$corrected, .data$flag, .data$special_flag)
       if (!is.null(corrections_db_path))
-        write_rds(corrected_df, file = corrections_db_path)
+        readr::write_rds(corrected_df, file = corrections_db_path)
     }
     if (return_all) {
       return(corrected_df)

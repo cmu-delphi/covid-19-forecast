@@ -35,9 +35,9 @@ multinomial_preprocessor <- function(dat, response, max_lag = Inf){
     df_use <- dat[indices,]
 
     # Guard against misuse of this function.
-    if( any( duplicated(df_use %>% dplyr::select(reference_date)) ) )
+    if( any( duplicated(df_use %>% dplyr::select(.data$reference_date)) ) )
       stop("Multiple response values for the same reference_date. Did you select an issue_date for this reference_date yet?")
-    x <- dplyr::pull(df_use,value)
+    x <- dplyr::pull(df_use, .data$value)
     dat[indices,"value"] <- multinomial_roll_sum(x, max_lag = max_lag)
   }
   return(dat)
