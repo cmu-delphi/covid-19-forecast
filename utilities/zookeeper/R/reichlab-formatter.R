@@ -15,7 +15,7 @@
 #' @return a tibble for conversion to csv
 #' @export
 #' @importFrom purrr map map_lgl map_int map2
-#' @importFrom dplyr bind_rows filter
+#' @importFrom dplyr bind_rows filter group_by distinct
 #' @importFrom assertthat assert_that
 format_predictions_for_reichlab_submission <- function(predictions_cards,
                                                        geo_values_to_filter = NULL){
@@ -37,21 +37,47 @@ format_predictions_for_reichlab_submission <- function(predictions_cards,
     msg = "Predictions are somehow missing necessary columns.")
 
   assert_that(all(predictions_cards$signal %in%
-                    c("confirmed_incidence_num", "deaths_incidence_num")),
+                    c("confirmed_incidence_num", "deaths_incidence_num",
+                      "confirmed_admissions_covid_1d")),
               msg = "Predictions are for unsupported signals")
 
-  assert_that(all(predictions_cards$incidence_period == "epiweek"),
-              msg = "Currently only submitting epiweek forecasts")
+  assert_that(all(predictions_cards$incidence_period %in%
+                    c("epiweek", "day")),
+              msg = "Currently only submitting epiweek/daily forecasts")
+
+  pcard_check <- predictions_cards %>%
+    select(.data$signal, .data$incidence_period, .data$ahead) %>%
+    mutate(
+      chk_period = case_when(
+        stringr::str_detect(.data$signal, "incidence") ~ .data$incidence_period == "epiweek",
+        stringr::str_detect(.data$signal, "admissions") ~ .data$incidence_period == "day",
+        TRUE ~ FALSE),
+      chk_ahead = case_when(
+        .data$signal == "confirmed_incidence_num" ~ .data$ahead %in% 1:8,
+        .data$signal == "deaths_incidence_num" ~ .data$ahead %in% 1:20,
+        .data$signal == "confirmed_admissions_covid_1d" ~ .data$ahead %in% 0:130,
+        TRUE ~ FALSE
+      )
+    )
+  assert_that(all(pcard_check$chk_period),
+              msg = "some signals have incorrect incidence_period")
+  assert_that(all(pcard_check$chk_ahead),
+              msg = "some signals have invalid aheads")
+
 
   case_quants <- c(0.025, 0.100, 0.250, 0.500, 0.750, 0.900, 0.975)
 
   reichlab_quantile <- predictions_cards %>%
-    mutate(target = if_else(.data$signal == "confirmed_incidence_num",
-                            paste0(.data$ahead, " wk ahead inc case"),
-                            paste0(.data$ahead, " wk ahead inc death")),
-           type = "quantile",
-           quantile = round(.data$quantile, 3)) %>%
+    mutate(
+      target = case_when(
+        .data$signal == "confirmed_incidence_num" ~ paste0(.data$ahead, " wk ahead inc case"),
+        .data$signal == "deaths_incidence_num" ~ paste0(.data$ahead, " wk ahead inc death"),
+        TRUE ~ paste0(.data$ahead, " day ahead inc hosp")
+      ),
+      type = "quantile",
+      quantile = round(.data$quantile, 3)) %>%
     filter(.data$signal == "deaths_incidence_num" |
+             .data$signal == "confirmed_admissions_covid_1d" |
              allowed_quantiles(.data$quantile, case_quants)) %>%
     select(location = .data$geo_value, .data$forecast_date, .data$quantile,
            .data$value, .data$target, .data$target_end_date, .data$type)

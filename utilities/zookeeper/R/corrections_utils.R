@@ -10,7 +10,7 @@ na_replace <- function(a, b) {
 exp_w <- function(x, std_decay = 30, b0 = 8, a = exp(1) / 2){
   stopifnot(length(x) <= std_decay)
   w <- (1:std_decay) / std_decay
-  w <- tail(w, length(x))
+  w <- utils::tail(w, length(x))
   1 / (1 + exp(-w * b0 + a))
 }
 
@@ -105,7 +105,7 @@ corrections_multinom_roll <- function(
 #'   c("AK","AL"), c(as.Date("2021-01-01"), as.Date("2021-01-02"), as.Date("2021-01-03")), c("New Year's Day","Other","Other"),
 #'   "AK", as.Date("2021-03-29"), "Seward's Day"
 #' )
-#' unchop_cartesian_mapping(
+#' zookeeper:::unchop_cartesian_mapping(
 #'   tbl1,
 #'   location, time ~ unique_time_description
 #' )
@@ -119,7 +119,7 @@ corrections_multinom_roll <- function(
 #'   c("AK","AL"), as.Date("2021-03-29"), "Not New Year's",
 #'   "AK", as.Date("2021-03-29"), "Seward's Day"
 #' )
-#' unchop_cartesian_mapping(
+#' zookeeper:::unchop_cartesian_mapping(
 #'   tbl2,
 #'   location, starts_with("time")
 #' )
@@ -130,11 +130,12 @@ corrections_multinom_roll <- function(
 #'   c(as.Date("2021-01-02"),as.Date("2021-01-03")), c("AK","AL"), "Other",
 #'   as.Date("2021-03-29"), c("AK","AL"), c("Seward's Day","Other")
 #' )
-#' unchop_cartesian_mapping(
+#' zookeeper:::unchop_cartesian_mapping(
 #'   tbl3,
 #'   time, location ~ tag
 #' )
 #'
+#' @export
 unchop_cartesian_mapping <- function(df, ...) {
   ## Translate `...` into list of list of (potentially named) integer vectors; `group_key_val_selections[[g]][[1L]]` should be the indices of the key selections of the `g`th group, and `group_key_val_selections[[g]][[2L]]` those of the vals:
   group_quosures <- rlang::enquos(...)
@@ -198,18 +199,18 @@ make_manual_flags <- function(df, manual_flags) {
   ds <- df$data_source[[1L]]
   sig <- df$signal[[1L]]
   stopifnot(all(df$data_source == ds), all(df$signal == sig))
-  manual_flags <- unchop_cartesian_mapping(manual_flags, data_source, signal, geo_value, time_value ~ max_lag)
+  manual_flags <- unchop_cartesian_mapping(manual_flags, .data$data_source, .data$signal, .data$geo_value, time_value ~ .data$max_lag)
   manual_flags <- dplyr::filter(manual_flags,
                                  .data$data_source == ds, .data$signal == sig)
   manual_flags <- dplyr::mutate(manual_flags, manual_flag = TRUE)
-  manual_flags <- dplyr::rename(manual_flags, manual_flag_max_lag = max_lag)
+  manual_flags <- dplyr::rename(manual_flags, manual_flag_max_lag = .data$max_lag)
   if (nrow(manual_flags) < 1) return(df)
   if (nrow(dplyr::anti_join(manual_flags, df, by=c("data_source","signal","geo_value","time_value"))) > 0L) {
     warning(sprintf('manual_flags marked entries of df that do not exist; for the current data_source and signal being inspected:\n%s',
-                    paste(collapse="\n", capture.output(print(manual_flags)), sep="\n")))
+                    paste(collapse="\n", utils::capture.output(print(manual_flags)), sep="\n")))
   }
   df <- dplyr::left_join(df, manual_flags, by=c("data_source","signal","geo_value","time_value"))
-  df <- dplyr::mutate_at(df, dplyr::vars(manual_flag), dplyr::coalesce, FALSE)
+  df <- dplyr::mutate_at(df, dplyr::vars(.data$manual_flag), dplyr::coalesce, FALSE)
   return(df)
 }
 

@@ -84,9 +84,9 @@ get_data_corrections  <- function(db_path, geo_type) {
   on.exit(DBI::dbDisconnect(conn = con))
   dplyr::tbl(src = con, geo_type) %>%
     dplyr::collect() %>%
-    dplyr::mutate(reference_date = lubridate::ymd(reference_date),
-                  issue_date = lubridate::ymd(issue_date),
-                  correction_date = lubridate::ymd(correction_date))
+    dplyr::mutate(reference_date = lubridate::ymd(.data$reference_date),
+                  issue_date = lubridate::ymd(.data$issue_date),
+                  correction_date = lubridate::ymd(.data$correction_date))
 }
 
 
@@ -125,9 +125,9 @@ update_corrections  <- function(db_path, geo_type, new_df) {
   ## Ensure the schema is correct
   dplyr::tbl(src = con, geo_type) %>%
     dplyr::collect() %>%
-    dplyr::mutate(reference_date = lubridate::ymd(reference_date),
-                  issue_date = lubridate::ymd(issue_date),
-                  correction_date = lubridate::ymd(correction_date)) ->
+    dplyr::mutate(reference_date = lubridate::ymd(.data$reference_date),
+                  issue_date = lubridate::ymd(.data$issue_date),
+                  correction_date = lubridate::ymd(.data$correction_date)) ->
     current_data
   ## ## Quick and dirty way to check schema match
   ## current_schema  <- current_data[FALSE, ] ## get a zero row tibble of existing data
@@ -140,9 +140,9 @@ update_corrections  <- function(db_path, geo_type, new_df) {
   }
 
   new_df %>%
-    dplyr::mutate(reference_date = as.character(reference_date),
-                  issue_date = as.character(issue_date),
-                  correction_date = as.character(correction_date)
+    dplyr::mutate(reference_date = as.character(.data$reference_date),
+                  issue_date = as.character(.data$issue_date),
+                  correction_date = as.character(.data$correction_date)
     ) %>%
     DBI::dbWriteTable(conn = con, name = geo_type, overwrite = TRUE)
   invisible(TRUE)
@@ -192,17 +192,17 @@ apply_corrections  <- function(df, geo_type, corrections_db_path) {
 
   dplyr::tbl(src = con, geo_type) %>%
     dplyr::collect() %>%
-    dplyr::mutate(reference_date = lubridate::ymd(reference_date),
-                  issue_date = lubridate::ymd(issue_date),
-                  correction_date = lubridate::ymd(correction_date)) %>%
+    dplyr::mutate(reference_date = lubridate::ymd(.data$reference_date),
+                  issue_date = lubridate::ymd(.data$issue_date),
+                  correction_date = lubridate::ymd(.data$correction_date)) %>%
     ## Remove unneeded columns for merge
-    dplyr::select(-value, -correction_date, -description) %>%
-    dplyr::rename(value = new_value) %>% ## New value is now effective value
+    dplyr::select(-.data$value, -.data$correction_date, -.data$description) %>%
+    dplyr::rename(value = .data$new_value) %>% ## New value is now effective value
     dplyr::inner_join(x = df, by = c("location", "reference_date", "variable_name")) %>%
     ## New value in y overrides old value in x but old location_name and issue_date should prevail,
     ## so select columns in correct order and drop unneeded ones
-    dplyr::select(location, location_name = location_name.x, reference_date, issue_date = issue_date.x,
-                  variable_name, value = value.y, -value.x, -location_name.y, -issue_date.y) ->
+    dplyr::select(.data$location, location_name = .data$location_name.x, .data$reference_date, issue_date = .data$issue_date.x,
+                  .data$variable_name, value = .data$value.y, -.data$value.x, -.data$location_name.y, -.data$issue_date.y) ->
     corrections
 
   if (nrow(corrections) == 0) {

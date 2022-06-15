@@ -2,10 +2,33 @@
 % Please edit documentation in R/wrappers.R
 \name{rmultinom_wrapper}
 \alias{rmultinom_wrapper}
-\title{Wrapper for \link[stats:Multinom]{stats::rmultinom}}
+\title{Wrapper for \code{\link[stats:Multinom]{stats::rmultinom}}}
 \usage{
 rmultinom_wrapper(n, size, prob)
 }
-\description{
-The \link{with_test} functions are restricted due to potential issues with bytecode and/or JIT compilation of base/external packages and/or cleanliness.  The \link{stub} function approach has issues due to the complexity of code and environment transformation.
+\arguments{
+\item{n}{forwarded to \code{stats::rmultinom}}
+
+\item{size}{forwarded to \code{stats::rmultinom}}
+
+\item{prob}{forwarded to \code{stats::rmultinom}}
 }
+\value{
+result of \code{stats::rmultinom}
+}
+\description{
+Wrapper for \code{\link[stats:Multinom]{stats::rmultinom}}
+}
+\section{Wrapper functions}{
+
+
+Wrapper functions for base/external functions enable
+(easier/cleaner/wider/any) unit testing with test doubles. Current methods
+for using test doubles without built-in dependency injection include:
+\itemize{
+\item \code{\link[mockr:local_mock]{mockr::with_mock}}, which is restricted to functions in the package under test
+\item \code{\link[testthat:with_mock]{testthat::with_mock}}, which is deprecated (and restricted to non-base functions)
+\item \code{\link[mockery:stub]{mockery::stub}}, which is a "shallower" replacement compared to the \code{with_mock} methods
+}
+}
+

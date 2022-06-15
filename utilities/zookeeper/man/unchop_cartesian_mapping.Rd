@@ -35,7 +35,7 @@ tbl1 <- tibble::tribble(
   c("AK","AL"), c(as.Date("2021-01-01"), as.Date("2021-01-02"), as.Date("2021-01-03")), c("New Year's Day","Other","Other"),
   "AK", as.Date("2021-03-29"), "Seward's Day"
 )
-unchop_cartesian_mapping(
+zookeeper:::unchop_cartesian_mapping(
   tbl1,
   location, time ~ unique_time_description
 )
@@ -49,7 +49,7 @@ tbl2 <- tibble::tribble(
   c("AK","AL"), as.Date("2021-03-29"), "Not New Year's",
   "AK", as.Date("2021-03-29"), "Seward's Day"
 )
-unchop_cartesian_mapping(
+zookeeper:::unchop_cartesian_mapping(
   tbl2,
   location, starts_with("time")
 )
@@ -60,7 +60,7 @@ tbl3 <- tibble::tribble(
   c(as.Date("2021-01-02"),as.Date("2021-01-03")), c("AK","AL"), "Other",
   as.Date("2021-03-29"), c("AK","AL"), c("Seward's Day","Other")
 )
-unchop_cartesian_mapping(
+zookeeper:::unchop_cartesian_mapping(
   tbl3,
   time, location ~ tag
 )
