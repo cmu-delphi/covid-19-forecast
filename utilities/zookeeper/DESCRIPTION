@@ -30,7 +30,7 @@ Imports:
     tidyselect,
     readr,
     stringr
-Remotes: cmu-delphi/covidcast/R-packages/evalcast@evalcast,
+Remotes: cmu-delphi/covidcast/R-packages/evalcast@main,
 Suggests: 
     mockery,
     knitr,
