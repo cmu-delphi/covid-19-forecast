@@ -14,8 +14,8 @@ LazyData: true
 Remotes:
     ryantibs/quantgen/quantgen@master,
     cmu-delphi/covidcast/R-packages/covidcast@main,
-    cmu-delphi/covidcast/R-packages/evalcast@evalcast,
-    cmu-delphi/covidcast/R-packages/modeltools@modeltools,
+    cmu-delphi/covidcast/R-packages/evalcast@main,
+    cmu-delphi/covidcast/R-packages/modeltools@main,
 Imports: 
     assertthat,
     covidcast,
